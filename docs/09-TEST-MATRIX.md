@@ -2983,3 +2983,74 @@ real-holder/Python-ledger retained-forward integration or actual cleanup map.
 No Apps Script test function applies: no `.gs`, route or Schema changed.
 Actual admission remains false;296 accounting/history, rates/single-inflight,
 cleanup reserves, one RPC, performance/device/freshness/24-hour gates remain.
+
+
+## 2026-10-25 Local cleanup disposition observations
+
+The existing thin/standalone publication, OAuth, sheet Reader and standalone
+script Reader factories expose synchronous `cleanupDisposition()` with no
+arguments. Arguments reject with the existing `TRIAL_STOPPED`. Every call
+returns new detached deeply frozen own-data objects. Observation performs no
+filesystem, clock, credential, capability, provider, event or debit operation;
+it never refreshes, expires, clears, consumes, persists or authorizes state.
+
+| Common field | Exact meaning / finite domain |
+| --- | --- |
+| `schemaVersion` | `1` |
+| `resource` | `deployment`, `oauth-token`, `sheet-reader`, `script-reader` |
+| `integrity` | `locally-uncontested` = no locally detected receipt/ownership/protocol failure; `compromised` = sticky known failure or ambiguous detached/duplicate cleanup callback. Neither is a fresh filesystem/canonical integrity proof. |
+| `inFlight` | This factory instance has a publish/grant/OAuth method, cleanup method or cleanup callback still pending. False says nothing about another instance or canonical pending. |
+| `resourceDisposition` | `not-dispatched` = no known resource attempt; `attempted-known` = retained owned deployment target, known Reader permission/owner pair, or previously received token; `attempted-unknown` = attempt known without that handle. No success, absence, admission or remote-settlement claim. |
+| `actions` | Frozen `close`/`verify` for deployment; `remove`/`verify` for Readers; `revoke`/`verify` for OAuth. Each action has the fields below. |
+| action `requested`, `entered` | Cumulative local method request versus cleanup capability callback invocation; existing persisted attempt latches also establish historical request/entry where applicable. Reader `NO_GRANT` consumes removal without callback entry. No callback entry never proves zero canonical spend. |
+| action `pending`, `result` | Method still pending; result is `pending`, `not-observed`, `returned` or `rejected`. Result describes the latest locally settled invocation, including local/pre-admission rejection. |
+| action `callbackPending`, `callbackResult` | Callback still pending, independently of the outer method; result is `pending`, `not-observed`, `returned` or `rejected`. Historical journal state alone never reconstructs callback settlement. |
+| action `consumed` | Existing attempt latch, retained monotonically in this instance. OAuth verification consumes before admission; denied revoke callback does not consume. No new retry permission. |
+| action `outcome` | Existing canonical factory journal value, preserved without reinterpretation; may disagree with retained latches after integrity failure. |
+
+Deployment adds `createAttempted` (monotonic local/journal intent latch, which
+can precede transport), `createOutcome`: `NOT_SENT`, `UNKNOWN`, `ACK_MATCHED`.
+Close outcomes: `NOT_STARTED`, `UNKNOWN`, `ACK_UNVERIFIED`; verify outcomes:
+`NOT_STARTED`, `UNKNOWN`, `ABSENT_AT_READBACK`. Stopped status never hides the
+known owned deployment or UNKNOWN create. Inventory cannot adopt another ID.
+
+Readers add `grantAttempted` (monotonic local/journal intent latch) and
+`grantOutcome`: `NOT_SENT`, `UNKNOWN`, `ACK_MATCHED`, plus `READER_VERIFIED` for
+the sheet profile only. Remove outcomes: `NOT_STARTED`, `UNKNOWN`,
+`ACK_UNVERIFIED`, `NO_GRANT`; verify outcomes as deployment. A known owned
+permission target can survive UNKNOWN grant. `verifyRemoved()` still rejects
+`NO_GRANT`. Existing refresh reads merely annotate identity/attempt regression;
+their canonical assignments and cleanup behavior are unchanged.
+
+OAuth adds `exchangeAttempted` (transport dispatch latch), `tokenHeld`,
+`tokenPreviouslyAccepted`, `acceptedTokenExpiresAt` (retained existing accepted
+expiry or null), and `verificationTokenHeld`. Previously received but unaccepted
+issued tokens can be revoked and never support verification. After cancellation,
+ordinary credential access remains closed; accepted provenance/expiry survive.
+Revoke outcomes: `NOT_NEEDED`, `TOKEN_UNAVAILABLE`, `UNKNOWN`, `ACK_UNVERIFIED`;
+verify outcomes: `NOT_STARTED`, `UNKNOWN`, `REJECTED_AT_READBACK`. Revoke consumes
+at callback entry; verification consumes before admission. Readback 401 only
+proves rejection of the previously accepted token at that observation, never
+causal/grant-wide revocation or rollback completion.
+
+No raw token, account, permission/resource identifier, journal path, credential
+reference, setter, callback or authority flag is exposed. Only nonsecret booleans,
+small callback/method counters and finite result metadata are added; existing
+accepted expiry is reused. No credential lifetime, journal schema, listener,
+consent, PKCE, verification, revoke, canonical retry or cleanup rule changes.
+Later orchestration must independently recheck owner, pending, settled events,
+claim, registry, source and dependency state. Known compromise or in-flight work
+cannot establish eligibility. Canonical scope failure still rejects finally.
+
+| Verification | Evidence boundary |
+| --- | --- |
+| Initial factory-transition TDD | 12 RED (missing method) then 12 GREEN; source-only owned fixtures |
+| Detached callbacks / verification denial | 6 focused assertion RED then GREEN; independent callback settlement remains visible |
+| Checksum-valid ownership/attempt regression | 3 RED then GREEN; no new cleanup guard or IO |
+| Ordinary stopped-status integrity error | 1 target Node22 RED then GREEN; sticky observed failure |
+| Final affected module tests | Node22.23.3:215/215 PASS, zero fail/cancel/skip;26 added cases. Four changed factory test modules only, including existing synthetic preparation-ledger integration and adversarial OAuth cleanup tests |
+| No-IO/privacy/immutability | Each factory profile covered with filesystem hooks forbidden, injected clock/credential/capability guards and detached immutable snapshot assertions |
+| Apps Script / real provider / source acceptance | N/A for Apps Script; real provider, browser, runtime composition, CI, release and production acceptance unclaimed |
+
+Rollback is a reviewed scoped source revert before use. Preserve old immutable
+candidates, UNKNOWN attempts, stopped journals, canonical charges and history.

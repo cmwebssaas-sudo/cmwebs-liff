@@ -7,6 +7,22 @@ import {createHash,randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import {consumeAuthorityTrialImportReadback} from './read-authority-trial-import.mjs';
 const stop=()=>{throw Error('TRIAL_STOPPED');},hash=v=>createHash('sha256').update(v).digest('hex'),checksum=v=>hash(JSON.stringify(v));
+// Observation metadata never admits IO or replaces a fresh canonical integrity check.
+const cleanupObservation=()=>({requested:false,entered:false,pending:0,result:'not-observed',callbackPending:0,callbackResult:'not-observed',callbackCount:0,ambiguous:false});
+const observeCleanup=(state,work)=>async function(...args){
+ state.requested=true;state.pending++;
+ try{const result=await work(...args);state.result='returned';return result;}
+ catch(e){state.result='rejected';throw e;}finally{if(state.callbackPending)state.ambiguous=true;state.pending--;}
+};
+const observeCleanupCallback=(state,work)=>function(...args){
+ state.entered=true;state.callbackPending++;if(++state.callbackCount>1)state.ambiguous=true;
+ let result;try{result=work(...args);}catch(e){state.callbackPending--;state.callbackResult='rejected';throw e;}
+ return Promise.resolve(result).then(value=>{state.callbackPending--;state.callbackResult='returned';return value;},error=>{state.callbackPending--;state.callbackResult='rejected';throw error;});
+};
+const cleanupSnapshot=(state,consumed,outcome,entered=consumed)=>Object.freeze({
+ requested:state.requested||entered||consumed,entered:state.entered||entered,pending:state.pending>0,
+ result:state.pending?'pending':state.result,callbackPending:state.callbackPending>0,callbackResult:state.callbackPending?'pending':state.callbackResult,consumed,outcome
+});
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const only=(v,keys,required=keys)=>record(v)&&Object.keys(v).every(k=>keys.includes(k))&&required.every(k=>Object.hasOwn(v,k));
 const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
@@ -48,12 +64,17 @@ export function createAuthorityTrialReader(input){
    !['ready','checking','grant-intent','reader-verified','failed','stopped'].includes(j.state)||['grantStarted','grantAttempted','removeAttempted','verifyAttempted','stopRequested'].some(k=>typeof j[k]!=='boolean')||
    !['NOT_SENT','UNKNOWN','ACK_MATCHED','READER_VERIFIED'].includes(j.grantOutcome)||!['NOT_STARTED','UNKNOWN','ACK_UNVERIFIED','NO_GRANT'].includes(j.removeOutcome)||!['NOT_STARTED','UNKNOWN','ABSENT_AT_READBACK'].includes(j.verifyOutcome)||
    [j.permissionId,j.ownerId].some(v=>v!==null&&!id(v))||(j.grantAttempted&&(!j.grantStarted||!j.permissionId||!j.ownerId||j.permissionId===j.ownerId)))stop();return j;};validate(journal);
+  let dispositionCompromised=false,granting=false,knownGrantAttempted=journal.grantAttempted,knownRemoveAttempted=journal.removeAttempted,knownVerifyAttempted=journal.verifyAttempted;const removeObservation=cleanupObservation(),verifyObservation=cleanupObservation();
   const stopPath=registry+'.stop',operationPath=path+'.operation.lock';
-  const stopped=()=>{try{lstatSync(stopPath);}catch(e){if(e.code==='ENOENT')return false;throw e;}if(JSON.stringify(read(stopPath))!==JSON.stringify(registration))stop();return true;};
-  const publishStop=()=>{if(stopped())return;try{save(stopPath,registration,true);}catch(e){if(!stopped())throw e;}};
-  const release=fd=>{if(fd!==undefined)try{closeSync(fd);unlinkSync(operationPath);}catch(_){stop();}};
-  const write=patch=>{journal={...journal,...patch};save(path,journal);};
-  const integrity=()=>{directory(path);if(JSON.stringify(read(registry))!==JSON.stringify(registration)||JSON.stringify(read(path))!==JSON.stringify(journal))stop();};
+  const stopped=()=>{try{try{lstatSync(stopPath);}catch(e){if(e.code==='ENOENT')return false;throw e;}if(JSON.stringify(read(stopPath))!==JSON.stringify(registration))stop();return true;}catch(e){dispositionCompromised=true;throw e;}};
+  const publishStop=()=>{try{if(stopped())return;try{save(stopPath,registration,true);}catch(e){if(!stopped())throw e;}}catch(e){dispositionCompromised=true;throw e;}};
+  const release=fd=>{if(fd!==undefined)try{closeSync(fd);unlinkSync(operationPath);}catch(_){dispositionCompromised=true;stop();}};
+  const write=patch=>{knownGrantAttempted||=patch.grantAttempted===true;knownRemoveAttempted||=patch.removeAttempted===true;knownVerifyAttempted||=patch.verifyAttempted===true;journal={...journal,...patch};try{save(path,journal);}catch(e){dispositionCompromised=true;throw e;}};
+  const integrity=()=>{try{directory(path);if(JSON.stringify(read(registry))!==JSON.stringify(registration)||JSON.stringify(read(path))!==JSON.stringify(journal))stop();}catch(e){dispositionCompromised=true;throw e;}};
+  const refresh=()=>{const fresh=validate(read(path));
+   if((journal.permissionId!==null&&fresh.permissionId!==journal.permissionId)||(journal.ownerId!==null&&fresh.ownerId!==journal.ownerId)||(knownGrantAttempted&&!fresh.grantAttempted)||(knownRemoveAttempted&&!fresh.removeAttempted)||(knownVerifyAttempted&&!fresh.verifyAttempted))dispositionCompromised=true;
+   journal=fresh;knownGrantAttempted||=journal.grantAttempted;knownRemoveAttempted||=journal.removeAttempted;knownVerifyAttempted||=journal.verifyAttempted;
+  };
   const live=()=>{integrity();const t=now();if(!Number.isSafeInteger(t)||t>=expiresAt||journal.stopRequested||stopped())stop();};
   const token=()=>{const raw=credential();if(types.isPromise(raw)){void Promise.prototype.then.call(raw,()=>{},()=>{});stop();}if(!only(raw,['accessToken','accountHash','scopes','expiresAt','refreshTokenPresent']))stop();const v={...raw};
    if(typeof v.accessToken!=='string'||v.accessToken.length>8192||!v.accessToken||/[\s\x00-\x1f\x7f]/.test(v.accessToken)||v.accountHash!==publisherHash||!Array.isArray(v.scopes)||JSON.stringify([...v.scopes].sort())!==JSON.stringify([...scopes].sort())||!Number.isSafeInteger(v.expiresAt)||typeof v.refreshTokenPresent!=='boolean'||v.expiresAt-now()<=10000)stop();return v;};
@@ -63,9 +84,9 @@ export function createAuthorityTrialReader(input){
   const verifyReader=v=>{const rows=acl(v);if(rows.length!==2)stop();const own=rows.filter(p=>p.role==='owner'),call=rows.filter(p=>p.role==='reader');if(own.length!==1||call.length!==1||permission(own[0],'owner',publisherHash)!==journal.ownerId||permission(call[0],'reader',callerHash)!==journal.permissionId)stop();};
   let grantPromise,removing=false,verifying=false;
   const grantWork=async()=>{
-   let op,claimed=false;
+   granting=true;let op,claimed=false;
    try{
-    op=openSync(operationPath,'wx',0o600);integrity();if(journal.grantStarted||journal.grantAttempted||journal.stopRequested||stopped())stop();claimed=true;write({grantStarted:true,state:'checking'});live();
+    try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}integrity();if(journal.grantStarted||journal.grantAttempted||journal.stopRequested||stopped())stop();claimed=true;write({grantStarted:true,state:'checking'});live();
     const lookup=await cap.read('caller-permission-id',metadataControl('B:caller-permission-id'));live();if(!only(lookup,['kind','id'])||lookup.kind!=='drive#permissionId'||!id(lookup.id))stop();write({permissionId:lookup.id});
     const originalOwner=ownerOnly(await cap.read('original-acl',metadataControl('B:original-acl-fresh')));live();if(originalOwner===journal.permissionId)stop();
     if(!consumeAuthorityTrialImportReadback(liveImportReceipt,{epoch,syntheticSheetId,publisherHash,fixtureHash},now())){const file=await cap.read('synthetic-file',metadataControl('B:fixture-file-readback'));live();if(!only(file,['id','mimeType','ownedByMe','trashed'])||file.id!==syntheticSheetId||file.mimeType!=='application/vnd.google-apps.spreadsheet'||file.ownedByMe!==true||file.trashed!==false)stop();}
@@ -77,27 +98,33 @@ export function createAuthorityTrialReader(input){
     },'B:reader-create');
     if(!only(reply,['kind','id','type','role','emailAddress'])||reply.kind!=='drive#permission'||permission(reply,'reader',callerHash)!==journal.permissionId)stop();write({grantOutcome:'ACK_MATCHED'});live();
     verifyReader(await cap.read('synthetic-acl',metadataControl('B:reader-acl-readback')));live();write({state:'reader-verified',grantOutcome:'READER_VERIFIED'});return Object.freeze({readerVerified:true,permissionHash:hash(journal.permissionId)});
-   }catch(_){if(claimed)try{integrity();write({state:'failed'});}catch(_){}stop();}finally{release(op);}
+   }catch(_){if(claimed)try{integrity();write({state:'failed'});}catch(_){}stop();}finally{try{release(op);}finally{granting=false;}}
   };
-  return Object.freeze({status:()=>journal.state,
+  const cleanupDisposition=function(){
+   if(arguments.length)stop();
+   return Object.freeze({schemaVersion:1,resource:'sheet-reader',integrity:dispositionCompromised||removeObservation.ambiguous||verifyObservation.ambiguous?'compromised':'locally-uncontested',inFlight:granting||removing||verifying||removeObservation.pending>0||verifyObservation.pending>0||removeObservation.callbackPending>0||verifyObservation.callbackPending>0,
+    resourceDisposition:!knownGrantAttempted?'not-dispatched':journal.permissionId&&journal.ownerId&&journal.permissionId!==journal.ownerId?'attempted-known':'attempted-unknown',grantAttempted:knownGrantAttempted,grantOutcome:journal.grantOutcome,
+    actions:Object.freeze({remove:cleanupSnapshot(removeObservation,knownRemoveAttempted,journal.removeOutcome,journal.removeAttempted&&journal.removeOutcome!=='NO_GRANT'),verify:cleanupSnapshot(verifyObservation,knownVerifyAttempted,journal.verifyOutcome)})});
+  };
+  return Object.freeze({cleanupDisposition,status:()=>journal.state,
    grant:()=>{if(grantPromise||journal.grantStarted||journal.stopRequested)return Promise.reject(Error('TRIAL_STOPPED'));grantPromise=grantWork();return grantPromise;},
-   remove:async()=>{
+   remove:observeCleanup(removeObservation,async()=>{
     if(removing||journal.removeAttempted)stop();removing=true;let failed=false,op;
     try{try{publishStop();}catch(_){failed=true;}if(grantPromise)await grantPromise.catch(()=>{});
-     op=openSync(operationPath,'wx',0o600);try{journal=validate(read(path));}catch(_){if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}
+     try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}try{refresh();}catch(_){dispositionCompromised=true;if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}
      if(journal.removeAttempted)stop();try{write({stopRequested:true,state:'stopped'});}catch(_){failed=true;}
      if(!journal.grantAttempted){try{write({removeAttempted:true,removeOutcome:'NO_GRANT'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({grantNeverDispatched:true});}
      if(!journal.permissionId||!journal.ownerId||journal.permissionId===journal.ownerId)stop();
-     await cap.cleanup('remove-reader',async()=>{try{write({removeAttempted:true,removeOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),url=base+'/'+encodeURIComponent(journal.permissionId),r=await fetcher(url,options('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else{const v=await json(r,url,4096);if(!only(v,[]))stop();}});
+     await cap.cleanup('remove-reader',observeCleanupCallback(removeObservation,async()=>{try{write({removeAttempted:true,removeOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),url=base+'/'+encodeURIComponent(journal.permissionId),r=await fetcher(url,options('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else{const v=await json(r,url,4096);if(!only(v,[]))stop();}}));
      try{write({removeOutcome:'ACK_UNVERIFIED'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({removeAcknowledged:true,rollbackComplete:false});
     }catch(_){stop();}finally{release(op);removing=false;}
-   },verifyRemoved:async()=>{
+   }),verifyRemoved:observeCleanup(verifyObservation,async()=>{
     if(removing||verifying)stop();verifying=true;let failed=false,op;
-    try{op=openSync(operationPath,'wx',0o600);try{journal=validate(read(path));}catch(_){if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}if(!journal.removeAttempted||journal.removeOutcome==='NO_GRANT'||journal.verifyAttempted)stop();
-     await cap.cleanup('verify-reader-removed',async()=>{try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),fields='nextPageToken,permissions(kind,id,type,role,emailAddress,deleted,permissionDetails(inherited,permissionType,role))',url=base+'?fields='+encodeURIComponent(fields)+'&pageSize=100';const v=await json(await fetcher(url,options('GET',t)),url);if(ownerOnly(v)!==journal.ownerId)stop();});
+    try{try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}try{refresh();}catch(_){dispositionCompromised=true;if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}if(!journal.removeAttempted||journal.removeOutcome==='NO_GRANT'||journal.verifyAttempted)stop();
+     await cap.cleanup('verify-reader-removed',observeCleanupCallback(verifyObservation,async()=>{try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),fields='nextPageToken,permissions(kind,id,type,role,emailAddress,deleted,permissionDetails(inherited,permissionType,role))',url=base+'?fields='+encodeURIComponent(fields)+'&pageSize=100';const v=await json(await fetcher(url,options('GET',t)),url);if(ownerOnly(v)!==journal.ownerId)stop();}));
      try{write({verifyOutcome:'ABSENT_AT_READBACK'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({readerAbsentAtReadback:true,grantOutcomeKnown:['ACK_MATCHED','READER_VERIFIED'].includes(journal.grantOutcome),rollbackComplete:false});
     }catch(_){stop();}finally{release(op);verifying=false;}
-   }
+   })
   });
  }catch(_){stop();}
 }
@@ -134,12 +161,17 @@ export function createAuthorityStandaloneScriptReader(input){
   const validate=j=>{if(!ownData(j,['version','mode','scriptId','originalScriptId','binding','state','permissionId','ownerId','grantStarted','grantAttempted','grantOutcome','removeAttempted','removeOutcome','verifyAttempted','verifyOutcome','stopRequested'])||j.version!==1||j.mode!==mode||j.scriptId!==scriptId||j.originalScriptId!==originalScriptId||j.binding!==binding||j.permissionId!==callerPermissionId||
    !['ready','checking','grant-intent','grant-acknowledged','failed','stopped'].includes(j.state)||['grantStarted','grantAttempted','removeAttempted','verifyAttempted','stopRequested'].some(k=>typeof j[k]!=='boolean')||!['NOT_SENT','UNKNOWN','ACK_MATCHED'].includes(j.grantOutcome)||!['NOT_STARTED','UNKNOWN','ACK_UNVERIFIED','NO_GRANT'].includes(j.removeOutcome)||!['NOT_STARTED','UNKNOWN','ABSENT_AT_READBACK'].includes(j.verifyOutcome)||
    (j.ownerId!==null&&!id(j.ownerId))||(j.grantAttempted&&(!j.grantStarted||!j.ownerId||j.permissionId===j.ownerId)))stop();return j;};validate(journal);
+  let dispositionCompromised=false,granting=false,knownGrantAttempted=journal.grantAttempted,knownRemoveAttempted=journal.removeAttempted,knownVerifyAttempted=journal.verifyAttempted;const removeObservation=cleanupObservation(),verifyObservation=cleanupObservation();
   const stopPath=registry+'.stop',operationPath=path+'.operation.lock';
-  const stopped=()=>{try{lstatSync(stopPath);}catch(e){if(e.code==='ENOENT')return false;throw e;}if(JSON.stringify(read(stopPath))!==JSON.stringify(registration))stop();return true;};
-  const publishStop=()=>{if(stopped())return;try{save(stopPath,registration,true);}catch(e){if(!stopped())throw e;}};
-  const release=fd=>{if(fd!==undefined)try{closeSync(fd);unlinkSync(operationPath);}catch(_){stop();}};
-  const write=patch=>{journal={...journal,...patch};save(path,journal);};
-  const integrity=()=>{directory(path);if(JSON.stringify(read(registry))!==JSON.stringify(registration)||JSON.stringify(read(path))!==JSON.stringify(journal))stop();};
+  const stopped=()=>{try{try{lstatSync(stopPath);}catch(e){if(e.code==='ENOENT')return false;throw e;}if(JSON.stringify(read(stopPath))!==JSON.stringify(registration))stop();return true;}catch(e){dispositionCompromised=true;throw e;}};
+  const publishStop=()=>{try{if(stopped())return;try{save(stopPath,registration,true);}catch(e){if(!stopped())throw e;}}catch(e){dispositionCompromised=true;throw e;}};
+  const release=fd=>{if(fd!==undefined)try{closeSync(fd);unlinkSync(operationPath);}catch(_){dispositionCompromised=true;stop();}};
+  const write=patch=>{knownGrantAttempted||=patch.grantAttempted===true;knownRemoveAttempted||=patch.removeAttempted===true;knownVerifyAttempted||=patch.verifyAttempted===true;journal={...journal,...patch};try{save(path,journal);}catch(e){dispositionCompromised=true;throw e;}};
+  const integrity=()=>{try{directory(path);if(JSON.stringify(read(registry))!==JSON.stringify(registration)||JSON.stringify(read(path))!==JSON.stringify(journal))stop();}catch(e){dispositionCompromised=true;throw e;}};
+  const refresh=()=>{const fresh=validate(read(path));
+   if((journal.permissionId!==null&&fresh.permissionId!==journal.permissionId)||(journal.ownerId!==null&&fresh.ownerId!==journal.ownerId)||(knownGrantAttempted&&!fresh.grantAttempted)||(knownRemoveAttempted&&!fresh.removeAttempted)||(knownVerifyAttempted&&!fresh.verifyAttempted))dispositionCompromised=true;
+   journal=fresh;knownGrantAttempted||=journal.grantAttempted;knownRemoveAttempted||=journal.removeAttempted;knownVerifyAttempted||=journal.verifyAttempted;
+  };
   const live=()=>{integrity();const t=now();if(!Number.isSafeInteger(t)||t>=expiresAt||journal.stopRequested||stopped())stop();};
   const token=()=>{const raw=credential();if(types.isPromise(raw)){void Promise.prototype.then.call(raw,()=>{},()=>{});stop();}if(!ownData(raw,['accessToken','accountHash','scopes','expiresAt','refreshTokenPresent']))stop();const v={...raw};
    const t=now();if(typeof v.accessToken!=='string'||v.accessToken.length>8192||!v.accessToken||/[\s\x00-\x1f\x7f]/.test(v.accessToken)||v.accountHash!==publisherHash||!ownArray(v.scopes)||JSON.stringify([...v.scopes].sort())!==JSON.stringify([...scopes].sort())||!Number.isSafeInteger(v.expiresAt)||!Number.isSafeInteger(t)||typeof v.refreshTokenPresent!=='boolean'||v.expiresAt-t<=10000)stop();return v;};
@@ -148,36 +180,42 @@ export function createAuthorityStandaloneScriptReader(input){
   const ownerOnly=v=>{const rows=acl(v);if(rows.length!==1)stop();const owner=permission(rows[0],'owner',publisherHash);if(owner===callerPermissionId)stop();return owner;};
   let grantPromise,removing=false,verifying=false;
   const grantWork=async()=>{
-   let op,claimed=false;
+   granting=true;let op,claimed=false;
    try{
-    op=openSync(operationPath,'wx',0o600);integrity();if(journal.grantStarted||journal.grantAttempted||journal.stopRequested||stopped())stop();claimed=true;write({grantStarted:true,state:'checking'});live();
+    try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}integrity();if(journal.grantStarted||journal.grantAttempted||journal.stopRequested||stopped())stop();claimed=true;write({grantStarted:true,state:'checking'});live();
     const baseline=await cap.external(async()=>{live();const t=token();return await json(await fetcher(aclUrl,options('GET',t)),aclUrl);},'D:standalone-acl-baseline');live();write({ownerId:ownerOnly(baseline)});
     const reply=await cap.external(async()=>{live();const t=token();if(journal.grantAttempted)stop();write({state:'grant-intent',grantAttempted:true,grantOutcome:'UNKNOWN'});live();
      const url=base+'?fields='+encodeURIComponent('kind,id,type,role,emailAddress')+'&sendNotificationEmail=false';return await json(await fetcher(url,options('POST',t,{type:'user',role:'reader',emailAddress:callerEmail})),url);
     },'D:standalone-reader-create');
     if(!only(reply,['kind','id','type','role','emailAddress'])||reply.kind!=='drive#permission'||permission(reply,'reader',callerHash)!==callerPermissionId)stop();write({grantOutcome:'ACK_MATCHED'});live();write({state:'grant-acknowledged'});
     return Object.freeze({grantAcknowledged:true,readerVerified:false,permissionHash:hash(callerPermissionId)});
-   }catch(_){if(claimed)try{integrity();write({state:'failed'});}catch(_){}stop();}finally{release(op);}
+   }catch(_){if(claimed)try{integrity();write({state:'failed'});}catch(_){}stop();}finally{try{release(op);}finally{granting=false;}}
   };
-  return Object.freeze({status:()=>journal.state,
+  const cleanupDisposition=function(){
+   if(arguments.length)stop();
+   return Object.freeze({schemaVersion:1,resource:'script-reader',integrity:dispositionCompromised||removeObservation.ambiguous||verifyObservation.ambiguous?'compromised':'locally-uncontested',inFlight:granting||removing||verifying||removeObservation.pending>0||verifyObservation.pending>0||removeObservation.callbackPending>0||verifyObservation.callbackPending>0,
+    resourceDisposition:!knownGrantAttempted?'not-dispatched':journal.permissionId&&journal.ownerId&&journal.permissionId!==journal.ownerId?'attempted-known':'attempted-unknown',grantAttempted:knownGrantAttempted,grantOutcome:journal.grantOutcome,
+    actions:Object.freeze({remove:cleanupSnapshot(removeObservation,knownRemoveAttempted,journal.removeOutcome,journal.removeAttempted&&journal.removeOutcome!=='NO_GRANT'),verify:cleanupSnapshot(verifyObservation,knownVerifyAttempted,journal.verifyOutcome)})});
+  };
+  return Object.freeze({cleanupDisposition,status:()=>journal.state,
    grant:()=>{if(grantPromise||journal.grantStarted||journal.stopRequested)return Promise.reject(Error('TRIAL_STOPPED'));grantPromise=grantWork();return grantPromise;},
-   remove:async()=>{
+   remove:observeCleanup(removeObservation,async()=>{
     if(removing||journal.removeAttempted)stop();removing=true;let failed=false,op;
     try{try{publishStop();}catch(_){failed=true;}if(grantPromise)await grantPromise.catch(()=>{});
-     op=openSync(operationPath,'wx',0o600);try{journal=validate(read(path));}catch(_){if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}
+     try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}try{refresh();}catch(_){dispositionCompromised=true;if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}
      if(journal.removeAttempted)stop();try{write({stopRequested:true,state:'stopped'});}catch(_){failed=true;}
      if(!journal.grantAttempted){try{write({removeAttempted:true,removeOutcome:'NO_GRANT'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({grantNeverDispatched:true});}
      if(journal.permissionId!==callerPermissionId||!journal.ownerId||journal.permissionId===journal.ownerId)stop();
-     await cap.cleanup('script-remove',async()=>{if(journal.removeAttempted)stop();try{write({removeAttempted:true,removeOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),url=base+'/'+encodeURIComponent(callerPermissionId),r=await fetcher(url,options('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else{const v=await json(r,url,4096);if(!only(v,[]))stop();}});
+     await cap.cleanup('script-remove',observeCleanupCallback(removeObservation,async()=>{if(journal.removeAttempted)stop();try{write({removeAttempted:true,removeOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),url=base+'/'+encodeURIComponent(callerPermissionId),r=await fetcher(url,options('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else{const v=await json(r,url,4096);if(!only(v,[]))stop();}}));
      try{write({removeOutcome:'ACK_UNVERIFIED'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({removeAcknowledged:true,rollbackComplete:false});
     }catch(_){stop();}finally{release(op);removing=false;}
-   },verifyRemoved:async()=>{
+   }),verifyRemoved:observeCleanup(verifyObservation,async()=>{
     if(removing||verifying)stop();verifying=true;let failed=false,op;
-    try{op=openSync(operationPath,'wx',0o600);try{journal=validate(read(path));}catch(_){if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}if(!journal.removeAttempted||journal.removeOutcome==='NO_GRANT'||journal.verifyAttempted)stop();
-     await cap.cleanup('script-verify',async()=>{if(journal.verifyAttempted)stop();try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),v=await json(await fetcher(aclUrl,options('GET',t)),aclUrl);if(ownerOnly(v)!==journal.ownerId)stop();});
+    try{try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}try{refresh();}catch(_){dispositionCompromised=true;if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}if(!journal.removeAttempted||journal.removeOutcome==='NO_GRANT'||journal.verifyAttempted)stop();
+     await cap.cleanup('script-verify',observeCleanupCallback(verifyObservation,async()=>{if(journal.verifyAttempted)stop();try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),v=await json(await fetcher(aclUrl,options('GET',t)),aclUrl);if(ownerOnly(v)!==journal.ownerId)stop();}));
      try{write({verifyOutcome:'ABSENT_AT_READBACK'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({readerAbsentAtReadback:true,grantOutcomeKnown:journal.grantOutcome==='ACK_MATCHED',rollbackComplete:false});
     }catch(_){stop();}finally{release(op);verifying=false;}
-   }
+   })
   });
  }catch(_){stop();}
 }

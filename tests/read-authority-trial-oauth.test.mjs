@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import {atomicFixtureControl} from './fixtures/read-authority/atomic-control.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -300,4 +301,43 @@ for(const mode of ['skip','clone','double','late','detach','reject-after'])test(
  });const s=v.s;await s.submit();await s.flow.receive(s.request());await s.flow.cancel();const pending=s.flow.verifyRevoked();void pending.catch(()=>{});
  if(mode==='detach'){await entered;let settled=false;void pending.finally(()=>settled=true).catch(()=>{});await tick();assert.equal(settled,false);release();}
  await assert.rejects(pending,/TRIAL_STOPPED/);if(mode==='late')assert.throws(saved,/TRIAL_STOPPED/);assert.notEqual(receipt(s).tokenVerification,'REJECTED_AT_READBACK');await assert.rejects(s.flow.verifyRevoked(),/TRIAL_STOPPED/);assert.equal(v.verifications(),['skip','late'].includes(mode)?0:1);
+});
+
+// Task100: absent token after attempted exchange must never mean no remote grant.
+test('cleanup disposition cancellation retains accepted-token provenance and expiry without reopening credential access',async()=>{
+ const v=verificationSetup(),s=v.s,initial=s.flow.cleanupDisposition(),before=readFileSync(s.options.path,'utf8');
+ assert.equal(initial.resourceDisposition,'not-dispatched');assert.equal(initial.exchangeAttempted,false);assert.equal(initial.acceptedTokenExpiresAt,null);
+ assert(Object.isFrozen(initial));assert(Object.isFrozen(initial.actions.revoke));assert.throws(()=>s.flow.cleanupDisposition({}),/TRIAL_STOPPED/);
+ assert.equal(readFileSync(s.options.path,'utf8'),before);assert.equal(s.calls.length,0);assert.equal(s.spent(),0);
+ await s.submit();await s.flow.receive(s.request());const accepted=s.flow.cleanupDisposition();s.flow.requestCancellation();assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);
+ const cancelled=s.flow.cleanupDisposition();assert.equal(cancelled.tokenHeld,true);assert.equal(cancelled.tokenPreviouslyAccepted,true);assert.equal(cancelled.acceptedTokenExpiresAt,clock+3600000);
+ for(const p of ['SYNTHETIC_ACCESS_TOKEN','SYNTHETIC_CLIENT_SECRET',email,callerHash,clientId,s.options.path])assert(!JSON.stringify(cancelled).includes(p));
+ await s.flow.cancel();const revoked=s.flow.cleanupDisposition();assert.equal(revoked.tokenHeld,false);assert.equal(revoked.verificationTokenHeld,true);assert.equal(revoked.actions.revoke.consumed,true);assert.equal(revoked.actions.revoke.result,'returned');
+ await s.flow.verifyRevoked();const verified=s.flow.cleanupDisposition();assert.equal(verified.actions.verify.consumed,true);assert.equal(verified.verificationTokenHeld,false);assert.equal(verified.actions.verify.outcome,'REJECTED_AT_READBACK');assert.equal(verified.tokenPreviouslyAccepted,true);
+ s.setNow(clock+3600001);assert.equal(s.flow.cleanupDisposition().acceptedTokenExpiresAt,clock+3600000);assert.equal(initial.resourceDisposition,'not-dispatched');assert.equal(accepted.tokenHeld,true);assert.equal(accepted.actions.revoke.consumed,false);assert.equal(s.calls.length,4);
+});
+for(const kind of ['unknown','unaccepted'])test('cleanup disposition '+kind+' exchange preserves uncertainty and token verification limits',async()=>{
+ const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});if(url.endsWith('/token')){if(kind==='unknown')throw Error('LOST_EXCHANGE');return Response.json({...token(),scope:'OTHER'});}if(url.endsWith('/revoke'))return new Response('');assert.fail('UNEXPECTED_READBACK');}});
+ await s.submit();await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);const d=s.flow.cleanupDisposition();assert.equal(d.exchangeAttempted,true);assert.equal(d.resourceDisposition,kind==='unknown'?'attempted-unknown':'attempted-known');assert.equal(d.tokenHeld,kind==='unaccepted');assert.equal(d.tokenPreviouslyAccepted,false);assert.equal(d.acceptedTokenExpiresAt,null);
+ await s.flow.cancel();await assert.rejects(s.flow.verifyRevoked(),/TRIAL_STOPPED/);assert.equal(s.flow.cleanupDisposition().actions.verify.consumed,false);assert.equal(s.calls.length,kind==='unknown'?1:2);
+});
+test('cleanup disposition revoke denial, entered pending failure and compromised journal remain distinct',async()=>{
+ let deny=true,release,enter;const gate=new Promise(r=>release=r),entered=new Promise(r=>enter=r);
+ const s=setup({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{if(deny)throw Error('DENIED');return io();}},fetcher:async(url,init)=>{s.calls.push({url,init});if(url.endsWith('/token'))return Response.json(token());if(url.endsWith('/revoke')){enter();await gate;throw Error('LOST_REVOKE');}return Response.json({email,verified_email:true});}});
+ await s.submit();await s.flow.receive(s.request());await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);const denied=s.flow.cleanupDisposition();assert.equal(denied.actions.revoke.requested,true);assert.equal(denied.actions.revoke.entered,false);assert.equal(denied.actions.revoke.consumed,false);assert.equal(denied.tokenHeld,true);
+ deny=false;const p=s.flow.cancel();await entered;const pending=s.flow.cleanupDisposition();assert.equal(pending.inFlight,true);assert.equal(pending.actions.revoke.pending,true);assert.equal(pending.actions.revoke.entered,true);release();await assert.rejects(p,/TRIAL_STOPPED/);
+ const failed=s.flow.cleanupDisposition();assert.equal(failed.actions.revoke.consumed,true);assert.equal(failed.actions.revoke.result,'rejected');assert.equal(failed.tokenHeld,false);assert.equal(failed.integrity,'locally-uncontested');
+ chmodSync(join(s.options.path,'..'),0o755);try{assert.throws(()=>s.flow.requestCancellation(),/TRIAL_STOPPED/);assert.equal(s.flow.cleanupDisposition().integrity,'compromised');}finally{chmodSync(join(s.options.path,'..'),0o700);}
+ assert.equal(denied.actions.revoke.entered,false);assert.equal(s.calls.filter(c=>c.url.endsWith('/revoke')).length,1);
+});
+
+test('cleanup disposition verify admission denial consumes only the accepted-token verification attempt',async()=>{
+ const v=verificationSetup(rejection,async(name,io)=>{if(name==='verify-token-revoked')throw Error('DENIED');return io();}),s=v.s;await s.submit();await s.flow.receive(s.request());await s.flow.cancel();
+ await assert.rejects(s.flow.verifyRevoked(),/TRIAL_STOPPED/);const d=s.flow.cleanupDisposition();assert.equal(d.actions.verify.requested,true);assert.equal(d.actions.verify.entered,false);assert.equal(d.actions.verify.consumed,true);assert.equal(d.verificationTokenHeld,false);assert.equal(d.actions.verify.callbackResult,'not-observed');assert.equal(v.verifications(),0);
+});
+
+test('cleanup disposition flow observation is filesystem clock credential and capability inert',()=>{
+ let observing=false;const forbid=()=>{if(observing)assert.fail('OBSERVER_SIDE_EFFECT');};const s=setup({now:()=>{forbid();return clock;},clientSecret:()=>{forbid();throw Error('NOT_USED');},control:{externalRead:async()=>{forbid();},cleanup:async()=>{forbid();}}});
+ const saved={};for(const name of ['lstatSync','readFileSync','openSync','writeSync','renameSync','fsyncSync']){saved[name]=fs[name];fs[name]=()=>assert.fail('OBSERVER_FILESYSTEM_IO');}syncBuiltinESMExports();observing=true;
+ try{const a=s.flow.cleanupDisposition(),b=s.flow.cleanupDisposition();assert.deepEqual(a,b);assert.notEqual(a,b);assert.notEqual(a.actions,b.actions);for(const action of Object.keys(a.actions)){assert(Object.isFrozen(a.actions[action]));assert.notEqual(a.actions[action],b.actions[action]);}}finally{observing=false;Object.assign(fs,saved);syncBuiltinESMExports();}
 });

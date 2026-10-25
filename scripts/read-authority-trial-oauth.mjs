@@ -11,6 +11,22 @@ export const AUTHORITY_TRIAL_REDIRECT_URI='http://127.0.0.1:34763/oauth/callback
 const stop=()=>{throw Error('TRIAL_STOPPED');};
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const checksum=v=>hash(JSON.stringify(v));
+// Observation metadata never admits IO or replaces a fresh canonical integrity check.
+const cleanupObservation=()=>({requested:false,entered:false,pending:0,result:'not-observed',callbackPending:0,callbackResult:'not-observed',callbackCount:0,ambiguous:false});
+const observeCleanup=(state,work)=>async function(...args){
+ state.requested=true;state.pending++;
+ try{const result=await work(...args);state.result='returned';return result;}
+ catch(e){state.result='rejected';throw e;}finally{if(state.callbackPending)state.ambiguous=true;state.pending--;}
+};
+const observeCleanupCallback=(state,work)=>function(...args){
+ state.entered=true;state.callbackPending++;if(++state.callbackCount>1)state.ambiguous=true;
+ let result;try{result=work(...args);}catch(e){state.callbackPending--;state.callbackResult='rejected';throw e;}
+ return Promise.resolve(result).then(value=>{state.callbackPending--;state.callbackResult='returned';return value;},error=>{state.callbackPending--;state.callbackResult='rejected';throw error;});
+};
+const cleanupSnapshot=(state,consumed,outcome,entered=consumed)=>Object.freeze({
+ requested:state.requested||entered||consumed,entered:state.entered||entered,pending:state.pending>0,
+ result:state.pending?'pending':state.result,callbackPending:state.callbackPending>0,callbackResult:state.callbackPending?'pending':state.callbackResult,consumed,outcome
+});
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const only=(v,allowed,required=allowed)=>record(v)&&Object.keys(v).every(k=>allowed.includes(k))&&required.every(k=>Object.hasOwn(v,k));
 const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
@@ -51,7 +67,9 @@ export function createAuthorityTrialOAuth(input){
    save(registry,{state:'ready',path,binding});
   }finally{if(lock!==undefined){closeSync(lock);unlinkSync(registry+'.lock');}}
   let journal=read(path),accessToken=null,verified=null,revokeAttempt,verifiedExpiry=null;
-  let cancellationRequested=false,journalCompromised=false;
+  let cancellationRequested=false,journalCompromised=false,dispositionCompromised=false,exchangeAttempted=false,tokenReceived=false,activeCalls=0;
+  const revokeObservation=cleanupObservation(),verifyObservation=cleanupObservation();
+  const observeActivity=work=>async function(...args){activeCalls++;try{return await work(...args);}finally{activeCalls--;}};
   let verificationToken=null,revokeSettled=false,verificationAttempted=false;
   let submitStarted=false,submitAdmitted=false,submitSettled=false,buffered=null;
   const write=patch=>{journal={...journal,...patch};try{save(path,journal);}catch(e){journalCompromised=true;throw e;}};
@@ -66,16 +84,16 @@ export function createAuthorityTrialOAuth(input){
    try{write({stage:journal.stage==='failed'?'failed':journal.stage==='cancelled'?'cancelled':stage});}catch(_){failed=true;}
    if(failed)stop();
   };
-  const revoke=()=>{
+  const revoke=observeCleanup(revokeObservation,()=>{
    if(revokeAttempt)return revokeAttempt.promise;if(!accessToken)return Promise.resolve();
    const tokenToRevoke=accessToken,attempt={active:true,entered:false,violated:false,work:null,promise:null};
    revokeAttempt=attempt;
    attempt.promise=Promise.resolve().then(async()=>{
     let completed=false,actual,receiptFailed=false;
     try{
-     const observed=await capability.cleanup('revoke-token',()=>{
+     const observed=await capability.cleanup('revoke-token',observeCleanupCallback(revokeObservation,()=>{
       if(!attempt.active||attempt.entered){attempt.violated=true;stop();}
-      attempt.entered=true;
+      attempt.entered=true;revokeObservation.entered=true;
       if(verifiedExpiry!==null)verificationToken=tokenToRevoke;
       attempt.work=(async()=>{
        // A compromised receipt must not prevent the one independently owned
@@ -88,9 +106,9 @@ export function createAuthorityTrialOAuth(input){
        if(r.status!==200||r.redirected===true||(r.url&&r.url!==url))stop();
        actual=Object.freeze({ownedRevokeSettled:true});completed=true;return actual;
       })();void attempt.work.catch(()=>{});return attempt.work;
-     });
+     }));
      attempt.active=false;
-     if(!attempt.entered||!completed||attempt.violated||observed!==actual||receiptFailed)stop();
+     if(!attempt.entered||!completed||attempt.violated||observed!==actual||receiptFailed){dispositionCompromised=true;stop();}
      integrity();write({revocation:'ACK_UNVERIFIED'});
     }finally{
      attempt.active=false;if(attempt.work)await attempt.work.catch(()=>{});
@@ -100,14 +118,14 @@ export function createAuthorityTrialOAuth(input){
      else if(revokeAttempt===attempt)revokeAttempt=undefined;
     }
    });return attempt.promise;
-  };
-  const verifyRevoked=async function(){
+  });
+  const verifyRevoked=observeCleanup(verifyObservation,async function(){
    let claimed=false,active=true,entered=false,violated=false,work,completed=false,actual;
    try{
     if(arguments.length||verificationAttempted||!revokeSettled||!verificationToken||verifiedExpiry===null)stop();
     verificationAttempted=true;claimed=true;
-    const observed=await capability.cleanup('verify-token-revoked',()=>{
-     if(!active||entered){violated=true;stop();}entered=true;
+    const observed=await capability.cleanup('verify-token-revoked',observeCleanupCallback(verifyObservation,()=>{
+     if(!active||entered){violated=true;dispositionCompromised=true;stop();}entered=true;verifyObservation.entered=true;
      work=(async()=>{
       // Only this holder's previously accepted token can support a readback.
       // Independent admission precedes every check and provider operation.
@@ -123,13 +141,13 @@ export function createAuthorityTrialOAuth(input){
        !Number.isSafeInteger(end)||end<begin||end>=verifiedExpiry)stop();
       actual=Object.freeze({tokenRejectedAtReadback:true,observedAt:end,revocationAccepted:false,rollbackComplete:false});completed=true;return actual;
      })();void work.catch(()=>{});return work;
-    });
-    active=false;if(!entered||!completed||violated||observed!==actual)stop();integrity();
+    }));
+    active=false;if(!entered||!completed||violated||observed!==actual){dispositionCompromised=true;stop();}integrity();
     write({tokenVerification:'REJECTED_AT_READBACK',tokenVerificationAt:actual.observedAt});
     // Preserve revoke ACK/UNKNOWN: rejection is neither causal nor grant-wide.
     return actual;
    }catch(_){stop();}finally{active=false;if(work)await work.catch(()=>{});if(claimed)verificationToken=null;}
-  };
+  });
   const abandon=()=>{try{cancelLocally('failed');}catch(_){/* local stop remains sticky even with a damaged journal */}};
   const submissionLive=()=>{integrity();const t=now();if(cancellationRequested||!['waiting','claimed'].includes(journal.stage)||!Number.isSafeInteger(t)||t<start||t>=deadline)stop();};
   const processResponse=async p=>{
@@ -137,10 +155,10 @@ export function createAuthorityTrialOAuth(input){
      const rawSecret=clientSecret();if(types.isPromise(rawSecret)){void Promise.prototype.then.call(rawSecret,()=>{},()=>{});stop();}if(!secret(rawSecret))stop();
      let sentAt;const t=await ordinary('E:token-exchange',async()=>{
       const tokenUrl='https://oauth2.googleapis.com/token';sentAt=now();write({revocation:'TOKEN_UNAVAILABLE'});
-      const response=await fetcher(tokenUrl,options('POST',new URLSearchParams({client_id:clientId,client_secret:rawSecret,code:p.get('code'),code_verifier:verifier,grant_type:'authorization_code',redirect_uri:AUTHORITY_TRIAL_REDIRECT_URI}).toString(),{'content-type':'application/x-www-form-urlencoded'}));
+      exchangeAttempted=true;const response=await fetcher(tokenUrl,options('POST',new URLSearchParams({client_id:clientId,client_secret:rawSecret,code:p.get('code'),code_verifier:verifier,grant_type:'authorization_code',redirect_uri:AUTHORITY_TRIAL_REDIRECT_URI}).toString(),{'content-type':'application/x-www-form-urlencoded'}));
       return await jsonResponse(response,tokenUrl);
      });verifier=null;
-     if(record(t)&&secret(t.access_token)){accessToken=t.access_token;write({revocation:'NOT_NEEDED'});}
+     if(record(t)&&secret(t.access_token)){accessToken=t.access_token;tokenReceived=true;write({revocation:'NOT_NEEDED'});}
      live();if(!only(t,['access_token','token_type','expires_in','scope'],['access_token','token_type','expires_in','scope'])||!secret(t.access_token)||t.token_type!=='Bearer'||!Number.isSafeInteger(t.expires_in)||t.expires_in<=360||t.expires_in>3600||!scopes(t.scope))stop();
      const tokenExpiry=sentAt+t.expires_in*1000;if(tokenExpiry>expiresAt||tokenExpiry-now()<=360000)stop();
      const user=await ordinary('E:caller-userinfo',async()=>{const userUrl='https://www.googleapis.com/oauth2/v2/userinfo?fields=email%2Cverified_email';return await jsonResponse(await fetcher(userUrl,options('GET',undefined,{authorization:'Bearer '+accessToken})),userUrl);});live();
@@ -149,8 +167,14 @@ export function createAuthorityTrialOAuth(input){
    }catch(_){abandon();stop();}
   };
   const q=new URLSearchParams({client_id:clientId,redirect_uri:AUTHORITY_TRIAL_REDIRECT_URI,response_type:'code',scope:AUTHORITY_TRIAL_SCOPES.join(' '),state,code_challenge:challenge,code_challenge_method:'S256',access_type:'online',include_granted_scopes:'false',prompt:'select_account consent'});
-  const flow=Object.freeze({verifyRevoked,authorizationUrl:'https://accounts.google.com/o/oauth2/v2/auth?'+q.toString(),remainingMs:()=>Math.max(0,deadline-now()),status:()=>journal.stage,
-   submitConsent:async function(io){
+  const cleanupDisposition=function(){
+   if(arguments.length)stop();
+   return Object.freeze({schemaVersion:1,resource:'oauth-token',integrity:journalCompromised||dispositionCompromised||revokeObservation.ambiguous||verifyObservation.ambiguous?'compromised':'locally-uncontested',inFlight:activeCalls>0||revokeObservation.pending>0||verifyObservation.pending>0||revokeObservation.callbackPending>0||verifyObservation.callbackPending>0,
+    resourceDisposition:!exchangeAttempted?'not-dispatched':tokenReceived?'attempted-known':'attempted-unknown',exchangeAttempted,tokenHeld:accessToken!==null,tokenPreviouslyAccepted:verifiedExpiry!==null,acceptedTokenExpiresAt:verifiedExpiry,verificationTokenHeld:verificationToken!==null,
+    actions:Object.freeze({revoke:cleanupSnapshot(revokeObservation,revokeSettled||revokeAttempt?.entered===true,journal.revocation),verify:cleanupSnapshot(verifyObservation,verificationAttempted,journal.tokenVerification??'NOT_STARTED',false)})});
+  };
+  const flow=Object.freeze({cleanupDisposition,verifyRevoked,authorizationUrl:'https://accounts.google.com/o/oauth2/v2/auth?'+q.toString(),remainingMs:()=>Math.max(0,deadline-now()),status:()=>journal.stage,
+   submitConsent:observeActivity(async function(io){
     if(arguments.length!==1||typeof io!=='function'||types.isProxy(io)||submitStarted||journal.stage!=='waiting')stop();submitStarted=true;
     let active=true,attempts=0,completed=false,actual,work,violated=false;
     try{
@@ -165,8 +189,8 @@ export function createAuthorityTrialOAuth(input){
      const response=buffered;buffered=null;if(response)await processResponse(response);
      return Object.freeze({source:'fixed-oauth-consent-submission',ownedIOSettled:true,consentVerified:false,trialAccepted:false,rollbackComplete:false});
     }catch(_){abandon();stop();}finally{active=false;if(work)await work.catch(()=>{});}
-   },
-   receive:async request=>{
+   }),
+   receive:observeActivity(async request=>{
     let claimed=false;
     try{
      integrity();if(cancellationRequested||!submitAdmitted||journal.stage!=='waiting'||!only(request,['method','host','url'])||request.method!=='GET'||request.host!=='127.0.0.1:34763'||typeof request.url!=='string'||request.url.length>16000||!request.url.startsWith('/oauth/callback?')||request.url.includes('#'))stop();
@@ -179,9 +203,9 @@ export function createAuthorityTrialOAuth(input){
      if(!submitSettled){buffered=p;return;}
      await processResponse(p);
     }catch(_){if(claimed)abandon();stop();}
-   },credential:()=>{try{integrity();if(cancellationRequested||journal.stage!=='ready'||!verified||verified.expiresAt-now()<=360000||now()>=expiresAt)stop();return verified;}catch(_){try{cancelLocally('cancelled');}catch(_){}stop();}},
+   }),credential:()=>{try{integrity();if(cancellationRequested||journal.stage!=='ready'||!verified||verified.expiresAt-now()<=360000||now()>=expiresAt)stop();return verified;}catch(_){try{cancelLocally('cancelled');}catch(_){}stop();}},
    requestCancellation:()=>cancelLocally('cancelled'),
-   cancel:async()=>{let failed=false;try{cancelLocally('cancelled');}catch(_){failed=true;}try{await revoke();}catch(_){failed=true;}if(failed)stop();}
+   cancel:observeActivity(async()=>{let failed=false;try{cancelLocally('cancelled');}catch(_){failed=true;}try{await revoke();}catch(_){failed=true;}if(failed)stop();})
   });return flow;
  }catch(_){stop();}
 }
