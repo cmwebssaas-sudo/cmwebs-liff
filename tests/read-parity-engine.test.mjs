@@ -80,3 +80,73 @@ test('explicit summaries preserve rich-source monetary results and the actual ho
 test('affected Apps Script summary test executes without Sheet writes',()=>{
   assert.equal(originalGas().testV2ReadSummaryProjection().code,'READ_SUMMARY_TEST_PASSED');
 });
+
+// Reintroducing repeated filters must fail the work oracle; relaxing either
+// strict status comparison or replacing/reordering the inputs must fail parity.
+test('canonical property summary visits 500 materialized views once without filtered arrays', t => {
+  const gas=originalGas();
+  const work=vm.runInContext(`(() => {
+    const rows=Array.from({length:20},()=>Array.from({length:25},(_,i)=>({
+      account_status:'active',effective_status:i%2?'occupied':'vacant'
+    })));
+    const work={callbacks:0,filteredArrays:0,roomReads:0};
+    const filter=Array.prototype.filter,forEach=Array.prototype.forEach;
+    Array.prototype.filter=function(callback,thisArg) {
+      work.filteredArrays++;
+      return filter.call(this,(...args)=>{work.callbacks++;return callback.apply(thisArg,args);});
+    };
+    Array.prototype.forEach=function(callback,thisArg) {
+      return forEach.call(this,(...args)=>{work.callbacks++;return callback.apply(thisArg,args);});
+    };
+    try {
+      for(const row of rows) {
+        const rooms=new Proxy(row,{get(target,key,receiver) {
+          if(typeof key==='string' && /^(0|[1-9][0-9]*)$/.test(key)) work.roomReads++;
+          return Reflect.get(target,key,receiver);
+        }});
+        propertyRoomBuildPropertyView_({},rooms,[]);
+      }
+    } finally {
+      Array.prototype.filter=filter;
+      Array.prototype.forEach=forEach;
+    }
+    return work;
+  })()`,gas);
+  t.diagnostic('actual canonical summary work: '+JSON.stringify(work));
+  assert.ok(work.callbacks<=500 && work.roomReads<=500 && work.filteredArrays===0,
+    'actual canonical summary work: '+JSON.stringify(work));
+});
+
+test('canonical property summary retains strict statuses, full fields, sparse duplicates and input identities', () => {
+  const gas=originalGas();
+  const property={property_id:'SYNTHETIC_P',workspace_id:'SYNTHETIC_W',landlord_id:'SYNTHETIC_L',
+    property_name:'  合成物件  ',city:'合成市',district:'合成區',address:'合成地址',
+    property_type:'suite',property_status:' ARCHIVED ',account_status:' ACTIVE ',
+    default_payment_account_id:'SYNTHETIC_ACCOUNT',note:'合成備註'};
+  const owners=[{owner_id:'SYNTHETIC_OWNER'}];
+  const duplicate={account_status:'active',effective_status:'vacant'};
+  const rooms=[duplicate,{account_status:'active',effective_status:'occupied'},
+    {account_status:'active',effective_status:'maintenance'},
+    ...['upcoming','needs_review','',null,0,'Vacant','unknown'].map(effective_status=>({account_status:'active',effective_status})),
+    ...['inactive','archived','ACTIVE','',null,0].map(account_status=>({account_status,effective_status:'occupied'})),
+    duplicate];
+  // A missing slot is skipped by Array.filter, while repeated references count.
+  rooms.length+=1;
+  const before=JSON.stringify({property,rooms,owners});
+  const expectedFields={property_id:'SYNTHETIC_P',workspace_id:'SYNTHETIC_W',landlord_id:'SYNTHETIC_L',
+    property_name:'合成物件',city:'合成市',district:'合成區',property_address:'合成地址',
+    property_type:'suite',property_type_label:'套房',property_status:'archived',account_status:'active',
+    default_payment_account_id:'SYNTHETIC_ACCOUNT',note:'合成備註',owners};
+  for(const [input,summary] of [[rooms,{room_count:11,vacant_count:2,occupied_count:1,maintenance_count:1}],
+    [[],{room_count:0,vacant_count:0,occupied_count:0,maintenance_count:0}],
+    [[{account_status:'archived',effective_status:'vacant'}],{room_count:0,vacant_count:0,occupied_count:0,maintenance_count:0}]]) {
+    const actual=gas.propertyRoomBuildPropertyView_(property,input,owners);
+    const expected={...expectedFields,summary,rooms:input};
+    assert.equal(JSON.stringify(actual),JSON.stringify(expected),'full view and key order');
+    assert.equal(actual.rooms,input);
+    assert.equal(actual.owners,owners);
+  }
+  assert.equal(JSON.stringify({property,rooms,owners}),before,'no input mutation');
+  assert.equal(rooms[0],rooms[16],'duplicate identity and source order');
+  assert.equal(17 in rooms,false,'sparse slot remains absent');
+});

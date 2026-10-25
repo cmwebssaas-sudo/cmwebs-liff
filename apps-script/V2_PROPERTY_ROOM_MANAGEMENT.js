@@ -2410,11 +2410,25 @@ function propertyRoomBuildPropertyView_(
   rooms,
   owners
 ) {
-  const activeRooms =
-    rooms.filter(function (room) {
-      return room.account_status ===
-        'active';
-    });
+  let roomCount = 0;
+  let vacantCount = 0;
+  let occupiedCount = 0;
+  let maintenanceCount = 0;
+  rooms.forEach(function (room) {
+    if (room.account_status !== 'active') {
+      return;
+    }
+    roomCount++;
+    if (room.effective_status === 'vacant') {
+      vacantCount++;
+    }
+    if (room.effective_status === 'occupied') {
+      occupiedCount++;
+    }
+    if (room.effective_status === 'maintenance') {
+      maintenanceCount++;
+    }
+  });
 
   return {
     property_id:
@@ -2460,28 +2474,13 @@ function propertyRoomBuildPropertyView_(
       owners,
     summary: {
       room_count:
-        activeRooms.length,
+        roomCount,
       vacant_count:
-        activeRooms.filter(
-          function (room) {
-            return room.effective_status ===
-              'vacant';
-          }
-        ).length,
+        vacantCount,
       occupied_count:
-        activeRooms.filter(
-          function (room) {
-            return room.effective_status ===
-              'occupied';
-          }
-        ).length,
+        occupiedCount,
       maintenance_count:
-        activeRooms.filter(
-          function (room) {
-            return room.effective_status ===
-              'maintenance';
-          }
-        ).length
+        maintenanceCount
     },
     rooms:
       rooms
