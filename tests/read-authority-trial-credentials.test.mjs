@@ -163,7 +163,9 @@ for(const uidCase of ['native','mismatch','unavailable','invalid','throws'])test
  const hash=v=>createHash('sha256').update(v).digest('hex');
  const uidCase=${JSON.stringify(uidCase)},nativeUID=os.userInfo().uid;
  assert(Number.isSafeInteger(nativeUID)&&nativeUID>=0);
- const dir=fs.mkdtempSync('/private/tmp/cmwebs-SYNTHETIC-publisher-');fs.chmodSync(dir,0o700);
+ const tempBase=fs.realpathSync(os.tmpdir());
+ const dir=fs.mkdtempSync(join(tempBase,'cmwebs-SYNTHETIC-publisher-'));fs.chmodSync(dir,0o700);
+ assert.equal(fs.statSync(dir).uid,nativeUID);assert.equal(fs.statSync(dir).mode&0o777,0o700);
  try{
   const path=join(dir,'SYNTHETIC-profile.json'),raw=${JSON.stringify(JSON.stringify(profile()))};
   fs.writeFileSync(path,raw,{mode:0o600});const before=fs.statSync(path);

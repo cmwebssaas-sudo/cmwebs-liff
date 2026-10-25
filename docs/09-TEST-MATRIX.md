@@ -3084,3 +3084,8 @@ no global shim, caller UID or credential bypass is introduced. Existing source
 mode, no-follow, stable-file/hash, scope, identity, expiry and no-retry guards
 remain covered. This local context regression is not provider, actual CUA
 credential, CI, admission or release acceptance.
+
+The subprocess fixture resolves native OS tmpdir to its canonical path before
+removing global process, preserving owned directory700/file600 on macOS and
+Linux. An owned native-temp override outside /private/tmp exercises all five
+UID cases locally; this portability check is separate from Linux CI evidence.
