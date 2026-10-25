@@ -1,3 +1,5 @@
+import {syncBuiltinESMExports} from 'node:module';
+import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,chmodSync,readFileSync,lstatSync,unlinkSync,writeFileSync} from 'node:fs';
@@ -101,4 +103,58 @@ test('credential object scope elements never execute coercion or JSON hooks',asy
  const s=setup({credential:()=>({accessToken:'SYNTHETIC_TOKEN',accountHash:publisherHash,scopes:objectScopes,expiresAt:clock+3600000,refreshTokenPresent:true})});
  let denied=false;try{await s.adapter.grant();}catch(error){assert.match(error.message,/^TRIAL_STOPPED$/);denied=true;}
  assert.deepEqual({denied,hooks,requests:s.calls.length},{denied:true,hooks:0,requests:0});
+});
+
+// Task100: NO_GRANT and UNKNOWN grant must select different existing cleanup paths.
+test('cleanup disposition script-reader observes NO_GRANT without debit and freezes old snapshots',async()=>{
+ const s=setup(),initial=s.adapter.cleanupDisposition(),before=readFileSync(s.options.path,'utf8');
+ assert.equal(initial.resource,'script-reader');assert.equal(initial.resourceDisposition,'not-dispatched');assert(Object.isFrozen(initial.actions.remove));
+ assert.throws(()=>s.adapter.cleanupDisposition({}),/TRIAL_STOPPED/);assert.equal(readFileSync(s.options.path,'utf8'),before);assert.equal(s.calls.length,0);
+ assert.deepEqual(await s.adapter.remove(),{grantNeverDispatched:true});await assert.rejects(s.adapter.verifyRemoved(),/TRIAL_STOPPED/);
+ const d=s.adapter.cleanupDisposition();assert.equal(d.actions.remove.outcome,'NO_GRANT');assert.equal(d.actions.remove.consumed,true);assert.equal(d.actions.remove.entered,false);assert.equal(d.actions.verify.entered,false);
+ assert.equal(initial.actions.remove.consumed,false);assert.equal(s.calls.length,0);assert.deepEqual(s.cleanup,[]);
+});
+test('cleanup disposition script-reader distinguishes pending grant and owned cleanup while retaining integrity failures',async()=>{
+ let release,enter;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);const s=setup(),base=s.options.fetcher;
+ s.options.fetcher=async(url,init)=>{if(init.method==='POST'){enter();await gate;}return base(url,init);};
+ const a=mod.createAuthorityStandaloneScriptReader(s.options),pending=a.grant();await entered;
+ const running=a.cleanupDisposition();assert.equal(running.inFlight,true);assert.equal(running.resourceDisposition,'attempted-known');assert.equal(running.grantOutcome,'UNKNOWN');release();assert.equal((await pending).grantAcknowledged,true);
+ const owned=a.cleanupDisposition();assert.equal(owned.inFlight,false);assert.equal(owned.integrity,'locally-uncontested');
+ for(const v of [callerEmail,publisherHash,s.options.path,'SYNTHETIC_MANAGEMENT_TOKEN',callerPermissionId])assert(!JSON.stringify(owned).includes(v));
+ chmodSync(join(s.options.path,'..'),0o755);try{await assert.rejects(a.remove(),/TRIAL_STOPPED/);const d=a.cleanupDisposition();assert.equal(d.integrity,'compromised');assert.equal(d.actions.remove.entered,true);assert.equal(d.actions.remove.consumed,true);assert.equal(d.actions.remove.result,'rejected');}finally{chmodSync(join(s.options.path,'..'),0o700);}
+ assert.equal(running.actions.remove.consumed,false);assert.equal(s.calls.filter(c=>c.init.method==='DELETE').length,1);
+});
+
+test('cleanup disposition UNKNOWN grant remains owned and denied remove is not callback entry',async()=>{
+ let deny=true;const s=setup({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{if(deny)throw Error('DENIED');return io();}}}),base=s.options.fetcher;
+ s.options.fetcher=async(url,init)=>{if(init.method==='POST'){s.calls.push({url,init});throw Error('LOST_GRANT');}return base(url,init);};
+ const a=mod.createAuthorityStandaloneScriptReader(s.options);await assert.rejects(a.grant(),/TRIAL_STOPPED/);const unknown=a.cleanupDisposition();assert.equal(unknown.resourceDisposition,'attempted-known');assert.equal(unknown.grantOutcome,'UNKNOWN');
+ await assert.rejects(a.remove(),/TRIAL_STOPPED/);const denied=a.cleanupDisposition();assert.equal(denied.actions.remove.entered,false);assert.equal(denied.actions.remove.consumed,false);assert.equal(denied.actions.remove.result,'rejected');
+ deny=false;await a.remove();await a.verifyRemoved();const d=a.cleanupDisposition();assert.equal(d.actions.remove.consumed,true);assert.equal(d.actions.verify.callbackResult,'returned');assert.equal(d.grantOutcome,'UNKNOWN');
+});
+test('cleanup disposition retains detached Reader callback activity after outer method settles',async()=>{
+ let enter,release,callback;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);const s=setup({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{callback=io();void callback.catch(()=>{});}}}),base=s.options.fetcher;
+ s.options.fetcher=async(url,init)=>{if(init.method==='DELETE'){enter();await gate;}return base(url,init);};const a=mod.createAuthorityStandaloneScriptReader(s.options);await a.grant();
+ const p=a.remove();await entered;await p;try{const d=a.cleanupDisposition();assert.equal(d.inFlight,true);assert.equal(d.actions.remove.callbackPending,true);assert.equal(d.integrity,'compromised');}finally{release();await callback;}
+ assert.equal(a.cleanupDisposition().actions.remove.callbackResult,'returned');assert.equal(a.cleanupDisposition().integrity,'compromised');
+});
+
+test('cleanup disposition marks checksum-valid owned identity drift instead of reporting intact cleanup',async()=>{
+ const s=setup();await s.adapter.grant();const envelope=JSON.parse(readFileSync(s.options.path));envelope.value.ownerId='SYNTHETIC_DIFFERENT_OWNER';envelope.sha256=hash(JSON.stringify(envelope.value));writeFileSync(s.options.path,JSON.stringify(envelope));
+ await s.adapter.remove();assert.equal(s.adapter.cleanupDisposition().integrity,'compromised');assert.equal(s.adapter.cleanupDisposition().resourceDisposition,'attempted-known');assert.equal(s.calls.filter(c=>c.init.method==='DELETE').length,1);
+});
+
+test('cleanup disposition adapter observation is filesystem clock credential and capability inert',()=>{
+ let observing=false;const forbid=()=>{if(observing)assert.fail('OBSERVER_SIDE_EFFECT');};const s=setup({now:()=>{forbid();return clock;},credential:()=>{forbid();throw Error('NOT_USED');},control:{externalRead:async()=>{forbid();},cleanup:async()=>{forbid();}}});
+ const saved={};for(const name of ['lstatSync','readFileSync','openSync','writeSync','renameSync','fsyncSync']){saved[name]=fs[name];fs[name]=()=>assert.fail('OBSERVER_FILESYSTEM_IO');}syncBuiltinESMExports();observing=true;
+ try{const a=s.adapter.cleanupDisposition(),b=s.adapter.cleanupDisposition();assert.deepEqual(a,b);assert.notEqual(a,b);assert.notEqual(a.actions,b.actions);for(const action of Object.keys(a.actions)){assert(Object.isFrozen(a.actions[action]));assert.notEqual(a.actions[action],b.actions[action]);}}finally{observing=false;Object.assign(fs,saved);syncBuiltinESMExports();}
+});
+
+test('cleanup disposition first-late Reader callback stays compromised after successful outer remove',async()=>{
+ let saved;const s=setup({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{saved=io;}}});await s.adapter.grant();const initialCalls=s.calls.length;
+ assert.deepEqual(await s.adapter.remove(),{removeAcknowledged:true,rollbackComplete:false});const before=s.adapter.cleanupDisposition();
+ assert.equal(before.inFlight,false);assert.equal(before.actions.remove.entered,false);assert.equal(before.actions.remove.consumed,false);assert.equal(s.calls.length,initialCalls);
+ await saved();const after=s.adapter.cleanupDisposition();assert.equal(s.calls.length,initialCalls+1);assert.equal(s.calls.at(-1).init.method,'DELETE');
+ assert.equal(after.actions.remove.callbackResult,'returned');assert.equal(after.actions.remove.consumed,true);assert.equal(after.inFlight,false);assert.equal(after.integrity,'compromised');
+ assert.equal(s.adapter.cleanupDisposition().integrity,'compromised');assert.equal(before.actions.remove.entered,false);
 });

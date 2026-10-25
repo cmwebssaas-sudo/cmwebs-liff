@@ -105,3 +105,66 @@ for(const kind of ['oversized','rejected-status']) test('thin '+kind+' body canc
  try{assert.equal(cancelStarted,true);assert.equal(cancelSettled,false);assert.equal(owned,true);}finally{release();await assert.rejects(pending,/TRIAL_STOPPED/);}
  assert.equal(owned,false);assert.equal(cancelSettled,true);
 });
+
+// Task100: losing dispatch, ownership, or cleanup-entry truth would select a wrong I alias.
+for(const [profile,make] of [['wrapper',setup],['standalone',standaloneSetup]])test('cleanup disposition '+profile+' keeps stopped ownership and detached no-IO snapshots',async()=>{
+ const s=make(),initial=s.adapter.cleanupDisposition(),before=readFileSync(s.options.path,'utf8');
+ assert.equal(initial.resourceDisposition,'not-dispatched');assert.equal(initial.createAttempted,false);assert.equal(initial.inFlight,false);
+ assert(Object.isFrozen(initial));assert(Object.isFrozen(initial.actions));assert(Object.isFrozen(initial.actions.close));
+ assert.throws(()=>{initial.actions.close.consumed=true;},TypeError);
+ assert.throws(()=>s.adapter.cleanupDisposition({}),/TRIAL_STOPPED/);
+ assert.equal(readFileSync(s.options.path,'utf8'),before);assert.equal(s.calls.length,0);assert.equal(s.spent(),0);
+ await s.adapter.publish();s.adapter.stop();assert.equal(s.adapter.status(),'stopped');
+ const owned=s.adapter.cleanupDisposition();assert.equal(owned.resourceDisposition,'attempted-known');assert.equal(owned.createOutcome,'ACK_MATCHED');
+ for(const privateValue of [deploymentId,scriptId,publisherHash,s.options.path,'SYNTHETIC_TOKEN'])assert(!JSON.stringify(owned).includes(privateValue));
+ await s.adapter.close();await s.adapter.verifyClosed();const done=s.adapter.cleanupDisposition();
+ assert.deepEqual([done.actions.close.entered,done.actions.close.consumed,done.actions.close.result,done.actions.verify.outcome],[true,true,'returned','ABSENT_AT_READBACK']);
+ assert.equal(initial.resourceDisposition,'not-dispatched');assert.equal(owned.actions.close.consumed,false);assert.equal(s.spent(),7);assert.equal(s.calls.length,7);
+});
+test('cleanup disposition distinguishes unknown create, never adopts inventory IDs and preserves settled close failure',async()=>{
+ const s=setup(),base=s.options.fetcher;s.options.fetcher=async(url,init)=>{if(init.method==='POST'&&url.includes('/deployments')){s.calls.push({url,init});throw Error('LOST_CREATE');}return base(url,init);};
+ const a=mod.createAuthorityTrialThin(s.options);await assert.rejects(a.publish(),/TRIAL_STOPPED/);assert.equal(a.cleanupDisposition().resourceDisposition,'attempted-unknown');
+ await assert.rejects(a.close(),/TRIAL_STOPPED/);assert.equal(a.cleanupDisposition().actions.close.entered,false);
+ await assert.rejects(a.verifyClosed(),/TRIAL_STOPPED/);const d=a.cleanupDisposition();assert.equal(d.resourceDisposition,'attempted-unknown');assert.equal(d.actions.verify.consumed,true);assert.equal(d.actions.verify.result,'rejected');assert.equal(d.integrity,'locally-uncontested');
+});
+test('cleanup disposition separates pending admission denial from entered DELETE failure and local journal damage',async()=>{
+ let release,enter;const gate=new Promise(r=>release=r),entered=new Promise(r=>enter=r);let deny=true;
+ const s=setup({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{if(deny){enter();await gate;throw Error('DENIED');}return io();}}});await s.adapter.publish();
+ const pending=s.adapter.close();await entered;const waiting=s.adapter.cleanupDisposition();assert.equal(waiting.inFlight,true);assert.equal(waiting.actions.close.pending,true);assert.equal(waiting.actions.close.entered,false);release();await assert.rejects(pending,/TRIAL_STOPPED/);
+ const denied=s.adapter.cleanupDisposition();assert.equal(denied.actions.close.requested,true);assert.equal(denied.actions.close.consumed,false);assert.equal(denied.actions.close.result,'rejected');
+ deny=false;chmodSync(join(s.options.path,'..'),0o755);try{await assert.rejects(s.adapter.close(),/TRIAL_STOPPED/);const d=s.adapter.cleanupDisposition();assert.equal(d.integrity,'compromised');assert.equal(d.actions.close.entered,true);assert.equal(d.actions.close.consumed,true);}finally{chmodSync(join(s.options.path,'..'),0o700);}
+ assert.equal(waiting.actions.close.entered,false);assert.equal(s.calls.filter(c=>c.init.method==='DELETE').length,1);
+});
+
+test('cleanup disposition keeps detached cleanup callback pending after outer admission returns',async()=>{
+ let enter,release;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);let callback;
+ const s=setup({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{callback=io();void callback.catch(()=>{});return;}}}),base=s.options.fetcher;
+ s.options.fetcher=async(url,init)=>{if(init.method==='DELETE'){enter();await gate;}return base(url,init);};const a=mod.createAuthorityTrialThin(s.options);await a.publish();
+ const p=a.close();await entered;await p;const d=a.cleanupDisposition();try{assert.equal(d.inFlight,true);assert.equal(d.actions.close.callbackPending,true);assert.equal(d.integrity,'compromised');}finally{release();await callback;}
+ assert.equal(a.cleanupDisposition().actions.close.callbackResult,'returned');assert.equal(a.cleanupDisposition().integrity,'compromised');
+});
+test('cleanup disposition invokes no filesystem clock credential or capability callbacks',()=>{
+ let observing=false;const forbid=()=>{if(observing)assert.fail('OBSERVER_SIDE_EFFECT');};const s=setup({now:()=>{forbid();return clock;},credential:()=>{forbid();throw Error('NOT_USED');},control:{externalRead:async()=>{forbid();},cleanup:async()=>{forbid();}}});
+ const saved={};for(const name of ['lstatSync','readFileSync','openSync','writeSync','renameSync','fsyncSync']){saved[name]=fs[name];fs[name]=()=>assert.fail('OBSERVER_FILESYSTEM_IO');}syncBuiltinESMExports();observing=true;
+ try{const a=s.adapter.cleanupDisposition(),b=s.adapter.cleanupDisposition();assert.deepEqual(a,b);assert.notEqual(a,b);assert.notEqual(a.actions,b.actions);assert.notEqual(a.actions.close,b.actions.close);}finally{observing=false;Object.assign(fs,saved);syncBuiltinESMExports();}
+});
+
+test('cleanup disposition never rewinds an UNKNOWN create after a checksum-valid stale journal',async()=>{
+ const s=setup(),base=s.options.fetcher;s.options.fetcher=async(url,init)=>{if(init.method==='POST'&&url.includes('/deployments'))throw Error('LOST_CREATE');return base(url,init);};const a=mod.createAuthorityTrialThin(s.options);await assert.rejects(a.publish(),/TRIAL_STOPPED/);
+ const envelope=JSON.parse(readFileSync(s.options.path));envelope.value.createAttempted=false;envelope.value.createOutcome='NOT_SENT';envelope.sha256=checksum(envelope.value);writeFileSync(s.options.path,JSON.stringify(envelope));
+ await assert.rejects(a.verifyClosed(),/TRIAL_STOPPED/);const d=a.cleanupDisposition();assert.equal(d.integrity,'compromised');assert.equal(d.createAttempted,true);assert.equal(d.resourceDisposition,'attempted-unknown');
+});
+
+test('cleanup disposition retains integrity failure discovered by ordinary stopped-status read',()=>{
+ const s=setup(),other=mod.createAuthorityTrialThin(s.options);s.adapter.stop();const p=join(homedir(),'.codex','private','cmwebs-authority-trials',checksum(s.options.epoch)+'.thin.json.stop');chmodSync(p,0o644);
+ try{assert.throws(()=>other.status(),/TRIAL_STOPPED/);assert.equal(other.cleanupDisposition().integrity,'compromised');}finally{chmodSync(p,0o600);}
+});
+
+for(const [profile,make] of [['wrapper',setup],['standalone',standaloneSetup]])test('cleanup disposition first-late '+profile+' callback stays compromised after successful outer close',async()=>{
+ let saved;const s=make({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{assert.equal(name,'close-deployment');saved=io;}}});await s.adapter.publish();
+ assert.deepEqual(await s.adapter.close(),{closeAcknowledged:true,rollbackComplete:false});const before=s.adapter.cleanupDisposition();
+ assert.equal(before.inFlight,false);assert.equal(before.actions.close.entered,false);assert.equal(before.actions.close.consumed,false);assert.equal(s.calls.length,5);
+ await saved();const after=s.adapter.cleanupDisposition();assert.equal(s.calls.length,6);assert.equal(s.calls.at(-1).init.method,'DELETE');
+ assert.equal(after.actions.close.callbackResult,'returned');assert.equal(after.actions.close.consumed,true);assert.equal(after.inFlight,false);assert.equal(after.integrity,'compromised');
+ assert.equal(s.adapter.cleanupDisposition().integrity,'compromised');assert.equal(before.actions.close.entered,false);
+});
