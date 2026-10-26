@@ -59,7 +59,7 @@ export function previewHtml() {
 export function createPreviewServer() {
   const assets = new Map([
     ['/landlord-home.css', 'text/css'], ['/landlord-responsive.css', 'text/css'],
-    ['/landlord-home-motion.js', 'text/javascript'],
+    ['/landlord-home-motion.js', 'text/javascript'], ['/landlord-glass-nav.js', 'text/javascript'],
     ['/assets/js/cmwebs-asset-valuation.js', 'text/javascript']
   ]);
   return createServer((request, response) => {
