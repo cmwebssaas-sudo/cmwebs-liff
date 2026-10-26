@@ -1,6 +1,9 @@
 const encoder=new TextEncoder();
 const hex=buffer=>[...new Uint8Array(buffer)].map(value=>value.toString(16).padStart(2,'0')).join('');
 function deny(code='AUTH_REQUIRED'){throw Object.assign(new Error(code),{code});}
+// Denial diagnostics carry check names and LINE's error text only, never
+// tokens, LINE user IDs or other identity values.
+function logDenial(detail){try{console.log('READ_DENIED '+JSON.stringify(detail));}catch{}}
 export function readCredential(request) {
   const match=(request.headers.get('authorization')||'').match(/^(LIFF|Session) ([^\s]{1,8192})$/i);
   if(!match) deny();
@@ -33,10 +36,18 @@ export function createIdentityAuthenticator(options={}) {
             // below refuses redirects without forwarding the ID token.
             redirect:'manual',signal:AbortSignal.timeout(1500)
           });
-          if(response.status!==200) deny();
+          if(response.status!==200) {
+            let error='';
+            try{const body=await response.json();error=String(body.error||'')+': '+String(body.error_description||'');}catch{}
+            logDenial({stage:'line_verify',status:response.status,error:error.slice(0,120)});
+            deny();
+          }
           claims=await response.json();
         } catch(error) {deny(error.code==='AUTH_REQUIRED'?'AUTH_REQUIRED':'AUTH_UNAVAILABLE');}
         now=clock();
+        if(!claims||claims.iss!=='https://access.line.me'||claims.aud!==channel||!Number.isSafeInteger(claims.exp)||claims.exp*1000<=now||typeof claims.sub!=='string')
+          logDenial({stage:'line_claims',iss_ok:claims?.iss==='https://access.line.me',aud_ok:claims?.aud===channel,
+            aud_type:typeof claims?.aud,exp_ok:Number.isSafeInteger(claims?.exp)&&claims.exp*1000>now,sub_type:typeof claims?.sub});
         if(!claims||claims.iss!=='https://access.line.me'||claims.aud!==channel||
           !Number.isSafeInteger(claims.exp)||!Number.isFinite(claims.exp*1000)||claims.exp*1000<=now||
           typeof claims.sub!=='string'||!claims.sub||claims.sub.trim()!==claims.sub||claims.sub.length>128) deny();

@@ -41,14 +41,19 @@ export async function serveReadRoute(request,context) {
   const url=new URL(request.url),route=routes[url.pathname],q=url.searchParams,section=q.get('section')||'home';
   if(context?.access?.success!==true||typeof context.loadDataset!=='function') return readFailure('READ_AUTH_NOT_READY');
   try {
+    const timing=context.timing||{},mark=name=>{const at=Date.now();timing[name]=at-(timing.last??at);timing.last=at;};
+    mark('serve_start');
     const dataset=await context.loadDataset(context.access);
+    mark('dataset_ms');
     if(url.pathname==='/v1/rooms'&&(dataset.V2_rooms||[]).some(row=>row.replica_room_bridge_supported!==true)) return readFailure('READ_DEPENDENCY_UNSUPPORTED');
     let options=context.options;
     if(url.pathname==='/v1/rooms') {
       // Gallery parsing needs only the existing pure helpers. Validate access
       // without building and discarding a second copy of every Sheet matrix.
       const helpers=createReadCalculator(createReadServices({},context.access,options));
-      const publicResources=await loadPublicRoomResources((dataset.V2_rooms||[]).map(row=>row.room_website_url),helpers,options);
+      const publicResources=await loadPublicRoomResources((dataset.V2_rooms||[]).map(row=>row.room_website_url),helpers,
+        {...options,db:context.db,waitUntil:context.waitUntil});
+      mark('gallery_ms');
       options={...options,publicResources};
     }
     const calculator=createReadCalculator(createReadServices(dataset,context.access,options,true));

@@ -14,3 +14,9 @@ migrations_dir = "migrations"
 # LINE Login channel that owns the landlord LIFF apps (public value).
 [vars]
 LINE_LOGIN_CHANNEL_ID = "2010314940"
+
+# Run next to the D1 primary (APAC, Tokyo): one user round trip, then each of the
+# many sequential D1 queries stays inside the region.
+[placement]
+mode = "smart"
+hint = "apac"
