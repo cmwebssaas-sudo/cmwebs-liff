@@ -52,3 +52,15 @@ list with the Apps Script version and note how long it takes to appear.
 | Sync | Run `removeV2ReadReplicaTriggers()`; remove the two Script Properties. |
 | Apps Script | Point the Web App deployment back to the previous version. |
 | Worker/D1 | Leave in place or delete; Sheets remain the source of truth. |
+
+## Status (2026-10-26)
+
+- Cloudflare: D1 `cmwebs-read-replica` (APAC) migrated 0001–0008; Worker
+  `cmwebs-read-api` deployed with both secrets; `/health` ready.
+- Apps Script: production deployment on version 235 (from main c85057f);
+  Script Properties set; first full sync 20/20 tables, D1 row counts equal
+  the synced Sheet counts; 5-minute and 03:00 triggers installed by the
+  deploying account; first heartbeat received.
+- Note: time-based triggers run the editor HEAD code, not a numbered
+  version. Keep HEAD equal to main (push with clasp from main only).
+- Frontend: rooms switched to `'on'` with release `20261026-rooms-on-v1`.

@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-6559b3f9494e91c1f2a31ee8a14d24ae041df319fa24049fc6609ef6c74fbf64",
+  "comparison_version": "read-71a563de5b419ad8a375ecf150d43a984c200c4feb208bbb9a4e50ee7f4d3a79",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -118,7 +118,7 @@
     "cloudflare/read-api/src/sync.js": "e67d35c0502c0d12e194e0ce2d907ae8c692a3d2e8a68c47d5f7973bc2363017",
     "cloudflare/read-api/wrangler.toml": "39796ace858ebbc6e61888ec14bb1988286950969f351ddd9c20b410a945365f",
     "document-mobile-actions.js": "20bc37c4e20ff6570a77aacb5d4e5873ea5d16877480c208bab5906e0cef7f92",
-    "frontend-release.js": "6559d0d093386c6d996b7e537635e4a97ae5e13f4ab883998e9df8f769e1d82d",
+    "frontend-release.js": "e8393fbb5ee1207f7596a881f7554bbda4fe00db19797486f11885945c52cdf2",
     "hub.html": "32d4dfc8db089f12cc380014adbed0ee8e705ec276a7b8c77188d644f70b9aff",
     "identity.html": "d9cdf5e77a7904af9c6b8a6e2c94d18f650d165fd4bf7fccfcb8dfb4f29320ba",
     "index.html": "ae8958fc8077810cc62e9c01d381b25fd07192f79d06363aed2db07399ec83bb",
@@ -126,7 +126,7 @@
     "landlord-announcements.html": "a168726d895322a638ef479e7b2d8eee7ffaf9567267a85c8b5e8d78409414e1",
     "landlord-api.js": "cf3c4006855a3d98489d9bad1ccea889f32beaa0317458125ac209fb5f89994c",
     "landlord-arrears.html": "2f9122c1b34b65c60989cbd7af37e5cb46430110f57c6fb21a1995e4ecc3de60",
-    "landlord-auth.js": "5631c1a0a0dd9692d16b3d914dc2dd399f100806cae89a9333055d26dbbfa1c6",
+    "landlord-auth.js": "8789f3ceb213e684a5cb4eede9970b3447f2333110a5e890e35594e3b8a22448",
     "landlord-bill-notifications.html": "9c9a334777232011abb0cbb0e040e29526171ff0e543bd09c00737505701212c",
     "landlord-billing.html": "26e46980627e02a093f169ceb11f75ceede3fd75941f0ee68505367745c74481",
     "landlord-contract-documents.html": "38b1c19ffeec9dcbc62ff2b6695b1901d89b5e80939083c9ec7ebcc63016a75f",

@@ -36,7 +36,8 @@
   ).split(' '));
   function protectReadsAfterWrite(action,result) {
     if (!/^landlord_/.test(action) || READ_ACTIONS.has(action) || !result || result.success !== true) return;
-    window.CMWEBS_READ_WRITE_GUARD_UNTIL=Math.max(Date.now()+120000,Number(window.CMWEBS_READ_WRITE_GUARD_UNTIL)||0);
+    // Cover one five-minute replica sync interval plus the sync run itself.
+    window.CMWEBS_READ_WRITE_GUARD_UNTIL=Math.max(Date.now()+420000,Number(window.CMWEBS_READ_WRITE_GUARD_UNTIL)||0);
     clearHomeSnapshot();
     ['localStorage','sessionStorage'].forEach(function (name) {
       try {
