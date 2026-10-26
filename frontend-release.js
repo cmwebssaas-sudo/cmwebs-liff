@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261026-rooms-on-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-ec4458dfe583ef81686cbba4442a6eff61b1fce4bff45bb3861c418204ba514b";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-dd6a0926e0572cdb9dc4f497faff2c064eb5501a231492376f8989bf0919feff";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';
