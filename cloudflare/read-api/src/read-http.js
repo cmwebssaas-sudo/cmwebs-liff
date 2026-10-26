@@ -48,6 +48,7 @@ export function createReadHttpHandler(options={}) {
 
 export function readAccessFailure(error) {
   const code=error?.code;
+  try{console.log('READ_DENIED '+JSON.stringify({stage:'access',code:code||'UNKNOWN'}));}catch{}
   if(deniedCodes.has(code)) return readFailure(code,401);
   if(unavailableCodes.has(code)) return readFailure(code);
   if(accessCodes.has(code)) return readFailure(code,403);
