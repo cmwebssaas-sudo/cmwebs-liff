@@ -153,7 +153,7 @@ function makeDispatcher() {
     'bankReceiptPostRequest_'
   ].map(name => extractFunction(dispatcher, name)).join('\n'), context);
   vm.runInContext(extractFunction(dispatcher, 'resolveLandlordQuickLeaseBridgeAccess_'), context);
-  vm.runInContext(extractFunction(dispatcher, 'doPost'), context);
+  vm.runInContext(extractFunction(dispatcher, 'dispatchV2Post_') + '\n' + extractFunction(dispatcher, 'doPost'), context);
   return { context, calls };
 }
 

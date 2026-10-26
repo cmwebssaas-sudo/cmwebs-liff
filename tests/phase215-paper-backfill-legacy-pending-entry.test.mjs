@@ -49,6 +49,7 @@ vm.runInContext([
   extractFunction('propertyRoomContractDay_'),
   extractFunction('propertyRoomScheduledPaperMatchesRoom_'),
   extractFunction('propertyRoomUpcomingPaperBackfillForRoom_'),
+  extractFunction('propertyRoomResolveRoomOccupancy_'),
   extractFunction('propertyRoomBuildRoomView_')
 ].join('\n'), context);
 

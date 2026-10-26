@@ -436,7 +436,9 @@ guardedTest('Phase 219 stores only the opaque landlord Email session token after
 
   await verified;
   assert.equal(storage.get('cmwebs_landlord_session_token'), 'SESSION_TOKEN_ABC');
-  assert.deepEqual([...storage.keys()], ['cmwebs_landlord_session_token']);
+  assert.deepEqual([...storage.keys()].sort(), ['cmwebs_landlord_read_write_guard_v1','cmwebs_landlord_session_token']);
+  assert.match(storage.get('cmwebs_landlord_read_write_guard_v1'), /^\d+$/);
+  assert.doesNotMatch(storage.get('cmwebs_landlord_read_write_guard_v1'), /SESSION_TOKEN|user-1|WS-1/);
   assert.equal(auth.getMode(), 'email');
   const authParams = auth.getRequestAuthParams();
   assert.equal(authParams.response_mode, 'bridge');

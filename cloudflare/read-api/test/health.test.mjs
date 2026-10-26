@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { readFile } from 'node:fs/promises';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import worker from '../src/index.js';
 
 test('health exercises the real local Worker and D1 without changing stored rows', async () => {
   const mf = new Miniflare(convertV4MiniflareOptions({
     modules: true,
-    scriptPath: fileURLToPath(new URL('../src/index.js', import.meta.url)),
+    script: await readFile(new URL('../.wrangler/dry-run/index.js', import.meta.url), 'utf8'),
     compatibilityDate: '2026-10-06',
     d1Databases: { DB: 'local-test-replica' }
   }));

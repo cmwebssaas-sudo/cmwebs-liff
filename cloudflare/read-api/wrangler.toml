@@ -1,12 +1,16 @@
 name = "cmwebs-read-api"
 main = "src/index.js"
 compatibility_date = "2026-10-06"
-workers_dev = false
+workers_dev = true
 preview_urls = false
 
-# Local placeholder only. Replace with the verified APAC D1 ID in C1.
+# Production read replica (APAC), created 2026-10-26.
 [[d1_databases]]
 binding = "DB"
 database_name = "cmwebs-read-replica"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "876cebb6-c0d2-4931-bf36-32239cdc1952"
 migrations_dir = "migrations"
+
+# LINE Login channel that owns the landlord LIFF apps (public value).
+[vars]
+LINE_LOGIN_CHANNEL_ID = "2010314940"

@@ -268,3 +268,80 @@ and disabled public deployment routes. Schemas, synchronization, identity and
 operational reads follow in their assigned work orders. Account login alone
 does not establish paid-plan readiness or the correct provisioning account.
 Google Sheets remains authoritative. Rollback of C0 only reverts source/CI.
+# 2026-10-12 C1 candidate: signed snapshots and bounded projections
+
+One JSON whitelist generates both Apps Script projection schema and D1 SQL.
+The replica stores approved operational fields and scalar encodings; raw tokens,
+bank data, identity documents and contract files remain excluded. Sheets retain
+write authority. Exact-byte HMAC, bounded request bodies, atomic nonce reservation
+and complete snapshot manifests protect ingestion. Batch staging does not expose
+partial replacement; transaction guards recheck source ordering before deletion.
+
+Dirty generations use brief ScriptLock sections, never network operations under
+the lock. A changed marker survives a concurrent synchronization; failed tables
+remain queued while independent tables continue. Successful dispatcher actions
+use an explicit classification and dependency map instead of spelling-based
+mutation detection. Unknown actions conservatively invalidate all projections.
+Immediate session revocation is a patch with a pending failure result. Operational
+authorization is gated on C3's freshness and fail-closed design. Remote three-day
+acceptance, then seven-day shadow acceptance, remain independent requirements.
+
+## 2026-10-12 approved read-replica boundaries and C6 acceptance
+
+The owner authorized the bounded R0/S1/C0–C6 read-path plan and continuous
+plan-scoped release after each gate. GAS/Sheets retain canonical writes and
+access authority; D1 serves only approved sanitized read projections. Existing
+rental identity/Workspace/RBAC remains canonical, without a second product login.
+Summary opt-in for home/actions and tenants is approved; default/detail remains
+full GAS. See `READ-PARITY-DECISION.md`.
+
+Each Worker read requires uncached request-bound GAS authority confirmation,
+matching current primary-D1 policy; mismatch/failure falls back to GAS. Actual
+performance must pass before enabling a page. See `READ-AUTHORITY-DECISION.md`.
+Only exact canonical ISO generation-clock paths within60s are separately visible
+clock observations under owner approval; all business/source-row fields remain
+exact. See `READ-CLOCK-DECISION.md`. Receipt-backed seven actual days are mandatory.
+
+C6 switches rooms→tenants→properties→arrears→revenue→home with published-build
+readback, authenticated timing, physical LINE/desktop and fallback/write-guard
+evidence for each page. `READ-CUTOVER.md` is preparation, not acceptance. Keep
+flags off/shadow when gates fail; preserve prior versions, additive metadata and
+original formal data for rollback. These approvals do not weaken privacy, alter
+billing/contract workflows or add V3/V4 functionality.
+
+C6 comparison identity is generated from the browser/GAS/Worker/source-contract
+closure and checked by validation and the bundled receiver. Asset cache/flag
+releases are separate. Source changes invalidate observation; flags-only changes
+retain the verified comparison epoch. Initial all-page qualification is saved;
+later page checks require only that page's seven complete windows, including both
+home sections, while all epoch failures remain blocking. Accepted on pages need
+not continue producing shadow rows. Private acceptance ledger/readback/device
+proof remains required; a source fingerprint does not prove live bindings.
+
+## 2026-10-26 read authority from synced D1, five-minute sync, rooms first
+
+Owner decision (2026-10-26). Supersedes the per-request Apps Script authority
+confirmation from C3 and the 24-hour/7-day observation gates in
+`READ-ACCELERATED-ROLLOUT.md` for the rooms-first launch.
+
+- The Worker no longer calls Apps Script on each read. Identity is still
+  verified (LINE `verify` endpoint; Email session HMAC), and authority comes
+  from the synced D1 rows: users, workspace memberships, workspaces and Email
+  sessions. The per-request call took 1–3 seconds and cancelled the speed-up.
+- Accepted trade-off: changes made in Apps Script (suspending a member, a
+  tenant payment report, a revoked Email session) can take up to about five
+  minutes to reach Worker reads. Revoked Email sessions are still pushed
+  immediately where the existing revocation patch succeeds.
+- Own writes: after a successful write the browser reads from Apps Script for
+  7 minutes (one sync interval plus the run), up from 2 minutes.
+- Sync runs every 5 minutes instead of every minute (about 15 instead of 48
+  Apps Script trigger minutes per day). Daily 03:00 Asia/Taipei full
+  reconciliation is unchanged. `installV2ReadReplicaTriggers()` creates both.
+- Freshness guard: each sync run that leaves nothing pending posts a signed
+  heartbeat to `/sync/heartbeat`. Reads fail over to Apps Script when the
+  latest heartbeat is older than 15 minutes.
+- The synthetic 50 ms latency budget is reported, not enforced, on shared CI
+  runners; it stays enforced locally. Real-device timing is the release gate.
+- Rollout: rooms page first with automatic fallback (3 s timeout, non-2xx or
+  malformed response returns to Apps Script); other pages one at a time after
+  the owner checks rooms on a phone.

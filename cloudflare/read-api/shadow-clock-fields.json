@@ -1,0 +1,15 @@
+{
+  "home": {
+    "home": "data.home.updated_at",
+    "actions": "data.contract_requests.summary.updated_at"
+  },
+  "revenue": {
+    "default": "data.updated_at"
+  },
+  "tenants": {
+    "default": "data.landlord.updated_at"
+  },
+  "arrears": {
+    "default": "data.landlord.updated_at"
+  }
+}

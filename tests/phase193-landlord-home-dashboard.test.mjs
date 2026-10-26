@@ -350,9 +350,11 @@ retryRuntime = createJsonpRuntime((script) => {
     const callbackName = decodeURIComponent(
       script.src.split('callback=')[1].split('&')[0]
     );
-    setTimeout(() => {
+    // Deliver the synthetic response before the next timer phase. A separate
+    // zero-ms timer races the five-ms test deadline under full-suite CPU load.
+    queueMicrotask(() => {
       retryRuntime[callbackName]({ success: true });
-    }, 0);
+    });
   }
 });
 vm.runInNewContext(

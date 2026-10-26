@@ -3,7 +3,7 @@
 建議模型／速度：GPT-6.1 Sol／高；本修訂涉及同步、授權與正式切換門檻。
 範圍：既有 V2.1 效能整併，保留 R0 → S1 → C0…C6、每單獨立 worktree／PR。
 狀態：**房東已於 2026-10-15 明確回覆「同意兩項加速修訂，繼續執行」。
-本修訂及單次 wrapper 試驗修訂均已批准；技術前置未完成，T0 尚未開始，尚未部署或啟用。**
+本觀察期修訂已批准；合成入口／計次另依後續批准修訂。技術前置未完成，T0 尚未開始，尚未部署或啟用。**
 
 ## 目的與目前阻礙
 
@@ -11,15 +11,76 @@
 採用「24 小時同步與 shadow 並行、先房源頁試行、其餘逐頁」方案，減少
 前置通過後的等待；不是承諾今天或明天完成全部遷移。
 
-目前 C1 每日 900 秒門檻未通過；C3 的新權威路徑仍未取得實際可行性證據，
-本地準備控制器的失敗處理修正已完成審查、完整回歸及 CI，並繼承至 C4～C6。
-C6 最新 CI 主測試成功，但 Worker 物件頁 500 房 p95=51.233ms 超過原 50ms；
-失敗保留，不能以較早成功結果取代。上述證據亦不能代替真實登入效能。
-實際試驗累積仍為 25／160，320 提案未獲批准；不得退款、重設或挪用回退預留。
-目前完整原生查核尚未證明能在 160 內執行。這是獨立阻礙，縮短觀察期不會解除它。
+### 2026-10-21 最新接續：95次安全暫停，未開始T0
 
-補充：160 次試驗阻礙的具體精簡提案見 [READ-TRIAL-MINIMUM-DECISION.md](READ-TRIAL-MINIMUM-DECISION.md)。
-它把第一階段兩次 RPC 改為一次 wrapper；房東已在同一則回覆明確批准兩項修訂。
+房東已另行批准明確指定發布者連線的六步接續，以及從未用主帳額度移轉2次
+至普通瀏覽器；最新分配為主帳132、普通瀏覽器84、獨立瀏覽器回退16，總232。
+主帳132＝已花53＋HTTP58＋獨立回退21；普通瀏覽器84＝已花41＋本次準備6＋
+future36＋歷史未用1。舊主帳未用2已取消，不能再以別名花用；全部歷史與故障保留。
+
+首次候選清單讀取已成功，實際95＝主帳53＋普通瀏覽器42；全部42筆事件結算，
+無pending，scope／child／lock關閉。已在同一checkpoint安全暫停，等待本人明選
+發布者連線；候選識別與profile只留私下，不公開。剩餘五步仍須核對唯一原分頁與
+精確專案、成功載入等待及發布者雜湊；清單或設定檔標籤都不給帳號信用。
+沒有分頁接管、DOM／帳號驗證、寫入、RPC或試驗時鐘。失敗扣次後停止，不能
+重放已消耗入口、猜另一條連線或跳過完整實際map與獨立回退。
+
+來源`cfd0000c98b31ec5318485f2d27e5e963a623648`隔離完整回歸2957／2957通過，
+來源／Core讀回與合成PG清理通過；來源CI39624938713為2952單元／26 Worker成功。
+整合`e9354d9f7e261d51246ccf614845ccc668662a6a`的CI39625127928為3085單元／45
+Worker成功。兩次均attempt1、實際checkout tree與對應來源一致；獨立來源／入口／
+整合審查通過。有效選擇可在較晚holder接續，早於已關閉候選checkpoint的選擇仍拒絕。
+這些結果只屬指定來源，不冒稱驗證後續文件提交或正式權威／隱私／效能／真機。
+
+### 先前94次診斷與來源證據（歷史）
+
+另行批准的唯一形狀查核已成功完成，實際94／232＝主帳53＋普通瀏覽器41。
+現行分配仍是主帳134、普通瀏覽器82、獨立瀏覽器回退16；未批准的後續
+重分配不列為可花額度。原40筆事件保留，新增一筆已結算；無pending，scope
+關閉、lock釋放，101個歷史／來源pins未變。沒有分頁接管、帳號／DOM讀取、
+寫入、RPC或試驗時鐘；這次批准不允許自動接續原六步。
+
+只保留的安全統計顯示：目前清單格式正常，原指定連線匹配0，合格Chrome2。
+這說明目前無法唯一選定原連線，不證明先前93的歷史失敗原因、實體斷線或
+任何帳號身分。原始清單、連線識別、profile與URL未保存或公開；診斷不給
+身分信用。下一次連線接續仍待範圍決定與實作／准入，不能重放已消耗入口。
+
+C3來源`6e4bf79373a9f21c360a0dec30e45d129698a3de`的完整隔離回歸2935／2935
+通過，零失敗／取消／跳過；外層Git收尾讀回逾時原樣保留，補充直接索引讀回
+核對653個來源檔、未變Core索引及321個tracked blob／mode、branch／HEAD與
+合成PG清理，獨立審查通過。來源CI39616294404 attempt1為2930單元／26 Worker
+成功；整合`427b741fcb24b3da572f9899752368d76b7918fa`的CI39616611326 attempt1
+為3063單元／45 Worker成功。兩次provider checkout tree均與對應來源一致；
+這些結果不冒稱驗證後續文件提交。舊失敗與正式效能／回退／真機／同步門檻
+全部保留，T0未開始，未部署或切換。
+
+### 先前93次終態與來源證據（歷史）
+
+2026-10-21 來源與終態對帳：C1 每日900秒與C3實際權威／隱私／新鮮度門檻仍未通過。
+單一獨立合成腳本已取代舊 wrapper／library。總上限仍232；經後續批准重分配後，
+目前為主帳134、普通瀏覽器操作82、獨立瀏覽器回退16。實際93（主帳53、
+瀏覽器40），既有事件、故障與STOP全部保留，不退款或重設。最新單次接續
+在清單metadata驗證停止，所有40事件結算、無pending，ownedScope SETTLED、
+lock已釋放；尚未綁定瀏覽器、接管分頁、核對帳號、寫入或執行RPC。
+不能據此判定實體Chrome斷線；尚未獲准重新開啟這個已消耗入口。
+較早65次與160＋72的分配是歷史紀錄，不是目前計數或可花額度。
+
+C3來源`8cc60ce7e53417a70ddb24770ab1e51e86a1922c`已整合至候選
+`2739e94d55dfdbd0ff369548a029a086a3b258be`。前者隔離Core／PG完整回歸
+2913／2913、validate與獨立審查通過；來源CI39609419506為2908單元／26
+Worker，整合CI39609755830為3041單元／45 Worker，兩次均為attempt1成功，
+實際checkout tree分別與對應來源tree一致。這些提交及CI是歷史證據邊界；
+本文件後續更新不會把它們重標為新HEAD的結果。
+較早51.233ms與後續50.069319ms等本地／CI失敗仍保留；通過的合成基準
+不等於CPU、正式登入、遠端500房或真機驗收。完整實際UI流程、預算內的
+全部試驗與獨立回退仍須證明。C1／C3與正式登入效能繼續阻擋T0；
+沒有正式觀察起點，也尚未完成部署／切換驗收。
+
+入口以 [READ-STANDALONE-TRIAL-DECISION.md](READ-STANDALONE-TRIAL-DECISION.md)，
+計次以 [READ-SIMPLE-TRIAL-ACCOUNTING.md](READ-SIMPLE-TRIAL-ACCOUNTING.md) 為準。
+[READ-TRIAL-MINIMUM-DECISION.md](READ-TRIAL-MINIMUM-DECISION.md) 中的單次
+wrapper、160總額及四個原生窗口保留作歷史，已由後續批准修訂取代；
+一次compatibility、全部安全查核與900秒／日等要求仍保留。
 
 ## 選擇與建議
 
@@ -48,11 +109,11 @@ C6 最新 CI 主測試成功，但 Worker 物件頁 500 房 p95=51.233ms 超過�
 - [ ] C1 已有可執行的同步修正；不能直接重裝已失敗的排程。
 - [ ] C3 的 Google 端白名單、欄位變更時不外洩、撤權未送達 D1 仍拒絕、來源新鮮度與完整權限對帳均實際通過。合成 compatibility 成功不足以通過。
 - [ ] 新權威與同步路徑先通過有限的真實效能量測；若仍受 GAS 往返限制而未達標，不能以縮短觀察期啟用。
-- [ ] 160 內的完整準備、觀測、未知終態處理及獨立回退逐項核算可執行；不可行時先提出具體流程精簡／計數修訂，不擴額、不發 RPC，也不繼續無關本地優化。
+- [ ] 最新已批准分配（主帳132＋普通瀏覽器84＋獨立瀏覽器回退16，總232）內的完整準備、觀測、未知終態處理及獨立回退逐項核算可執行；實際95與全部舊STOP保留；已批准的同checkpoint明選接續不重放舊入口。已消耗並停止的入口不得重開；不可行時停止，不自動擴額、重送RPC或更改停止規則。
 - [ ] 受影響完整測試、必要 Apps Script 測試、靜態驗證、一次審查與 CI 通過；未改動的部分沿用同一來源版本的有效證據。
 - [ ] 正式副本初次同步與來源對帳一致；只含白名單欄位，未完成／過期／部分版本拒絕供讀。所有頁面 on 仍為關閉。
 - [ ] 部署與讀回身份已固定，正式資料無需為測試新增／刪除帳務；單頁及全頁 off 的回退版本、發布方法與執行人已備妥，並完成測試環境回退演練。
-- [ ] 定義這段排程與 shadow 的請求／CPU／D1 預算並核對已付方案剩餘用量；不得用它繞過 160 的合成試驗額度，若新增費用仍找房東。
+- [ ] 定義這段排程與 shadow 的請求／CPU／D1 預算並核對已付方案剩餘用量；不得用它繞過最新已批准的合成試驗雙帳／總額度，若新增費用仍找房東。
 
 T0 記錄 UTC 與台北時間、來源 commit、Worker／GAS／Pages 版本、資料集與
 開關。沒有通過共同前置，就沒有觀察開始時間，不從文件日期或合成測試起算。
@@ -105,3 +166,24 @@ fallback 及 Workspace 隔離均保留。
 不建立新架構、不新增產品功能、不擴張正式資料存取或費用授權。
 文件 rollback：revert 本修訂；不能在已有正式切換後只改文件而跳過實際 off／讀回。
 本次只有計畫文件變更，沒有任何正式部署或資料變更。
+
+
+### 2026-10-22 current C3 and C6 acceptance checkpoint
+
+C3 actual97/232 is PREP HARD_STOP: browser binding succeeded, inventory
+callback/validation failed. All44 UI events settled with pendingnull; no
+page claim/account projection, mutation, RPC or trial clock followed. The
+reason is not established from retained evidence. Prior95/94 and all failure
+history remain; current source work grants no remote retry authority. A new
+bounded continuation decision awaits the owner separately.
+
+C6 diagnostic sourcec2ddec6 has local Worker53/53 and repaired bare Core/PG
+2893/2893 with exact-source/cleanup readbacks and independent review. Its
+new exact-head CI39634649349 is in progress; do not treat it as passed. The
+failed integration39627922453 (3085unit,43/45Worker) remains evidence. This
+composition still requires its own source verification and exact-head CI.
+Neither local evidence nor diagnostic COMPLETE establishes formal acceptance.
+Endpoint blank/flags off; no deployment, formal-data/configuration change or
+observation T0. Technical gates,24h parallel sync/shadow including Taipei
+crossday03:00,rooms-first device/rollback,another stable24h and seven-day
+postlaunch observation all remain required.

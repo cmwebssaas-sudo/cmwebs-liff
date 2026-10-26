@@ -14,6 +14,39 @@
   };
   const BRIDGE_TIMEOUT_MS = 25000;
   const EMAIL_BRIDGE_TIMEOUT_MS = 60000;
+  const WRITE_GUARD_KEY = 'cmwebs_landlord_read_write_guard_v1';
+  // Match the canonical sync policy's read actions. Unknown successful landlord
+  // actions conservatively protect subsequent reads as possible writes.
+  const READ_ACTIONS = new Set((
+    'landlord_announcements_init landlord_arrears landlord_bank_receipts_init '+
+    'landlord_bill_manual_settlement_status landlord_bill_notifications_init '+
+    'landlord_bill_test_archive_candidates landlord_billing_init '+
+    'landlord_contract_checkout_init landlord_contract_checkout_settlement_init landlord_contract_checkout_settlement_preview '+
+    'landlord_contract_document_download landlord_contract_documents_init '+
+    'landlord_contract_initiated_init landlord_contract_initiated_status landlord_contract_requests_init '+
+    'landlord_contract_signing_review_auth_status landlord_contract_signing_review_update_status '+
+    'landlord_contract_signing_reviews_fetch_status landlord_contract_signing_reviews_init '+
+    'landlord_email_session_status landlord_entry_status landlord_home landlord_home_bootstrap '+
+    'landlord_invitation_init landlord_line_logs landlord_messages_init landlord_notifications_init '+
+    'landlord_onboarding_init landlord_paid_bills_init landlord_payment_reports_init landlord_properties_init '+
+    'landlord_repair_tickets_init landlord_revenue_dashboard_init landlord_room_center_init '+
+    'landlord_settings_init landlord_subscription_init landlord_team_init landlord_tenant_checkins_init '+
+    'landlord_tenant_create_init landlord_tenant_initial_meter_init landlord_tenants '+
+    'landlord_workspace_activity_init landlord_workspace_context'
+  ).split(' '));
+  function protectReadsAfterWrite(action,result) {
+    if (!/^landlord_/.test(action) || READ_ACTIONS.has(action) || !result || result.success !== true) return;
+    window.CMWEBS_READ_WRITE_GUARD_UNTIL=Math.max(Date.now()+120000,Number(window.CMWEBS_READ_WRITE_GUARD_UNTIL)||0);
+    clearHomeSnapshot();
+    ['localStorage','sessionStorage'].forEach(function (name) {
+      try {
+        const store=window[name];
+        if (store) store.setItem(WRITE_GUARD_KEY,String(Math.max(
+          window.CMWEBS_READ_WRITE_GUARD_UNTIL,Number(store.getItem(WRITE_GUARD_KEY)||0)||0
+        )));
+      } catch (error) {}
+    });
+  }
 
   let config = {
     apiUrl: '',
@@ -218,6 +251,7 @@
         maybeHandleAuthFailure(result);
 
         if (result.success === true) {
+          protectReadsAfterWrite(action,result);
           resolve(result);
         } else {
           const error =
@@ -409,6 +443,10 @@
 
     handleAuthFailure(result) {
       return maybeHandleAuthFailure(result);
+    },
+
+    observeResponse(action,result) {
+      protectReadsAfterWrite(String(action || ''),result);
     },
 
     requestEmailCode(email) {

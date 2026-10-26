@@ -16,6 +16,19 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
+- 2026-10-12 read-path continuation: recommended GPT-6.1 Sol/high for C6 per
+  approved work plan. Recorded S1 serving baseline is233 with owner-confirmed
+  LINE reads/notification and desktop Email; C0 merged PR265/main32a5820.
+  C1 draft266 real72-hour isolated test continues; C2–C5 draft267–270 are reviewed
+  local candidates, all off/unpublished. C5 source9c72fd4 CI38185484575 passed;
+  clock classification has explicit owner approval. C6 preparation is in its own
+  branch/worktree and `READ-CUTOVER.md`; no C6 page has switched or been accepted.
+  Real days, authenticated latency and each page's physical LINE/desktop gate
+  remain required. These records require fresh serving/export verification before
+  release and do not replace current external evidence. Preserve checkpoint root
+  WIP and private materials. Batch authorization covers plan-scoped release;
+  only stated owner-action/scope/fee/deletion exceptions need escalation.
+
 - 2026-10-12 C0 scaffold: independent branch/worktree based on S1 merge
   `b8f62f0`; local Worker/D1 health tests and dry-run pass. Worker and remote
   D1 are not deployed/created. CLI OAuth login is present; target account,
@@ -148,4 +161,24 @@ without specific authorization. Never store or reveal secret values.
 
 - Repair dispatch release COMPLETE at publication level: PR249/main7241f2e; Pages built,50 public files match; serving224 at same URL, other4 deployments unchanged. Anonymous GET/POST rejected. Real authenticated landlord/vendor transactions and physical device UNVERIFIED; no business test dispatch/financial write/LINE send.
 
+- 2026-10-12 continuous read-path execution uses the owner's batch authorization
+  for in-plan reviewed commits/PRs/merges, deployments and configuration. Exceptions
+  remain new fees, formal data deletion, scope expansion and owner login/payment/
+  device acceptance. R0 PR263 and S1 PR264 source are merged. S1 frontend gate
+  passed; backend v233 has69-file immutable/readback evidence and rollback v232;
+  post-backend owner LINE/notification/Email acceptance passed. C0 PR265/main32a5820 passes CI and
+  62-file Pages readback. C1 source candidate is isolated and remains draft until
+  the separate test environment's three real consecutive days pass. Seven real
+  shadow days and physical per-page acceptance also remain mandatory. Preserve
+  dirty root WIP. Private security material stays outside Git and PR text.
+
 - 2026-10-10 auto email settlement completion notice correctness fix: candidate a377903; immutable22561 files match; original deployment225, rollback224, other4 unchanged.729 tests/42 bank runtime tests and independent review pass. No frontend/schema/Properties/trigger/financial-rule changes; no manual intake/send or historical bulk resend. Real LINE receipt UNVERIFIED. See BANK-AUTO-SETTLEMENT-NOTIFICATION.md.
+
+- 2026-10-15 C3 local holder/finalizer fix: affected83/83 and complete1728/1728
+  PASS, actual Core/ownedPG cleanup verified; initial11 realm failures retained
+  and fixed using the existing approved OS identity API. Initial review findings
+  resolved, incremental findings0. Exact-head CI and downstream propagation
+  pending. Actual25/160 unchanged/unclaimed, native STOP. Separate Draft PR272
+  proposes accelerated24h/rooms-first gates, not yet approved; original72h and
+  seven-day requirements still apply. Prioritize an executable160-budget trial
+  plan after this fix, not additional unrelated performance/tooling work.
