@@ -4700,3 +4700,14 @@ authenticated/device and release gates remain outstanding; no publication.
   and a 03:00 Asia/Taipei reconciliation.
 - Frontend: write guard is 7 minutes.
 - Synthetic latency budget: enforced locally, reported only when `CI` is set.
+
+## 2026-10-26 keyless and repeated-ID replica rows
+
+First production full sync failed for `V2_users` (one repeated `user_id`),
+`V2_payments` (legacy rows without `payment_id`) and
+`V2_landlord_tenant_list_view` (one row without `tenant_id`). Sheets are not
+modified. Keyless rows sync as `row:<sheet row>`, later copies of a repeated
+ID as `<id>#row:<sheet row>`; the Worker accepts only keys that match the
+row's own ID and Sheet row, and merges scoped reads by Sheet row plus ID so
+every row is kept. Patches without a Sheet row still require a real ID.
+Tests: Apps Script projection, Worker `/sync` acceptance and rejection, merge.

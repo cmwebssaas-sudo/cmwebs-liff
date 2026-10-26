@@ -263,12 +263,22 @@ test('full sync queues every unattempted table after deadline without reading it
   assert.equal(h.cache.has('cmwebs:read-replica:lease'),false);
 });
 
-test('missing sheets and duplicate stable keys never send a deleting snapshot',()=>{
-  for(const sheets of [{},{V2_rooms:[['room_id'],['R1'],['R1']]}]) {
-    const h=harness({sheets}); h.ctx.readReplicaMarkDirty_(['V2_rooms']);
-    assert.equal(h.ctx.runV2ReadReplicaDirtySync().success,false);
-    assert.equal(h.sent.length,0);
-  }
+test('a missing sheet never sends a deleting snapshot',()=>{
+  const h=harness({sheets:{}}); h.ctx.readReplicaMarkDirty_(['V2_rooms']);
+  assert.equal(h.ctx.runV2ReadReplicaDirtySync().success,false);
+  assert.equal(h.sent.length,0);
+});
+
+test('keyless and repeated-ID rows are kept and identified by Sheet row',()=>{
+  const h=harness({sheets:{V2_payments:[['payment_id','amount'],['P1',100],['',200],['P1',300],['',400]]}});
+  h.ctx.readReplicaMarkDirty_(['V2_payments']);
+  assert.equal(h.ctx.runV2ReadReplicaDirtySync().success,true);
+  const rows=JSON.parse(h.sent[0].payload).rows;
+  assert.deepEqual(rows.map(row=>row.row_key),['P1','row:3','P1#row:4','row:5']);
+  assert.deepEqual(rows.map(row=>row.fields.amount),[100,200,300,400]);
+  assert.equal(rows[1].fields.payment_id,'');
+  // Patches carry no Sheet row and still require a real ID.
+  assert.throws(()=>h.ctx.readReplicaProjectRow_('V2_landlord_email_sessions',{session_id:'',status:'revoked'}),/stable replica key/);
 });
 
 test('immediate revocation projects and patches only the revoked session',()=>{

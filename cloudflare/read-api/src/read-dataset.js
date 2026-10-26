@@ -8,6 +8,12 @@ const unique=values=>[...new Set(values.map(text).filter(Boolean))];
 const column=field=>`trim(COALESCE(json_extract("${field}",'$'),''))`;
 const blankWorkspace=`upper(${column('workspace_id')}) = ''`;
 export const HEARTBEAT_MAX_AGE_MS=15*60000;
+// The same Sheet row can arrive from several scoped queries. Deduplicate by
+// Sheet row plus ID, so keyless and repeated-ID rows are all kept.
+export function mergeReplicaRows(key,rows) {
+  return [...new Map(rows.map(row=>[String(row.replica_source_row??'')+'\u0000'+String(row[key]??''),row])).values()]
+    .sort((a,b)=>Number(a.replica_source_row)-Number(b.replica_source_row)||String(a[key]).localeCompare(String(b[key])));
+}
 function failure(code='READ_REPLICA_UNAVAILABLE'){throw Object.assign(new Error(code),{code});}
 const escapedOrControl=/[\\\u0000-\u001f]/;
 function decodeCell(value) {
@@ -89,10 +95,7 @@ export function createReadDatasetLoader(database,options={}) {
   async function select(table,where,params=[]) {
     return decode(await statement(table,where,params).all(),schema[table].fields);
   }
-  function merge(table,rows) {
-    const key=schema[table].key;
-    return [...new Map(rows.map(row=>[row[key],row])).values()].sort((a,b)=>Number(a.replica_source_row)-Number(b.replica_source_row)||String(a[key]).localeCompare(String(b[key])));
-  }
+  function merge(table,rows) {return mergeReplicaRows(schema[table].key,rows);}
   function valueSelections(field,values,extra='1=1',extraParams=[]) {
     const workspaceField=field==='workspace_id';
     const ids=unique(values).map(value=>workspaceField?value.toUpperCase():value),selections=[];

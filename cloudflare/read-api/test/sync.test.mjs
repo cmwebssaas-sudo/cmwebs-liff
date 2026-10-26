@@ -183,3 +183,17 @@ test('signed heartbeats record the newest clean version and reject forgery, repl
       assert.equal((await beat(body)).status, 400);
   });
 });
+
+test('keyless and repeated-ID rows sync under Sheet-row keys; mismatched synthetic keys are rejected', async () => {
+  await fixture(async (db, send) => {
+    const make = (key, id, source, name) => {
+      const fields = { room_id: id, room_name: name, workspace_id: 'W_SYNTHETIC', replica_source_row: source };
+      return { row_key: key, row_hash: hash(canonical(fields)), fields };
+    };
+    const rows = [make('R1', 'R1', 2, 'a'), make('row:3', '', 3, 'b'), make('R1#row:4', 'R1', 4, 'c')];
+    assert.equal((await send(snapshot(rows))).status, 200);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM V2_rooms').first()).n, 3);
+    for (const bad of [make('row:9', '', 3, 'x'), make('row:3', 'R2', 3, 'x'), make('R2#row:5', 'R1', 5, 'x'), make('R1#row:5', 'R1', 1, 'x')])
+      assert.equal((await send(snapshot([bad], { source_version: Date.now() + 1 }))).status, 400);
+  });
+});

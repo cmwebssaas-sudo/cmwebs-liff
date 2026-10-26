@@ -58,7 +58,10 @@ function readReplicaProjectRow_(sheetName, source, sourceRow, sourceContext) {
     fields[key]=value;
   });
   if(dateFields.length) fields.replica_date_fields=JSON.stringify(dateFields);
-  const key = String(fields[table.key] || '').trim();
+  let key = String(fields[table.key] || '').trim();
+  // Legacy rows without an ID still count in Apps Script reads; identify them
+  // by Sheet row. Patches (no source row) still require a real ID.
+  if (!key && Number.isSafeInteger(fields.replica_source_row)) key = 'row:' + fields.replica_source_row;
   if (!key || key.length>256) throw new Error('Missing stable replica key');
   return {row_key:key,row_hash:readReplicaHash_(readReplicaCanonicalFields_(fields)),fields:fields};
 }
@@ -199,6 +202,10 @@ function readReplicaRowsFromSheet_(sheetName) {
     const row=item.values;
     const source={}; headers.forEach(function(header,index){if(header) source[header]=row[index];});
     const projected=readReplicaProjectRow_(sheetName,source,item.sourceRow,sourceContext);
+    // A repeated ID keeps every row; later copies are identified by Sheet row.
+    if (Object.prototype.hasOwnProperty.call(seen,projected.row_key) && Number.isSafeInteger(projected.fields.replica_source_row)) {
+      projected.row_key=projected.row_key+'#row:'+projected.fields.replica_source_row;
+    }
     if (Object.prototype.hasOwnProperty.call(seen,projected.row_key)) throw new Error('Duplicate stable replica key');
     seen[projected.row_key]=true;
     return projected;
