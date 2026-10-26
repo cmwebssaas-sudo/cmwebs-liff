@@ -26,7 +26,7 @@ test('actual comparison sources stay fixed through flag/cache releases and inval
       assert.ok(Object.hasOwn(before.sources,name),name);
     const central=join(temp,'frontend-release.js'),old=await readFile(central,'utf8');
     const asset=old.match(/CMWEBS_RELEASE_VERSION\s*=\s*'([^']+)'/)[1];
-    await writeFile(central,old.replace(asset,'assets-flag-only').replace("rooms: 'off'","rooms: 'on'"));
+    await writeFile(central,old.replace(asset,'assets-flag-only').replace(/rooms: '(on|off)'/,flag=>flag.includes("'on'")?"rooms: 'off'":"rooms: 'on'"));
     for(const name of await readdir(temp)) if(/\.(html|js|css)$/.test(name)&&name!=='frontend-release.js') {
       const path=join(temp,name);await writeFile(path,(await readFile(path,'utf8')).replaceAll('?v='+asset,'?v=assets-flag-only'));
     }
@@ -42,7 +42,7 @@ test('actual comparison sources stay fixed through flag/cache releases and inval
       await assert.rejects(()=>verifyReadComparison(temp));
       await writeFile(path,source);
     }
-    await writeFile(central,(await readFile(central,'utf8')).replace("CMWEBS_READ_API_URL = ''","CMWEBS_READ_API_URL = 'https://changed.invalid'"));
+    await writeFile(central,(await readFile(central,'utf8')).replace(/CMWEBS_READ_API_URL = '[^']*'/,"CMWEBS_READ_API_URL = 'https://changed.invalid'"));
     assert.notEqual((await readComparisonSnapshot(temp)).comparison_version,before.comparison_version);
   } finally {await rm(temp,{recursive:true,force:true});}
 });
