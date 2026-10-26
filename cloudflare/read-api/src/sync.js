@@ -34,6 +34,14 @@ async function verifySignature(request, body, secret) {
   if (!await crypto.subtle.verify('HMAC',key,bytes,encoder.encode(timestamp+'\n'+nonce+'\n'+body))) stop('SYNC_AUTH_REQUIRED',401);
   return nonce;
 }
+// Rows are keyed by their ID; keyless rows by 'row:<sheet row>' and repeated
+// IDs by '<id>#row:<sheet row>', matching the Apps Script projection.
+function validRowKey(row, table) {
+  const id = String(row.fields[table.key] ?? '').trim(), source = row.fields.replica_source_row;
+  if (row.row_key === id) return id !== '';
+  if (!Number.isSafeInteger(source) || source < 2) return false;
+  return row.row_key === (id ? id + '#row:' : 'row:') + source;
+}
 async function validateBatch(batch) {
   if (!batch || typeof batch !== 'object' || !Object.hasOwn(tables,batch.sheet)) stop('INVALID_BATCH');
   const table = tables[batch.sheet];
@@ -53,7 +61,7 @@ async function validateBatch(batch) {
     if (!row || Object.keys(row).some(k=>!['row_key','row_hash','fields'].includes(k)) ||
         typeof row.row_key !== 'string' || !row.row_key.trim() || row.row_key.length > 256 || seen.has(row.row_key) ||
         !row.fields || typeof row.fields !== 'object' || Array.isArray(row.fields) ||
-        String(row.fields[table.key] ?? '').trim() !== row.row_key ||
+        !validRowKey(row, table) ||
         Object.entries(row.fields).some(([key,value])=>!table.fields.includes(key) ||
           !(['string','number','boolean'].includes(typeof value) || value === null) ||
           (typeof value === 'number' && !Number.isFinite(value)) ||
