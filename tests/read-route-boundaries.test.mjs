@@ -274,3 +274,38 @@ test('unsupported existing bridge dependencies fail closed rather than publish a
     assert.ok(projectedDataset(emptyBridge).V2_rooms.every(row=>row.replica_room_bridge_supported===false),'even an empty provisioned bridge must stay on GAS');
   }
 });
+
+test('public gallery results are shared through D1: fetched once, reused fresh, refreshed in the background when stale',async()=>{
+  const helpers=createReadCalculator(createReadServices(dataset,access));
+  const rows=new Map();
+  const db={prepare:sql=>({bind:(...args)=>({
+    all:async()=>({results:args.filter(url=>rows.has(url)).map(url=>({url,...rows.get(url)}))}),
+    run:async()=>{assert.match(sql,/INSERT INTO room_gallery_cache/);rows.set(args[0],{status:args[1],photos:args[2],expires_at:args[3]});return {success:true};}
+  })})};
+  const site=name=>'https://synthetic-shared-'+name+'.z3house.com';
+  const page=photo=>'<section class="space-detail__media"><img src="'+photo+'"></section>';
+  const media=origin=>origin+'/api/public/media/11111111-2222-3333-4444-555555555555';
+  let calls=0;
+  const fetch=async url=>{calls++;return new Response(page(media(new URL(url).origin)));};
+
+  // Missing everywhere: fetched once and written to D1 after the response.
+  const a=site('a')+'/spaces/one/',pending=[];
+  const first=await loadPublicRoomResources([a],helpers,{fetch,now:1000,db,waitUntil:p=>pending.push(p)});
+  await Promise.all(pending);
+  assert.equal(calls,1);assert.match(first[a].body,/api\/public\/media/);
+  assert.equal(JSON.parse(rows.get(a).photos)[0],media(site('a')));
+
+  // Fresh in D1 but not in this isolate: no network fetch.
+  const b=site('b')+'/spaces/two/';
+  rows.set(b,{status:200,photos:JSON.stringify([media(site('b'))]),expires_at:5000});
+  const fresh=await loadPublicRoomResources([b],helpers,{fetch,now:2000,db});
+  assert.equal(calls,1);assert.match(fresh[b].body,new RegExp(media(site('b')).replaceAll('.','\\.')));
+
+  // Stale in D1: served immediately, refreshed once via waitUntil.
+  const c=site('c')+'/spaces/three/',refreshes=[];
+  rows.set(c,{status:200,photos:JSON.stringify([media(site('c'))+'?old']),expires_at:10});
+  const stale=await loadPublicRoomResources([c],helpers,{fetch,now:3000,db,waitUntil:p=>refreshes.push(p)});
+  assert.match(stale[c].body,/\?old/);assert.equal(refreshes.length,1);
+  await Promise.all(refreshes);
+  assert.equal(calls,2);assert.equal(JSON.parse(rows.get(c).photos)[0],media(site('c')));
+});

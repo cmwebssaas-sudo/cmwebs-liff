@@ -13,13 +13,13 @@ function json(body, status = 200, headers = {}) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (new URL(request.url).pathname === '/sync') return sync(request,env);
     if (new URL(request.url).pathname === '/sync/heartbeat') return heartbeat(request,env);
     if (new URL(request.url).pathname === '/v1/shadow-report') return shadow(request,env);
     if (isReadRoute(new URL(request.url).pathname)) {
       if(!env.LINE_LOGIN_CHANNEL_ID||!env.READ_REPLICA_SYNC_SECRET) return readFailure('READ_AUTH_NOT_READY');
-      return read(request,env);
+      return read(request,env,ctx);
     }
     if (new URL(request.url).pathname !== '/health') {
       return json({ success: false, error: 'NOT_FOUND' }, 404);
