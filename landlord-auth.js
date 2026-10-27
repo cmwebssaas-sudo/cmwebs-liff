@@ -371,11 +371,21 @@
     return false;
   }
 
+  function lineIdToken() {
+    // LIFF SDK 2.31+ throws from getIDToken() before liff.init(); an Email
+    // page without a session must still reach its login form.
+    try {
+      return window.liff && typeof window.liff.getIDToken === 'function'
+        ? text(window.liff.getIDToken()) : '';
+    } catch (error) {
+      return '';
+    }
+  }
+
   function lineAuthParams() {
     return {
       line_user_id: text(config.lineUserId),
-      id_token: window.liff && typeof window.liff.getIDToken === 'function'
-        ? text(window.liff.getIDToken()) : ''
+      id_token: lineIdToken()
     };
   }
 

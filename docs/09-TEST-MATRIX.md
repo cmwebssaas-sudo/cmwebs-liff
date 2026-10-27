@@ -4796,3 +4796,22 @@ open the iOS link preview (`-webkit-touch-callout: none`). Release
 `20261028-glass-nav-native-v1`; read comparison identity regenerated. Tests: `tests/glass-bottom-nav.test.mjs` (5); checked
 with the synthetic home preview at 390px: left end 12 → 5.5px and back, right
 end and top unchanged, lens height ratio 1 while pressed and dragged.
+
+## 2026-10-28 Email login entry and registration page fixes
+
+LIFF SDK 2.31 (served from the rolling `edge/2` URL) now throws from
+`liff.getIDToken()` before `liff.init()`. The Email entry page reads auth
+params before any LIFF init, so it showed "房東入口載入失敗". The shared token
+helpers in `landlord-auth.js` and `liff-request-auth.js` now treat that throw
+as "no LINE token"; LINE pages still init LIFF before reading a token.
+The entry page's desktop rail gets icons with tooltips. The registration page
+loads the glass theme and gets a padded card, a pill Email/LINE switch and a
+navy submit button; on wide screens the form stays centred and the scrollbar
+sits at the window edge. Release `20261028-entry-register-fix-v1`; read
+comparison identity regenerated.
+
+Tests: `tests/liff-uninitialised-token.test.mjs` (4; the auth-params test
+fails on the previous helper). Checked against the real LIFF SDK on a local
+static server: `landlord-entry.html?mode=email` shows the Email login form;
+`landlord-register.html` at desktop width and at 375px with no horizontal
+scroll.
