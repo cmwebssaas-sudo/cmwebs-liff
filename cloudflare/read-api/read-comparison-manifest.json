@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-f929c46e6e8fb1f660e55b0178dd3357dba8910601e67e0b0a01ea0ff30f0aa6",
+  "comparison_version": "read-daff6e10d8daa37f4ef7ebe236a06ebf28f356d19d6449734f678b8c8021d743",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -135,10 +135,10 @@
     "landlord-entry.html": "8aa2f7e7383469ad69ca5481cf86f1f0ae35bd6aa7c88c22d6f21ee508047c30",
     "landlord-glass-nav.js": "02ca92472f39b4efd96ccb25aaea512aabfec17bbb0fb24f618aa8954cad16ef",
     "landlord-glass-shell.js": "c8b47276fa654405f82d53b2f00751878f43396e06070c090d4f2a428da82ae6",
-    "landlord-glass-theme.css": "5319fef9745643e77cbaf422eebb9b3787b35f02d309e1890531fc39e8b39152",
+    "landlord-glass-theme.css": "a1085def6eb8ad9cb7dd729a1d1d12379c2a7814ce5359989a0e3d658e08c679",
     "landlord-home-motion.js": "5c8312783d83514daf2ef4de01138e240d330270a6d43b7c4a3af8bbe903a819",
-    "landlord-home.css": "399fc4cf1b03bf15466b600cc42a4248fa7e18f77067a836886ac9ec4675edbd",
-    "landlord-home.html": "b74cda1bfcb0596e3b04c94e394bbcc2df76a3280b86d302033eaad5ecf56866",
+    "landlord-home.css": "10e539334b20905010ddbcf9fb966d3d90b72634338af8ae908f28e06c2afdde",
+    "landlord-home.html": "b026e5742edc3e266761251efe9ed3dd7dc204470d63e0fad6a0f2b7e2c19b54",
     "landlord-join.html": "8d6dd1437f9c2e69e907258533f92419553eb5a419da8f9eaa731dbded6aa888",
     "landlord-line-logs.html": "eb9a4cb1581437bcba1de889beea94a6f0a1d02eb03f1924b44b72c66c6fe6c0",
     "landlord-messages.html": "dcb1cdceb25c8d20b4ff5d4e3f79bc8d471736822cca28c8d24c1a98eac7ad7f",

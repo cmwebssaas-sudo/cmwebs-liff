@@ -460,3 +460,183 @@ body {
     translate: 0 -3px;
   }
 }
+
+/* Phone page layouts (redesign phase 3). Shared patterns that every main
+   landlord page uses on phones: navy titles, light glass versions of the
+   coloured page heroes, two-column stat grids, pill filters and search. */
+@media (max-width: 1023px) {
+  .app-shell :is(.page-title, .list-title) {
+    color: var(--glass-ink);
+    letter-spacing: -0.02em;
+  }
+
+  .app-shell :is(.eyebrow, .page-subtitle, .hero-kicker) {
+    color: var(--glass-ink-muted);
+  }
+
+  .app-shell :is(.topbar, .page-header) .refresh-button {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    border: 1px solid var(--glass-edge);
+    border-radius: 999px;
+    background: var(--glass-surface);
+    color: var(--glass-ink);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* Purple/blue heroes on billing, properties and settings become the same
+     light glass hero as home; tenants' green header card follows. */
+  .app-shell .card:is(.hero, .header-card) {
+    border-color: var(--glass-edge);
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--glass-ink);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .app-shell .card.hero::after {
+    content: none;
+  }
+
+  .app-shell .hero :is(.hero-label, .hero-desc) {
+    color: var(--glass-ink-muted);
+  }
+
+  .app-shell .hero .hero-chip {
+    border-color: var(--glass-hairline);
+    background: rgba(15, 30, 54, 0.05);
+    color: var(--glass-ink);
+  }
+
+  .app-shell .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .app-shell .summary-item,
+  .app-shell .status-box {
+    border: 0;
+    border-radius: 16px;
+    background: rgba(15, 30, 54, 0.05);
+  }
+
+  .app-shell :is(.summary-label, .status-label) {
+    color: var(--glass-ink-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .app-shell .hero .summary-value {
+    color: var(--glass-ink);
+  }
+
+  .app-shell .status-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .app-shell .status-box:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .app-shell :is(.filter-button, .filter, .tab-button) {
+    border: 1px solid var(--glass-edge);
+    border-radius: 999px;
+    background: var(--glass-surface);
+    color: var(--glass-ink-muted);
+    box-shadow: 0 4px 12px rgba(15, 30, 54, 0.04);
+  }
+
+  .app-shell :is(.filter-button, .filter, .tab-button).active {
+    border-color: var(--glass-ink);
+    background: var(--glass-ink);
+    color: #ffffff;
+  }
+
+  .app-shell :is(.search-input, input.search) {
+    border-color: var(--glass-hairline);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+  }
+}
+
+/* Tenants page on phones. */
+@media (max-width: 1023px) {
+  .app-shell .create-tenant-button {
+    min-height: 44px;
+    border-radius: 999px;
+    background: var(--glass-ink);
+    font-size: 13px;
+    box-shadow: 0 8px 18px rgba(15, 30, 54, 0.16);
+  }
+
+  .app-shell .tenant-card .avatar {
+    border-radius: 999px;
+    background: #e3f5ea;
+    color: #06753a;
+  }
+
+  .app-shell .tenant-money-grid {
+    border-top-color: var(--glass-hairline);
+    background: rgba(15, 30, 54, 0.025);
+  }
+
+  .app-shell .money-box + .money-box,
+  .app-shell .tenant-action-button + .tenant-action-button {
+    border-left-color: var(--glass-hairline);
+  }
+
+  .app-shell .tenant-actions {
+    border-top-color: var(--glass-hairline);
+  }
+
+  .app-shell .tenant-action-button:not(.quick-renewal) {
+    background: transparent;
+    font-size: 12px;
+  }
+
+  .app-shell .tenant-actions.has-quick-renewal .tenant-action-button:not(.quick-renewal) {
+    border-color: var(--glass-hairline);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+  }
+}
+
+/* Arrears and other pages using the shared .btn set, on phones. */
+@media (max-width: 1023px) {
+  .app-shell .btn {
+    border-radius: 999px;
+  }
+
+  .app-shell .btn.btn-black {
+    background: var(--glass-ink);
+  }
+
+  .app-shell .btn.btn-outline {
+    border-color: var(--glass-hairline);
+    background: rgba(255, 255, 255, 0.7);
+  }
+}
+
+/* Rooms page on phones: one scrolling row of filters, navy hero action. */
+@media (max-width: 1023px) {
+  .app-shell .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .app-shell .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-shell .filters .filter {
+    flex: 0 0 auto;
+  }
+
+  .app-shell .hero .hero-action {
+    border-color: var(--glass-ink);
+    background: var(--glass-ink);
+  }
+}

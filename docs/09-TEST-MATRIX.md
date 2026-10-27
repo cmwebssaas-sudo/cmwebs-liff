@@ -4738,3 +4738,17 @@ Tests: `tests/glass-shell-theme.test.mjs`; checked with the synthetic home
 preview at 1440px and 375px and with the tenant-detail shell at 1440px.
 Pages that need login were not rendered locally; check them in LINE and
 the desktop browser after publishing.
+
+## 2026-10-27 Bright glass phone layouts (redesign phase 3, batch 1)
+
+Phones only (`max-width: 1023px`), styling only. Home (`landlord-home.css`):
+light glass hero with green ring and amber unpaid chip, to-do items as a 2×2
+grid of glass cards, quick functions as glass tiles. Shared
+(`landlord-glass-theme.css`): navy titles, light glass versions of the
+purple/blue/green page heroes (billing, properties, settings, tenants),
+two-column stat grids, pill filters, search and `.btn` buttons, a single
+scrolling filter row on rooms, tenant card finance strip and actions.
+
+Tests: `tests/glass-shell-theme.test.mjs`; checked at 375px with synthetic
+data for home, tenants, arrears, rooms, properties and more, and without
+data for billing and settings. Desktop rules unchanged.
