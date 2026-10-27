@@ -46,3 +46,14 @@ test('entrance motion plays once, respects reduced motion and stops observing', 
   assert.match(script, /GIVE_UP_MS = \d+/);
   assert.match(script, /home-skeleton-page/, 'skeletons do not animate');
 });
+
+test('phone page layouts stay inside the phone media query', () => {
+  const css = read('landlord-glass-theme.css');
+  const phone = css.slice(css.indexOf('Phone page layouts (redesign phase 3)'));
+  assert.ok(phone.length > 0);
+  const blocks = phone.split('@media').slice(1);
+  assert.ok(blocks.length >= 4);
+  for (const block of blocks) assert.match(block, /^ \(max-width: 1023px\)/);
+  assert.match(phone, /\.app-shell \.card:is\(\.hero, \.header-card\)/, 'coloured page heroes become light glass');
+  assert.match(phone, /\.app-shell \.summary-grid \{\s*grid-template-columns: repeat\(2/, 'stats use two columns on phones');
+});
