@@ -4776,7 +4776,7 @@ stretches it sideways only), so it stays inside the bar. Pressing the first or
 last tab tugs that end of `.bottom-nav-inner` out 7px by margin and lets it
 spring back; the bar is never transformed. The lens has no backdrop filter
 (WebKit draws a transformed backdrop as a square block) and held tabs no longer
-open the iOS link preview (`-webkit-touch-callout: none`). Read comparison
-identity regenerated. Tests: `tests/glass-bottom-nav.test.mjs` (5); checked
+open the iOS link preview (`-webkit-touch-callout: none`). Release
+`20261027-glass-nav-native-v1`; read comparison identity regenerated. Tests: `tests/glass-bottom-nav.test.mjs` (5); checked
 with the synthetic home preview at 390px: left end 12 → 5.5px and back, right
 end and top unchanged, lens height ratio 1 while pressed and dragged.
