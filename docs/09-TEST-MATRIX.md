@@ -4711,3 +4711,14 @@ ID as `<id>#row:<sheet row>`; the Worker accepts only keys that match the
 row's own ID and Sheet row, and merges scoped reads by Sheet row plus ID so
 every row is kept. Patches without a Sheet row still require a real ID.
 Tests: Apps Script projection, Worker `/sync` acceptance and rejection, merge.
+
+## 2026-10-27 iOS-style liquid glass bottom navigation
+
+`landlord-glass-nav.js` + the `.bottom-nav.glass-ready` block in
+`landlord-responsive.css` (phones only) on the 11 landlord pages that load the
+shared stylesheet. The bar never scales; a lens slightly larger than its tab
+(about 2px past the bar) follows the finger, stretches sideways while moving
+and settles into a soft pill. Pages without the script keep the old bar.
+Fixed shell (`.bottom-nav` absolute at bottom, safe-area padding) unchanged.
+Tests: `tests/glass-bottom-nav.test.mjs`; checked in a 375px browser and on a
+real iPhone (LINE/Safari) through iPhone Mirroring with the synthetic preview.

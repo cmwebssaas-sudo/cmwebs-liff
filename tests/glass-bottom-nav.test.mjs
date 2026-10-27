@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+
+const root = new URL('../', import.meta.url);
+const read = path => readFileSync(new URL(path, root), 'utf8');
+const pages = execSync('git grep -l \'class="bottom-nav"\' -- "*.html"', { cwd: root, encoding: 'utf8' })
+  .trim().split('\n').filter(page => read(page).includes('landlord-responsive.css'));
+
+test('every landlord page with the shared stylesheet loads the glass nav script at the release version', () => {
+  assert.ok(pages.length >= 11, 'main landlord pages are covered');
+  const release = read('frontend-release.js').match(/CMWEBS_RELEASE_VERSION = '([^']+)'/)[1];
+  for (const page of pages) {
+    const source = read(page);
+    assert.match(source, new RegExp(`<script src="landlord-glass-nav\\.js\\?v=${release}" defer></script>`), page);
+  }
+});
+
+test('glass styles apply only on phones after the script marks the bar ready', () => {
+  const css = read('landlord-responsive.css');
+  const block = css.slice(css.indexOf('iOS-style liquid glass bottom navigation'));
+  assert.match(block, /@media \(max-width: 1023px\)/);
+  for (const selector of block.match(/^\s+\.[^{]+\{/gm)) assert.match(selector, /\.bottom-nav\.glass-ready/, selector.trim());
+});
+
+test('the bar never scales and the lens stays within a few pixels of it', () => {
+  const css = read('landlord-responsive.css'), script = read('landlord-glass-nav.js');
+  const block = css.slice(css.indexOf('iOS-style liquid glass bottom navigation'));
+  assert.doesNotMatch(block, /\.bottom-nav\.glass-ready(\.is-[a-z-]+)?\s*\{[^}]*transform/);
+  const [scaleX, scaleY] = script.match(/PRESS_SCALE = \[([\d.]+), ([\d.]+)\]/).slice(1).map(Number);
+  assert.ok(scaleX <= 1.15 && scaleY <= 1.25, 'lens grows only slightly past its tab');
+  assert.match(block, /\.is-under-lens\s*\{\s*transform: scale\(1\.08\)/);
+});
+
+test('pointer gestures suppress the native click while keyboard clicks still navigate', () => {
+  const script = read('landlord-glass-nav.js');
+  assert.match(script, /event\.detail > 0 && Date\.now\(\) < suppressUntil/);
+  assert.match(script, /prefers-reduced-motion: reduce/);
+});
