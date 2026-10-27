@@ -108,11 +108,14 @@ test('synthetic preview identifies every money card as demonstration instead of 
 test('revenue page has desktop navigation while mobile keeps its fixed bottom shell', () => {
   const page = readFileSync(new URL('../landlord-revenue-dashboard.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../assets/css/cmwebs-asset-valuation.css', import.meta.url), 'utf8');
-  assert.match(page, /class="app-shell av-desktop"/);
-  assert.match(page, /aria-label="房東桌面導覽"/);
-  assert.match(page, /aria-current="page"[^>]*>營收與資產/);
+  // Bright glass redesign: the shared landlord desktop shell replaced the
+  // page's own av-desktop sidebar; landlord-responsive.css hides the bottom
+  // nav on desktop.
+  assert.match(page, /class="app-shell desktop-ready"/);
+  assert.match(page, /<aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>/);
+  assert.match(page, /aria-current="page"[^>]*><svg[\s\S]*?<\/svg><span>營收與資產<\/span>/);
+  assert.match(page, /<link rel="stylesheet" href="landlord-responsive\.css\?v=/);
   assert.match(css, /min-width:1024px/);
-  assert.match(css, /\.av-desktop \.bottom-nav \{ display: none;/);
   assert.match(page, /\.bottom-nav \{ position:absolute/);
 });
 

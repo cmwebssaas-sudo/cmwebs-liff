@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-45bebb3a1dc9ba8bb7570dd83e3ef09668011bd48bd723281616265cfbe9d23d",
+  "comparison_version": "read-0f869e745aaef525bdf0dafb79f5bf4ad3d2858abffd798931ac8fe7ba5f7caf",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -152,7 +152,7 @@
     "landlord-register.html": "438f1b7b53972882abf7fea68aa853f8f257def80e917e37657a7650bb330820",
     "landlord-registry.html": "56599305d1293a54b78f50a4a3b55109129c9f0ba563836e24a2475e81d23e03",
     "landlord-responsive.css": "9f9d73c700fe71ca753f143f7072557c4b6dbd2da06bf0d6d2b65ee0b34ea5da",
-    "landlord-revenue-dashboard.html": "7afeb556c2ec9969626734c0f8a61b41706fb00ee00dced54b8d9dafebd488ea",
+    "landlord-revenue-dashboard.html": "c5d5aaa0b96a0ce2417afbae9ed4d92ee120ca83df039b4e0c68d59e9465060f",
     "landlord-rooms.html": "c0e136e0475b91287cf78cb16e9aebd0f92af186a7ea88ada08e37dbf2f30767",
     "landlord-settings.html": "89d162664cb187eb4ecdf2e1e387edc3fe2dbbc528db6563091ee435e760e1da",
     "landlord-subscription.html": "b5b23bdc1a12d394ce6fded58df41fecf42c75eca7ef7e2182bfecdee1812fcc",

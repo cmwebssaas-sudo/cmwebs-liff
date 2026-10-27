@@ -4815,3 +4815,19 @@ fails on the previous helper). Checked against the real LIFF SDK on a local
 static server: `landlord-entry.html?mode=email` shows the Email login form;
 `landlord-register.html` at desktop width and at 375px with no horizontal
 scroll.
+
+## 2026-10-28 Revenue and assets page joins the bright glass shell
+
+`landlord-revenue-dashboard.html` had its own `av-desktop` sidebar and none
+of the glass shell. It now uses the shared desktop rail (icons, Workspace
+footer, logout), the sticky glass top bar with a refresh pill, the glass
+theme and the glass bottom navigation. The valuation block, rate buttons,
+selects and chart cards use the navy/glass colours. Desktop: KPIs three per
+row, bar charts capped at 220px high, and the overdue-age and contract-expiry
+cards side by side. The monthly chart's y-axis gutter is wider so labels such
+as 224,000 are no longer clipped. Release `20261028-revenue-glass-v1`; read
+comparison identity regenerated.
+
+Tests: `tests/asset-income-valuation.test.mjs` (shell assertion updated),
+`tests/glass-shell-theme.test.mjs` now covers this page; checked with
+synthetic data at 1024px and 375px (no horizontal scroll).
