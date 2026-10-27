@@ -8,8 +8,8 @@
   />
   <title>CMWebs 建立房東帳號</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261028-glass-nav-native-v1"></script>
-  <script src="liff-request-auth.js?v=20261028-glass-nav-native-v1"></script>
+<script src="frontend-release.js?v=20261028-entry-register-fix-v1"></script>
+  <script src="liff-request-auth.js?v=20261028-entry-register-fix-v1"></script>
 
   <style>
     :root {
@@ -494,7 +494,30 @@
     [aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); }
     #registrationStatus { min-height: 24px; font-size: 14px; line-height: 1.6; color: var(--muted); }
     a.submit-button { display: block; text-align: center; text-decoration: none; }
+
+    /* Bright glass look (2026-10-28): a padded card and navy pill actions.
+       On wide screens the shell spans the window and the form stays centred,
+       so the scrollbar sits at the window edge. */
+    .app-shell { max-width: none; }
+    .page { padding-right: max(16px, calc((100% - 528px) / 2)); padding-left: max(16px, calc((100% - 528px) / 2)); }
+    .register-card { padding: 24px 22px; }
+    .register-card h1 { margin: 0 0 8px; color: var(--glass-ink); font-size: 26px; font-weight: 900; letter-spacing: -0.4px; }
+    .register-card > p { margin: 0; color: var(--glass-ink-muted); font-size: 14px; line-height: 1.7; }
+    .register-card > p + p { margin-top: 8px; }
+    .register-card > p:last-child { margin-top: 16px; text-align: center; }
+    .register-card a:not(.submit-button) { color: var(--glass-ink); font-weight: 800; }
+    .method-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 22px 0 4px; padding: 5px; border-radius: 999px; background: rgba(15, 30, 54, 0.06); }
+    .method-switch .secondary-button { min-height: 44px; margin: 0; border: 0; border-radius: 999px; background: transparent; color: var(--glass-ink-muted); box-shadow: none; }
+    .method-switch .secondary-button[aria-pressed="true"] { background: #ffffff; color: var(--glass-ink); box-shadow: 0 2px 8px rgba(15, 30, 54, 0.12); }
+    .register-card .field > span { color: var(--glass-ink); font-weight: 800; }
+    .register-card .field > input { border-color: var(--glass-hairline); border-radius: 14px; background: rgba(255, 255, 255, 0.9); }
+    .register-card .field > input:focus { outline: 2px solid rgba(15, 30, 54, 0.35); }
+    .register-card .checkbox-row { color: var(--glass-ink-muted); }
+    .register-card .checkbox-row > input { accent-color: var(--glass-ink); }
+    .register-card .submit-button { border-radius: 999px; background: var(--glass-ink); box-shadow: 0 8px 20px rgba(15, 30, 54, 0.16); }
+    .register-card #resendCode { border-radius: 999px; }
   </style>
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-entry-register-fix-v1" />
 </head>
 
 <body>
@@ -522,7 +545,7 @@
 
   </div>
 
-  <script src="landlord-auth.js?v=20261028-glass-nav-native-v1"></script>
+  <script src="landlord-auth.js?v=20261028-entry-register-fix-v1"></script>
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
     const LIFF_ID = '2010314940-EjX1qbb8';
@@ -534,10 +557,10 @@
     function showMessage(message){document.getElementById('registrationStatus').textContent=message;}
     function render(){
       document.getElementById('app').innerHTML = `
-        <section class="card">
+        <section class="card register-card">
           <h1>建立房東帳號</h1>
           <p>先建立自己的管理團隊，再選擇適合的訂閱方案。</p>
-          <div style="display:flex;gap:12px;margin:20px 0" aria-label="註冊方式">
+          <div class="method-switch" aria-label="註冊方式">
             <button type="button" id="emailMethod" class="secondary-button" aria-pressed="${method==='email'}">Email 註冊</button>
             <button type="button" id="lineMethod" class="secondary-button" aria-pressed="${method==='line'}">LINE 註冊</button>
           </div>
@@ -578,7 +601,7 @@
         else {const token=await verifiedLineToken();if(!token)return;result=await auth.registerVerifiedLine(token,values);}
         if(result.code==='ALREADY_REGISTERED'){showMessage(result.message);return;}
         const data=result.data || {},pending=data.provisioning_status!=='READY';
-        document.getElementById('app').innerHTML=`<section class="card"><h1>帳號已建立</h1><p>${escapeText(data.workspace_name || values.workspace_name)}</p><p>${pending?'訂閱帳號正在等待連線，可在訂閱頁重新連線。':'現在可以查看與選擇訂閱方案。'}</p><a class="submit-button" href="landlord-subscription.html">前往訂閱與會員中心</a></section>`;
+        document.getElementById('app').innerHTML=`<section class="card register-card"><h1>帳號已建立</h1><p>${escapeText(data.workspace_name || values.workspace_name)}</p><p>${pending?'訂閱帳號正在等待連線，可在訂閱頁重新連線。':'現在可以查看與選擇訂閱方案。'}</p><a class="submit-button" href="landlord-subscription.html">前往訂閱與會員中心</a></section>`;
       }catch(error){showMessage(error.message || '建立未完成，請稍後重試。');}
       finally{busy=false;if(document.getElementById('submitButton'))document.getElementById('submitButton').disabled=false;}
     }

@@ -8,12 +8,12 @@
   />
   <title>CMWebs 房東入口</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261028-glass-nav-native-v1"></script>
-  <script src="liff-request-auth.js?v=20261028-glass-nav-native-v1"></script>
-  <script src="landlord-auth.js?v=20261028-glass-nav-native-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261028-glass-nav-native-v1" />
-  <script src="landlord-glass-nav.js?v=20261028-glass-nav-native-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261028-glass-nav-native-v1" defer></script>
+<script src="frontend-release.js?v=20261028-entry-register-fix-v1"></script>
+  <script src="liff-request-auth.js?v=20261028-entry-register-fix-v1"></script>
+  <script src="landlord-auth.js?v=20261028-entry-register-fix-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261028-entry-register-fix-v1" />
+  <script src="landlord-glass-nav.js?v=20261028-entry-register-fix-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261028-entry-register-fix-v1" defer></script>
 
   <style>
     :root {
@@ -355,7 +355,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-glass-nav-native-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-entry-register-fix-v1" />
 </head>
 
 <body>
@@ -368,8 +368,16 @@
         </div>
 
         <nav class="desktop-nav" aria-label="房東功能">
-          <button class="desktop-nav-item active" type="button" onclick="goPage('landlord-entry.html')">帳號登入</button>
-          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')">管理首頁</button>
+          <button class="desktop-nav-item active" type="button" onclick="goPage('landlord-entry.html')"><svg viewBox="0 0 24 24">
+              <path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14"></path>
+              <path d="M4 12h10"></path>
+              <path d="M10.5 8.5L14 12l-3.5 3.5"></path>
+            </svg><span>帳號登入</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')"><svg viewBox="0 0 24 24">
+              <path d="M4 11.5L12 5l8 6.5"></path>
+              <path d="M6.5 10.5V19h11v-8.5"></path>
+              <path d="M9.5 19v-5h5v5"></path>
+            </svg><span>管理首頁</span></button>
         </nav>
 
         <div class="desktop-sidebar-footer">

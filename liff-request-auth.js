@@ -8,7 +8,12 @@
   ]);
   function idToken() {
     const sdk = global.liff;
-    return sdk && typeof sdk.getIDToken === 'function' ? String(sdk.getIDToken() || '') : '';
+    // LIFF SDK 2.31+ throws before liff.init(); treat that as no token.
+    try {
+      return sdk && typeof sdk.getIDToken === 'function' ? String(sdk.getIDToken() || '') : '';
+    } catch (error) {
+      return '';
+    }
   }
   global.CMWebsLiffRequestAuth = {
     getIdToken: idToken,
