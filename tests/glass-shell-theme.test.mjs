@@ -47,22 +47,44 @@ test('entrance motion plays once, respects reduced motion and stops observing', 
   assert.match(script, /home-skeleton-page/, 'skeletons do not animate');
 });
 
-test('phone page layouts stay inside the phone media query', () => {
+const pageCss = () => {
   const css = read('landlord-glass-theme.css');
-  const phone = css.slice(css.indexOf('Phone page layouts (redesign phase 3)'));
-  assert.ok(phone.length > 0);
+  return css.slice(css.indexOf('Page colours at every width'));
+};
+
+test('page colours apply at every width; phone layouts stay in the phone query', () => {
+  const pages = pageCss();
+  const shared = pages.slice(0, pages.indexOf('/* Phone page layouts'));
+  assert.ok(!shared.includes('@media'), 'colour rules are not width-scoped');
+  assert.match(shared, /\.app-shell \.card:is\(\.hero, \.header-card\)/, 'coloured page heroes become light glass');
+  assert.match(shared, /\.btn\.btn-primary, \.create-tenant-button, \.save-button/, 'green primary actions become navy');
+  const phone = pages.slice(pages.indexOf('/* Phone page layouts'), pages.indexOf('/* Desktop page layouts'));
   const blocks = phone.split('@media').slice(1);
-  assert.ok(blocks.length >= 4);
+  assert.ok(blocks.length >= 3);
   for (const block of blocks) assert.match(block, /^ \(max-width: 1023px\)/);
-  assert.match(phone, /\.app-shell \.card:is\(\.hero, \.header-card\)/, 'coloured page heroes become light glass');
   assert.match(phone, /\.app-shell \.summary-grid \{\s*grid-template-columns: repeat\(2/, 'stats use two columns on phones');
+  assert.match(phone, /\(min-width: 340px\) \{\s*\.app-shell :is\(\.profile-summary, \.request-grid, \.action-grid, \.request-info-grid\)/);
+  assert.match(phone, /\.request-info:has\(\.amount-compare\) \{\s*grid-column: 1 \/ -1;/, 'rent comparisons span the card');
 });
 
-test('tenant detail and contract requests keep two-column grids on phones', () => {
-  const css = read('landlord-glass-theme.css');
-  const batch = css.slice(css.indexOf('Tenant detail and contract requests on phones'));
-  assert.ok(batch.length > 0);
-  for (const block of batch.split('@media').slice(1)) assert.match(block, /^ \(max-width: 1023px\)/);
-  assert.match(batch, /\(min-width: 340px\) \{\s*\.app-shell :is\(\.profile-summary, \.request-grid, \.action-grid, \.request-info-grid\)/);
-  assert.match(batch, /\.request-info:has\(\.amount-compare\) \{\s*grid-column: 1 \/ -1;/, 'rent comparisons span the card');
+test('desktop layouts only widen grids on desktop widths', () => {
+  const desktop = pageCss().slice(pageCss().indexOf('/* Desktop page layouts'));
+  const blocks = desktop.split('@media').slice(1);
+  assert.equal(blocks.length, 2);
+  assert.match(blocks[0], /^ \(min-width: 1024px\)/);
+  assert.match(blocks[1], /^ \(min-width: 1280px\)/);
+  assert.match(desktop, /\.room-grid \{\s*grid-template-columns: repeat\(3/);
+  assert.match(desktop, /:has\(> \.arrears-card\) \{\s*display: grid;/);
+});
+
+test('every desktop rail item has its own icon and a label', () => {
+  for (const page of pages.filter(page => page !== 'landlord-entry.html')) {
+    const nav = read(page).match(/<nav class="desktop-nav">([\s\S]*?)<\/nav>/)[1];
+    const items = [...nav.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)].map(m => m[1]);
+    assert.ok(items.length >= 8, page);
+    const icons = items.map(item => item.match(/<svg[\s\S]*?<\/svg>/)?.[0].replace(/\s+/g, ' '));
+    assert.ok(icons.every(Boolean), `${page}: every item has an icon`);
+    assert.equal(new Set(icons).size, icons.length, `${page}: icons are distinct`);
+    assert.ok(items.every(item => /<span>[^<]+<\/span>$/.test(item)), `${page}: labels are tooltips`);
+  }
 });

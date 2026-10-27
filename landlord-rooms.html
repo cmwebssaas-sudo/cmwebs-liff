@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>CMWebs 房間中心</title>
-  <script src="frontend-release.js?v=20261027-mobile-detail-v1"></script>
-  <script src="liff-request-auth.js?v=20261027-mobile-detail-v1"></script>
-  <script src="landlord-auth.js?v=20261027-mobile-detail-v1"></script>
-  <script src="landlord-api.js?v=20261027-mobile-detail-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261027-mobile-detail-v1" />
-  <script src="landlord-glass-nav.js?v=20261027-mobile-detail-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261027-mobile-detail-v1" defer></script>
+  <script src="frontend-release.js?v=20261027-desktop-pages-v1"></script>
+  <script src="liff-request-auth.js?v=20261027-desktop-pages-v1"></script>
+  <script src="landlord-auth.js?v=20261027-desktop-pages-v1"></script>
+  <script src="landlord-api.js?v=20261027-desktop-pages-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261027-desktop-pages-v1" />
+  <script src="landlord-glass-nav.js?v=20261027-desktop-pages-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261027-desktop-pages-v1" defer></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -203,7 +203,7 @@
       .filter { flex: 1 1 auto; }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261027-mobile-detail-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261027-desktop-pages-v1" />
 </head>
 <body>
   <div class="app-shell desktop-ready">
@@ -234,28 +234,26 @@
               <path d="M9.5 15.5h5"></path>
             </svg><span>合約</span></button>
           <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
-              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
-              <path d="M8.5 9h7"></path>
-              <path d="M8.5 13h7"></path>
-              <path d="M8.5 17h4"></path>
+              <path d="M13 4.5H6.5v15H13"></path>
+              <path d="M10 12h10"></path>
+              <path d="M16.5 8.5L20 12l-3.5 3.5"></path>
             </svg><span>退房</span></button>
           <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')"><svg viewBox="0 0 24 24">
-              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
-              <path d="M8.5 9h7"></path>
-              <path d="M8.5 13h7"></path>
-              <path d="M8.5 17h4"></path>
+              <rect x="3.5" y="6" width="17" height="12" rx="2"></rect>
+              <path d="M3.5 10h17"></path>
+              <path d="M7 14.5h3"></path>
             </svg><span>帳款</span></button>
           <button class="desktop-nav-item" type="button" onclick="goPage('landlord-revenue-dashboard.html')"><svg viewBox="0 0 24 24">
-              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
-              <path d="M8.5 9h7"></path>
-              <path d="M8.5 13h7"></path>
-              <path d="M8.5 17h4"></path>
+              <path d="M4 19.5h16"></path>
+              <path d="M7 16v-4"></path>
+              <path d="M12 16V8"></path>
+              <path d="M17 16v-6"></path>
             </svg><span>營收與資產</span></button>
           <button class="desktop-nav-item" type="button" onclick="goPage('landlord-more.html')"><svg viewBox="0 0 24 24">
-              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
-              <path d="M8.5 9h7"></path>
-              <path d="M8.5 13h7"></path>
-              <path d="M8.5 17h4"></path>
+              <rect x="4.5" y="4.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="13.5" y="4.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="4.5" y="13.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="13.5" y="13.5" width="6" height="6" rx="1.5"></rect>
             </svg><span>更多工具</span></button>
         </nav>
         <div class="desktop-sidebar-footer"><div class="desktop-context-label">Workspace</div><div id="desktopWorkspaceName" class="desktop-context-value">載入中</div><div id="desktopRoleLabel" class="desktop-sidebar-role">房東</div><button class="desktop-logout-button" type="button" onclick="desktopLogout()">登出</button></div>
