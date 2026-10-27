@@ -57,3 +57,12 @@ test('phone page layouts stay inside the phone media query', () => {
   assert.match(phone, /\.app-shell \.card:is\(\.hero, \.header-card\)/, 'coloured page heroes become light glass');
   assert.match(phone, /\.app-shell \.summary-grid \{\s*grid-template-columns: repeat\(2/, 'stats use two columns on phones');
 });
+
+test('tenant detail and contract requests keep two-column grids on phones', () => {
+  const css = read('landlord-glass-theme.css');
+  const batch = css.slice(css.indexOf('Tenant detail and contract requests on phones'));
+  assert.ok(batch.length > 0);
+  for (const block of batch.split('@media').slice(1)) assert.match(block, /^ \(max-width: 1023px\)/);
+  assert.match(batch, /\(min-width: 340px\) \{\s*\.app-shell :is\(\.profile-summary, \.request-grid, \.action-grid, \.request-info-grid\)/);
+  assert.match(batch, /\.request-info:has\(\.amount-compare\) \{\s*grid-column: 1 \/ -1;/, 'rent comparisons span the card');
+});
