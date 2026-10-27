@@ -4766,3 +4766,19 @@ to 340px instead of collapsing to one column at 390px.
 
 Tests: `tests/glass-shell-theme.test.mjs`; checked at 375px with synthetic
 data for both pages. Desktop rules unchanged.
+
+## 2026-10-27 Bright glass desktop layouts (redesign phase 4, batch 1)
+
+Styling and desktop rail markup only. `landlord-glass-theme.css`: the
+phone-only colour rules (light glass page heroes, navy primary actions,
+pill filters/selects/search, glass circle header buttons, round avatars)
+now apply at every width; layout rules stay phone-only. Desktop: stats in
+one row, arrears cards two per row and room cards three per row from
+1280px. Desktop rail: 退房, 帳款, 營收與資產 and 更多工具 get their own icons
+on every main landlord page; billing's text-only rail gets icons and
+tooltips, plus the glass desktop top bar. Entry (login) page unchanged.
+
+Tests: `tests/glass-shell-theme.test.mjs`; checked at 1440px with synthetic
+data for tenants, arrears, rooms, properties, more, billing, settings,
+tenant detail, contract requests and home, and rechecked tenants,
+properties, tenant detail and home at 375px.
