@@ -1,16 +1,19 @@
 /*
  * iOS-style liquid glass bottom navigation for landlord pages (phones only).
  * At rest a soft pill sits behind the current tab. Pressing lifts the pill
- * into a clear lens slightly larger than the tab; it follows the finger,
- * stretches sideways while it travels, then settles on the chosen tab. The
- * bar itself never grows. Keyboard and reduced-motion users keep the plain
+ * into a clear lens that, like the iOS tab bar, only ever spreads sideways
+ * (never taller) and pulls back; it follows the finger, stretches sideways
+ * while it travels, then settles on the chosen tab. The bar itself never
+ * grows; pressing the first or last tab tugs that end out a few pixels and
+ * lets it spring back. Keyboard and reduced-motion users keep the plain
  * button click.
  */
 (function (global) {
   'use strict';
   const doc = global.document;
   const reduceMotion = global.matchMedia ? global.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
-  const PRESS_SCALE = [1.12, 1.22];
+  // Pressed lens: a touch wider than its tab, never taller.
+  const PRESS_SCALE = [1.06, 1];
   const NAVIGATE_DELAY_MS = 220;
 
   function enhance(nav) {
@@ -70,10 +73,18 @@
       if (!pill.animate) return Promise.resolve();
       return pill.animate([
         { transform: 'translateX(' + from + 'px) scale(' + PRESS_SCALE[0] + ',' + PRESS_SCALE[1] + ')' },
-        { transform: 'translateX(' + (from + (to - from) * 0.6) + 'px) scale(' + (PRESS_SCALE[0] * stretch) + ',' + (PRESS_SCALE[1] / stretch) + ')', offset: 0.45 },
-        { transform: 'translateX(' + to + 'px) scale(' + PRESS_SCALE[0] + ',' + PRESS_SCALE[1] + ')', offset: 0.75 },
+        { transform: 'translateX(' + (from + (to - from) * 0.6) + 'px) scale(' + (PRESS_SCALE[0] * stretch) + ',1)', offset: 0.45 },
+        { transform: 'translateX(' + to + 'px) scale(0.97,1)', offset: 0.8 },
         { transform: 'translateX(' + to + 'px) scale(1,1)' }
       ], { duration: 380, easing: 'cubic-bezier(.25, 1, .4, 1)' }).finished.catch(function () {});
+    }
+    // The first or last tab tugs its end of the bar outward and lets it spring back. It moves the
+    // edge (margin) rather than transforming the bar, which keeps the frosted glass's rounded
+    // corners in WebKit.
+    function stretchEdge(index) {
+      if ((index !== 0 && index !== items.length - 1) || !inner.animate) return;
+      const side = index === 0 ? 'marginLeft' : 'marginRight';
+      inner.animate([{ [side]: '0px' }, { [side]: '-7px', offset: 0.35 }, { [side]: '0px' }], { duration: 460, easing: 'cubic-bezier(.25, 1, .4, 1)' });
     }
     function release() {
       gesture = null;
@@ -88,6 +99,14 @@
       if (inner.setPointerCapture) inner.setPointerCapture(event.pointerId);
       setPill(current >= 0 ? restingX(current) : followX(event.clientX), PRESS_SCALE[0], PRESS_SCALE[1]);
       nav.classList.add('is-lensing');
+      // The lens spreads a little sideways, then pulls back to its pressed width.
+      if (pill.animate) pill.animate([
+        { transform: 'translateX(' + x + 'px) scale(1,1)' },
+        { transform: 'translateX(' + x + 'px) scale(1.14,1)', offset: 0.4 },
+        { transform: 'translateX(' + x + 'px) scale(' + PRESS_SCALE[0] + ',1)' }
+      ], { duration: 260, easing: 'cubic-bezier(.25, 1, .4, 1)' });
+      gesture.edge = indexAt(event.clientX);
+      stretchEdge(gesture.edge);
       const target = followX(event.clientX);
       global.requestAnimationFrame(function () {
         if (!gesture) return;
@@ -100,13 +119,14 @@
       if (!gesture.dragging && Math.abs(event.clientX - gesture.startX) < 6) return;
       gesture.dragging = true;
       const next = followX(event.clientX), speed = Math.min(Math.abs(next - x) / 40, 0.2);
-      setPill(next, PRESS_SCALE[0] + speed, PRESS_SCALE[1] - speed / 2);
+      setPill(next, PRESS_SCALE[0] + speed, PRESS_SCALE[1]);
       magnify(indexAt(event.clientX));
     });
     inner.addEventListener('pointerup', function (event) {
       if (!gesture || event.pointerId !== gesture.id) return;
-      const index = indexAt(event.clientX), item = items[index];
+      const index = indexAt(event.clientX), item = items[index], pressed = gesture.edge;
       gesture = null;
+      if (index !== pressed) stretchEdge(index);
       // The native click that follows this pointerup is suppressed below.
       suppressUntil = Date.now() + 400;
       const settled = travel(restingX(index));

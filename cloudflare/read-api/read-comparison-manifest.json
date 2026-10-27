@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-7e6e3b452a3a826970670476ef873b9d949b399620bbf9f15bf864f9db37be60",
+  "comparison_version": "read-0d3af1d15453234661ef06608e28ea07b44bae83190651fe6e38722e94c74460",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -133,7 +133,7 @@
     "landlord-contract-documents.html": "38b1c19ffeec9dcbc62ff2b6695b1901d89b5e80939083c9ec7ebcc63016a75f",
     "landlord-contract-requests.html": "66edf88da85cb2a05c987b692a9a0eaae495108ed19af2bd92b91f507f9050db",
     "landlord-entry.html": "8aa2f7e7383469ad69ca5481cf86f1f0ae35bd6aa7c88c22d6f21ee508047c30",
-    "landlord-glass-nav.js": "02ca92472f39b4efd96ccb25aaea512aabfec17bbb0fb24f618aa8954cad16ef",
+    "landlord-glass-nav.js": "2619c91d0a65dd9588f0a79f0349c4c07da9fae790830de0cccec9dbd2cdbda2",
     "landlord-glass-shell.js": "c8b47276fa654405f82d53b2f00751878f43396e06070c090d4f2a428da82ae6",
     "landlord-glass-theme.css": "487663f7334cbe077d3b13e2575494468401367f44b1d16d83cb8bcd02136800",
     "landlord-home-motion.js": "5c8312783d83514daf2ef4de01138e240d330270a6d43b7c4a3af8bbe903a819",
@@ -151,7 +151,7 @@
     "landlord-properties.html": "dae533b3c48b4ee87a4ec4480307b9f394fdf485e6350043d9aba16fd3bba16d",
     "landlord-register.html": "cc31604fd619f01c7a12ad3a736f2ad1772d54caa2a59c5fef9b0a85ede56d6e",
     "landlord-registry.html": "56599305d1293a54b78f50a4a3b55109129c9f0ba563836e24a2475e81d23e03",
-    "landlord-responsive.css": "688b0956105b02cf65ea1028f347cf1b4e71f4a23ab784094b165bc8bb6c810c",
+    "landlord-responsive.css": "9f9d73c700fe71ca753f143f7072557c4b6dbd2da06bf0d6d2b65ee0b34ea5da",
     "landlord-revenue-dashboard.html": "7afeb556c2ec9969626734c0f8a61b41706fb00ee00dced54b8d9dafebd488ea",
     "landlord-rooms.html": "40090a498843c578431d142a1daa95d1538133f05a1c055c95d656b777e1bf1e",
     "landlord-settings.html": "13f4f8108e49544937318cc9eb82c842468c7a2512eeb9d0244383140c6efc7a",
