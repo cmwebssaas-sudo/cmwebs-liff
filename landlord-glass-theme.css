@@ -640,3 +640,103 @@ body {
     background: var(--glass-ink);
   }
 }
+
+/* Tenant detail and contract requests on phones (redesign phase 3, batch 2):
+   glass circle header buttons, a light profile hero, navy primary actions,
+   and two-column info grids on every phone at least 340px wide. */
+@media (max-width: 1023px) {
+  .app-shell .topbar .back-button,
+  .app-shell .page-header .icon-button {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    border: 1px solid var(--glass-edge);
+    border-radius: 999px;
+    background: var(--glass-surface);
+    color: var(--glass-ink);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .app-shell .topbar-title {
+    color: var(--glass-ink);
+  }
+
+  .app-shell .profile-head {
+    background: transparent;
+  }
+
+  .app-shell :is(.profile-card, .landlord-row) .avatar {
+    border-radius: 999px;
+    background: #e3f5ea;
+    color: #06753a;
+  }
+
+  .app-shell :is(.summary-box, .request-info) {
+    border-color: transparent;
+    background: rgba(15, 30, 54, 0.045);
+  }
+
+  .app-shell .tenant-evidence-links {
+    display: grid;
+    gap: 8px;
+    margin-top: 0;
+    padding: 0 19px 19px;
+  }
+
+  .app-shell .tenant-evidence-links a {
+    justify-content: center;
+    border-color: var(--glass-hairline);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--glass-ink);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .app-shell .request-info:has(.amount-compare) {
+    grid-column: 1 / -1;
+  }
+
+  .app-shell .action-grid .action-button {
+    min-height: 112px;
+    border-color: var(--glass-edge);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .app-shell .tenant-document-upload-button {
+    border-radius: 999px;
+  }
+
+  .app-shell .tenant-document-upload-button:not(:disabled, .is-complete),
+  .app-shell .btn.btn-primary {
+    background: var(--glass-ink);
+  }
+
+  .app-shell .btn.btn-light {
+    border-color: var(--glass-hairline);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--glass-ink);
+  }
+
+  .app-shell .request-card {
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .app-shell select.select-input {
+    border-color: var(--glass-hairline);
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.82);
+  }
+}
+
+/* Both pages collapse their grids to one column at 390px, which is most
+   phones; keep two columns down to 340px so cards stay compact. */
+@media (max-width: 1023px) and (min-width: 340px) {
+  .app-shell :is(.profile-summary, .request-grid, .action-grid, .request-info-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -4752,3 +4752,17 @@ scrolling filter row on rooms, tenant card finance strip and actions.
 Tests: `tests/glass-shell-theme.test.mjs`; checked at 375px with synthetic
 data for home, tenants, arrears, rooms, properties and more, and without
 data for billing and settings. Desktop rules unchanged.
+
+## 2026-10-27 Bright glass phone layouts (redesign phase 3, batch 2)
+
+Phones only (`max-width: 1023px`), styling only, in
+`landlord-glass-theme.css`. Tenant detail: glass circle back/refresh
+buttons, light profile hero with round avatar, record links as stacked
+pills, navy upload buttons, quick actions as a 2×2 grid of glass cards.
+Contract requests: glass circle refresh button, round avatar, pill selects,
+glass request cards, navy primary and translucent light buttons, rent and
+fee comparisons spanning the card. Both pages keep two-column grids down
+to 340px instead of collapsing to one column at 390px.
+
+Tests: `tests/glass-shell-theme.test.mjs`; checked at 375px with synthetic
+data for both pages. Desktop rules unchanged.
