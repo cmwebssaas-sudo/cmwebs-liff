@@ -731,8 +731,8 @@
 
 /* iOS-style liquid glass bottom navigation (phones). Applied only after
    landlord-glass-nav.js marks the bar .glass-ready, so pages without the
-   script keep their original bar. The bar never scales; the lens grows a
-   little past its tab and at most about 2px past the bar. */
+   script keep their original bar. The bar never scales; like the iOS tab bar
+   the lens only spreads sideways and stays inside the bar. */
 @media (max-width: 1023px) {
   .bottom-nav.glass-ready {
     border-top: 0;
@@ -762,6 +762,9 @@
     position: relative;
     z-index: 1;
     -webkit-tap-highlight-color: transparent;
+    /* A held tab must not turn into iOS's link preview (a square dimmed block, then a share menu). */
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
     transition: transform 0.22s cubic-bezier(0.25, 1, 0.4, 1);
   }
 
@@ -799,7 +802,6 @@
     opacity: 1;
     background: rgba(255, 255, 255, 0.3);
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 8px 22px rgba(15, 30, 54, 0.18), inset 0 1px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 6px rgba(15, 30, 54, 0.06);
-    -webkit-backdrop-filter: blur(1.5px) saturate(160%);
-    backdrop-filter: blur(1.5px) saturate(160%);
+    /* No backdrop filter: WebKit draws a transformed backdrop as a square block. */
   }
 }
