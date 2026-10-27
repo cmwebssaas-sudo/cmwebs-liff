@@ -1,0 +1,462 @@
+/*
+ * Bright glass shell for landlord pages (2026-10-27 redesign, phase 2).
+ * Loaded as the last stylesheet so it sits above each page's inline styles.
+ * Card and button rules use :where() to stay at single-class specificity,
+ * so page-specific variants (coloured heroes, danger buttons) still win.
+ * Only the shared shell changes here; per-page layouts come in phase 3.
+ */
+:root {
+  --glass-ink: #0f1e36;
+  --glass-ink-muted: #4a5a70;
+  --glass-bg: #edf0f4;
+  --glass-surface: rgba(255, 255, 255, 0.7);
+  --glass-surface-strong: rgba(255, 255, 255, 0.86);
+  --glass-edge: rgba(255, 255, 255, 0.85);
+  --glass-hairline: rgba(15, 30, 54, 0.08);
+  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 10px 30px rgba(15, 30, 54, 0.07);
+  --glass-shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 18px 40px rgba(15, 30, 54, 0.12);
+  --glass-amber: #f2a33a;
+  --glass-ease: cubic-bezier(0.25, 1, 0.4, 1);
+  --glass-rise-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --desktop-sidebar-width: 108px;
+}
+
+/* Background: neutral light with two soft colour washes. The page scrolls
+   over a fixed shell, so the washes stay put while content moves. */
+html,
+body {
+  background: var(--glass-bg);
+}
+
+.app-shell {
+  background:
+    radial-gradient(900px 520px at 85% -10%, #dde7f3 0%, rgba(221, 231, 243, 0) 60%),
+    radial-gradient(700px 480px at 0% 100%, #e6eee8 0%, rgba(230, 238, 232, 0) 60%),
+    var(--glass-bg);
+}
+
+.app-shell .page {
+  background: transparent;
+}
+
+/* Cards: translucent white with a bright top edge. No backdrop blur on
+   cards, so long lists scroll smoothly inside the LINE browser. */
+:where(.app-shell) :is(.card, .dashboard-card, .section-card):where(:not(.hero, .home-hero, .header-card, .tenant-filter-card, .dashboard-chart-error, .error-card)) {
+  border-color: var(--glass-edge);
+  background: var(--glass-surface);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Buttons: navy pill for the main action, gentle press for every button. */
+:where(.app-shell) .primary-button {
+  border-color: var(--glass-ink);
+  border-radius: 999px;
+  background: var(--glass-ink);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 30, 54, 0.16);
+}
+
+:where(.app-shell) button {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.28s ease, scale 0.18s var(--glass-ease), translate 0.28s var(--glass-ease);
+}
+
+:where(.app-shell) button:where(:not(:disabled, .nav-item, .desktop-nav-item)):active {
+  scale: 0.97;
+}
+
+:where(.modal-backdrop, .alert-mask) {
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
+  backdrop-filter: blur(6px) saturate(140%);
+}
+
+/* Entrance: landlord-glass-shell.js tags the first real render with
+   .glass-rise and a staggered --rise-delay; later refreshes do not replay. */
+.glass-rise {
+  animation: glass-rise 0.56s var(--glass-rise-ease) var(--rise-delay, 0s) both;
+}
+
+@keyframes glass-rise {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .glass-rise {
+    animation-name: glass-rise-soft;
+    animation-duration: 0.6s;
+  }
+
+  @keyframes glass-rise-soft {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+      filter: blur(6px);
+    }
+  }
+
+  html,
+  body,
+  .app-shell.desktop-ready {
+    background-color: var(--glass-bg);
+  }
+
+  .app-shell.desktop-ready {
+    background:
+      radial-gradient(900px 520px at 85% -10%, #dde7f3 0%, rgba(221, 231, 243, 0) 60%),
+      radial-gradient(700px 480px at 0% 100%, #e6eee8 0%, rgba(230, 238, 232, 0) 60%),
+      var(--glass-bg);
+  }
+
+  /* Floating navy rail: icons only, labels appear as tooltips. */
+  .desktop-sidebar,
+  .desktop-sidebar[hidden] {
+    z-index: 50;
+    width: 76px;
+    height: calc(var(--app-height) - 32px);
+    margin: 16px 0 16px 16px;
+    overflow: visible;
+    border: 0;
+    border-radius: 28px;
+    background: var(--glass-ink);
+    color: #ffffff;
+    box-shadow: 0 20px 40px rgba(15, 30, 54, 0.22);
+  }
+
+  .desktop-sidebar-inner {
+    align-items: center;
+    padding: 18px 0 14px;
+  }
+
+  .desktop-brand {
+    padding: 0 0 6px;
+    border-bottom: 0;
+  }
+
+  .desktop-brand-label {
+    display: flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    background: var(--glass-amber);
+    color: var(--glass-ink);
+    font-size: 0;
+    letter-spacing: 0;
+  }
+
+  .desktop-brand-label::before {
+    content: 'CM';
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .desktop-brand-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .desktop-nav {
+    justify-items: center;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .desktop-nav-item {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    color: rgba(255, 255, 255, 0.62);
+    transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, scale 0.18s var(--glass-ease);
+  }
+
+  .desktop-nav-item svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .desktop-nav-item > span {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 16px);
+    z-index: 2;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--glass-ink);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-6px, -50%);
+    box-shadow: 0 8px 20px rgba(15, 30, 54, 0.2);
+    transition: opacity 0.18s ease, transform 0.18s var(--glass-ease);
+  }
+
+  .desktop-nav-item:hover > span,
+  .desktop-nav-item:focus-visible > span {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+
+  .desktop-nav-item:hover,
+  .desktop-nav-item:active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  .desktop-nav-item:active {
+    scale: 0.94;
+  }
+
+  .desktop-nav-item.active {
+    border-color: transparent;
+    background: #ffffff;
+    color: var(--glass-ink);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .desktop-nav-item:focus-visible,
+  .desktop-logout-button:focus-visible {
+    outline: 2px solid var(--glass-amber);
+    outline-offset: 3px;
+  }
+
+  /* Workspace and role show in a small card beside the rail on hover. */
+  .desktop-sidebar-footer {
+    position: relative;
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .desktop-sidebar-footer::after {
+    position: absolute;
+    bottom: 0;
+    left: calc(100% + 14px);
+    width: 220px;
+    height: 104px;
+    border: 1px solid var(--glass-edge);
+    border-radius: 16px;
+    background: var(--glass-surface-strong);
+    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(22px) saturate(170%);
+    box-shadow: var(--glass-shadow-lift);
+    content: '';
+  }
+
+  .desktop-context-label,
+  .desktop-context-value,
+  .desktop-sidebar-role {
+    position: absolute;
+    z-index: 1;
+    left: calc(100% + 30px);
+    width: 190px;
+    margin: 0;
+    color: var(--glass-ink-muted);
+    font-size: 13px;
+  }
+
+  .desktop-context-label { bottom: 74px; }
+  .desktop-context-value { bottom: 46px; color: var(--glass-ink); font-size: 16px; }
+  .desktop-sidebar-role { bottom: 20px; }
+
+  .desktop-sidebar-footer::after,
+  .desktop-context-label,
+  .desktop-context-value,
+  .desktop-sidebar-role {
+    opacity: 0;
+    pointer-events: none;
+    translate: -6px 0;
+    transition: opacity 0.18s ease, translate 0.18s var(--glass-ease);
+  }
+
+  .desktop-sidebar-footer:hover::after,
+  .desktop-sidebar-footer:focus-within::after,
+  .desktop-sidebar-footer:hover > div,
+  .desktop-sidebar-footer:focus-within > div {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .desktop-logout-button {
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+    margin-top: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: none;
+  }
+
+  .desktop-logout-button:hover {
+    border-color: transparent;
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* Content column and the sticky glass top bar. */
+  .desktop-main {
+    overflow-x: hidden;
+    padding: 16px 32px 48px 24px;
+  }
+
+  /* Frosted strip in the gap above the floating top bar, so content
+     scrolling past it blurs away instead of showing through. */
+  .desktop-main::before {
+    position: sticky;
+    top: 0;
+    z-index: 41;
+    display: block;
+    height: 16px;
+    margin: -16px -32px 0 -24px;
+    background: rgba(237, 240, 244, 0.85);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    pointer-events: none;
+    content: '';
+  }
+
+  .desktop-topbar,
+  .desktop-topbar[hidden] {
+    position: sticky;
+    top: 16px;
+    z-index: 40;
+    margin-bottom: 24px;
+    padding: 14px 20px;
+    border: 1px solid var(--glass-edge);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.62);
+    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(22px) saturate(170%);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .desktop-page-kicker {
+    color: var(--glass-ink-muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .desktop-page-title {
+    margin-top: 2px;
+    color: var(--glass-ink);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .desktop-topbar-meta {
+    color: var(--glass-ink-muted);
+  }
+
+  .desktop-status-pill {
+    border: 0;
+    background: rgba(15, 30, 54, 0.06);
+    color: var(--glass-ink);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  :where(.app-shell) :is(.card, .dashboard-card, .section-card, .header-card, .property-card, .hero, .actions-card, .toolbar-card, .filter-card) {
+    border-radius: 22px;
+  }
+
+  .desktop-overview .dashboard-kpi,
+  .desktop-overview .quick-button {
+    border-color: var(--glass-edge);
+    border-radius: 20px;
+    background: var(--glass-surface-strong);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .desktop-overview .primary-button,
+  .desktop-overview .dashboard-retry-button {
+    border-color: var(--glass-ink);
+    border-radius: 999px;
+    background: var(--glass-ink);
+  }
+
+  .desktop-overview .primary-button:hover:not(:disabled),
+  .desktop-overview .dashboard-retry-button:hover:not(:disabled) {
+    background: #1d3354;
+    box-shadow: 0 10px 22px rgba(15, 30, 54, 0.2);
+  }
+
+  :where(.app-shell) .primary-button:where(:hover:not(:disabled)) {
+    background: #1d3354;
+  }
+
+  .desktop-table-wrap,
+  .desktop-table-wrap[hidden] {
+    border-color: var(--glass-edge);
+    border-radius: 20px;
+    background: var(--glass-surface-strong);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .tenant-desktop-table th,
+  .room-desktop-table th {
+    background: rgba(246, 248, 251, 0.94);
+    color: var(--glass-ink-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .tenant-desktop-table tbody tr,
+  .room-desktop-table tbody tr {
+    transition: background-color 0.2s ease;
+  }
+
+  .tenant-desktop-table tbody tr:hover,
+  .room-desktop-table tbody tr:hover {
+    background: rgba(15, 30, 54, 0.035);
+  }
+
+  .desktop-modal .modal-sheet {
+    border-radius: 24px;
+  }
+}
+
+/* Hover lift for clickable cards on devices with a real pointer. */
+@media (hover: hover) and (min-width: 1024px) {
+  .desktop-overview .action-item,
+  .desktop-overview .quick-button,
+  .desktop-overview .dashboard-kpi,
+  .property-card,
+  .request-card {
+    transition: translate 0.28s var(--glass-ease), box-shadow 0.28s ease, background-color 0.2s ease;
+  }
+
+  .desktop-overview .action-item:hover,
+  .desktop-overview .quick-button:hover,
+  .desktop-overview .dashboard-kpi:hover,
+  .property-card:hover,
+  .request-card:hover {
+    box-shadow: var(--glass-shadow-lift);
+    transform: none;
+    translate: 0 -3px;
+  }
+}
