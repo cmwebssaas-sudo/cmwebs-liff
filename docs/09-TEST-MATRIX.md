@@ -4722,3 +4722,19 @@ and settles into a soft pill. Pages without the script keep the old bar.
 Fixed shell (`.bottom-nav` absolute at bottom, safe-area padding) unchanged.
 Tests: `tests/glass-bottom-nav.test.mjs`; checked in a 375px browser and on a
 real iPhone (LINE/Safari) through iPhone Mirroring with the synthetic preview.
+
+## 2026-10-27 Bright glass shell (redesign phase 2)
+
+`landlord-glass-theme.css` (last stylesheet in `<head>`) and
+`landlord-glass-shell.js` on the 11 main landlord pages: neutral light
+background, floating navy desktop rail with hover tooltips and a workspace
+card, sticky glass top bar, translucent cards, navy pill primary buttons,
+press/hover motion via the `scale`/`translate` properties, and a one-time
+staggered card entrance. Card and button rules use `:where()` so coloured
+page heroes and button variants keep their own styles. Per-page layouts
+are phase 3.
+
+Tests: `tests/glass-shell-theme.test.mjs`; checked with the synthetic home
+preview at 1440px and 375px and with the tenant-detail shell at 1440px.
+Pages that need login were not rendered locally; check them in LINE and
+the desktop browser after publishing.
