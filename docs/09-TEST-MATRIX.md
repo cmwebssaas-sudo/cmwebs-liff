@@ -4767,6 +4767,22 @@ to 340px instead of collapsing to one column at 390px.
 Tests: `tests/glass-shell-theme.test.mjs`; checked at 375px with synthetic
 data for both pages. Desktop rules unchanged.
 
+## 2026-10-27 Bright glass desktop layouts (redesign phase 4, batch 1)
+
+Styling and desktop rail markup only. `landlord-glass-theme.css`: the
+phone-only colour rules (light glass page heroes, navy primary actions,
+pill filters/selects/search, glass circle header buttons, round avatars)
+now apply at every width; layout rules stay phone-only. Desktop: stats in
+one row, arrears cards two per row and room cards three per row from
+1280px. Desktop rail: 退房, 帳款, 營收與資產 and 更多工具 get their own icons
+on every main landlord page; billing's text-only rail gets icons and
+tooltips, plus the glass desktop top bar. Entry (login) page unchanged.
+
+Tests: `tests/glass-shell-theme.test.mjs`; checked at 1440px with synthetic
+data for tenants, arrears, rooms, properties, more, billing, settings,
+tenant detail, contract requests and home, and rechecked tenants,
+properties, tenant detail and home at 375px.
+
 ## 2026-10-27 Glass bottom navigation matches the iOS tab bar
 
 From the owner's recording of the native tab bar, shared with the Libenest,
@@ -4777,6 +4793,6 @@ last tab tugs that end of `.bottom-nav-inner` out 7px by margin and lets it
 spring back; the bar is never transformed. The lens has no backdrop filter
 (WebKit draws a transformed backdrop as a square block) and held tabs no longer
 open the iOS link preview (`-webkit-touch-callout: none`). Release
-`20261027-glass-nav-native-v1`; read comparison identity regenerated. Tests: `tests/glass-bottom-nav.test.mjs` (5); checked
+`20261028-glass-nav-native-v1`; read comparison identity regenerated. Tests: `tests/glass-bottom-nav.test.mjs` (5); checked
 with the synthetic home preview at 390px: left end 12 → 5.5px and back, right
 end and top unchanged, lens height ratio 1 while pressed and dragged.
