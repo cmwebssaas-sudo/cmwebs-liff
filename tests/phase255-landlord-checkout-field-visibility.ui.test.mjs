@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 
 const checkoutPage = readFileSync(new URL('../landlord-tenant-checkout.html', import.meta.url), 'utf8');
 
-assert.match(checkoutPage, /class="app-shell checkout-shell"/);
-assert.match(checkoutPage, /<main class="page checkout-page" id="app">/);
+assert.match(checkoutPage, /class="app-shell checkout-shell desktop-ready"/);
+assert.match(checkoutPage, /<main class="page checkout-page desktop-main">[\s\S]*?<div id="app">/);
 assert.match(checkoutPage, /\.checkout-shell \.page\s*\{[^}]*scroll-padding-bottom:\s*calc\(32px \+ env\(safe-area-inset-bottom\)\)/s);
 assert.match(checkoutPage, /\.checkout-shell \.bottom-nav\s*\{[^}]*display:\s*none\s*!important/s);
 assert.match(checkoutPage, /scrollIntoView\(\{ behavior: 'auto', block: 'nearest', inline: 'nearest' \}\)/);

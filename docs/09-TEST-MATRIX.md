@@ -4831,3 +4831,51 @@ comparison identity regenerated.
 Tests: `tests/asset-income-valuation.test.mjs` (shell assertion updated),
 `tests/glass-shell-theme.test.mjs` now covers this page; checked with
 synthetic data at 1024px and 375px (no horizontal scroll).
+
+## 2026-10-28 Six more landlord pages join the bright glass shell
+
+`landlord-activity.html`, `landlord-announcements.html`,
+`landlord-bill-notifications.html`, `landlord-notifications.html`,
+`landlord-team.html` and `landlord-tenant-checkin.html` now use the shared
+desktop rail (the matching item is current: 帳款 for bill notifications, 房客
+for check-in, otherwise 更多工具), a Workspace footer, the sticky glass top bar
+with the page title, Workspace name and a refresh pill (bill notifications
+also keeps 帳單管理), the glass theme and the glass bottom navigation. The bill
+notification send bar floats over the content column on desktop instead of
+spanning the rail. Hero pills and meta lines that were white on the old
+coloured heroes (team, workspaces) now use the glass ink colours, and the
+tenant detail quick-action tile rule is scoped to that page so check-in
+actions keep their navy primary button on phones. Phone
+headers are unchanged; on desktop the theme hides a page's own `.topbar`
+beside the glass top bar. Release `20261028-glass-pages-v1`; read comparison
+identity regenerated.
+
+Tests: `tests/glass-more-pages.test.mjs` (new) checks each page's shell,
+current rail item, top bar title and refresh action, the Workspace name fill
+and the desktop-only header rule; `tests/glass-shell-theme.test.mjs` now
+covers these pages. Checked with synthetic data at 1280px and 390px.
+
+## 2026-10-28 Eight more landlord pages join the bright glass shell
+
+`landlord-workspaces.html`, `landlord-messages.html`,
+`landlord-paid-bills.html`, `landlord-line-logs.html`,
+`landlord-payment-report-review.html`, `landlord-contract-documents.html`,
+`landlord-tenant-create.html` and `landlord-tenant-checkout.html` now use the
+shared desktop rail (current item: 帳款 for paid bills and payment review, 合約
+for documents, 房客 for tenant create, 退房 for checkout, otherwise 更多工具),
+the sticky glass top bar, the glass theme and the glass bottom navigation.
+Script-rendered phone headers are hidden on desktop beside the top bar.
+Payment review and checkout used `<main id="app">`, which their scripts
+replace; `#app` is now a div inside the main column so the top bar survives
+re-renders. Tenant create's desktop title follows its mode (新租約, 續約,
+紙本補登). LINE logs and checkout gained the `goPage` helper the rail needs;
+the LINE logs refresh pill reloads the page so LIFF is not initialised twice.
+The checkout hero text uses the glass ink colour. Release
+`20261028-glass-pages-v2`; read comparison identity regenerated.
+
+Tests: `tests/glass-more-pages.test.mjs` covers each page's shell, current
+rail item and top bar title, the `#app` placement, tenant create's title
+sync and `goPage` on every glass page. `tests/phase255-...` and
+`tests/contract-conditions.test.mjs` were updated for the new markup.
+Checked with synthetic data at 1280px and 390px, including an automated
+low-contrast scan (white text on a light background): none found.

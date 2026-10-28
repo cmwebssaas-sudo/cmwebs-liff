@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>CMWebs 辦理房客退房</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261028-revenue-glass-v1"></script>
+<script src="frontend-release.js?v=20261028-glass-pages-v2"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261028-glass-pages-v2" />
+  <script src="landlord-glass-nav.js?v=20261028-glass-pages-v2" defer></script>
+  <script src="landlord-glass-shell.js?v=20261028-glass-pages-v2" defer></script>
   <style>
     :root { --app-height: 100vh; --nav-height: 64px; --primary: #06c755; --primary-dark: #079641; --page-bg: #f4f6fa; --surface: #fff; --text: #171a1f; --muted: #747b85; --border: #e7ebf0; --danger: #e5484d; --warning: #a46b00; --warning-bg: #fff7df; --shadow: 0 7px 24px rgba(30, 40, 60, .07); }
     * { box-sizing: border-box; }
@@ -23,6 +26,7 @@
     .hero { color: #fff; background: linear-gradient(145deg, #079641, #06c755); }
     .hero h1 { margin: 0; font-size: 22px; }
     .hero p { margin: 8px 0 0; color: rgba(255,255,255,.88); font-size: 13px; line-height: 1.65; }
+    .app-shell .hero p { color: var(--glass-ink-muted); }
     .section-title { margin-bottom: 12px; font-size: 15px; font-weight: 900; }
     .notice { padding: 12px; border-radius: 13px; background: var(--warning-bg); color: var(--warning); font-size: 12px; line-height: 1.65; }
     .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -55,12 +59,85 @@
     .success { color: var(--primary-dark); line-height: 1.65; }
     .bottom-nav { position: absolute; right: 0; bottom: 0; left: 0; z-index: 10; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--border); background: rgba(255,255,255,.96); }
     .checkout-shell .bottom-nav { display: none !important; }
+    @media (min-width: 1024px) {
+      .app-shell.desktop-ready { max-width: none; }
+      .desktop-main > #app > .topbar { display: none; }
+    }
     .bottom-nav-inner { display: flex; height: var(--nav-height); align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
   </style>
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-glass-pages-v2" />
 </head>
 <body>
-  <div class="app-shell checkout-shell">
-    <main class="page checkout-page" id="app"><section class="card">載入退房資料中…</section></main>
+  <div class="app-shell checkout-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand">
+          <div class="desktop-brand-label">CMWEBS</div>
+          <div class="desktop-brand-title">智慧租管</div>
+        </div>
+<nav class="desktop-nav">
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')"><svg viewBox="0 0 24 24">
+              <path d="M4 11.5L12 5l8 6.5"></path>
+              <path d="M6.5 10.5V19h11v-8.5"></path>
+              <path d="M9.5 19v-5h5v5"></path>
+            </svg><span>總覽</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+              <circle cx="9" cy="8" r="3"></circle>
+              <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+              <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+              <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+            </svg><span>房客</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')"><svg viewBox="0 0 24 24">
+              <path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path>
+              <path d="M8 20v-7h8v7"></path>
+              <path d="M9 8.5h.01M15 8.5h.01"></path>
+            </svg><span>物件與房間</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-contract-requests.html')"><svg viewBox="0 0 24 24">
+              <path d="M7 3.5h7l3 3V20H7z"></path>
+              <path d="M14 3.5V7h3"></path>
+              <path d="M9.5 12h5"></path>
+              <path d="M9.5 15.5h5"></path>
+            </svg><span>合約</span></button>
+          <button class="desktop-nav-item active" type="button" aria-current="page" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+              <path d="M13 4.5H6.5v15H13"></path>
+              <path d="M10 12h10"></path>
+              <path d="M16.5 8.5L20 12l-3.5 3.5"></path>
+            </svg><span>退房</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')"><svg viewBox="0 0 24 24">
+              <rect x="3.5" y="6" width="17" height="12" rx="2"></rect>
+              <path d="M3.5 10h17"></path>
+              <path d="M7 14.5h3"></path>
+            </svg><span>帳款</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-revenue-dashboard.html')"><svg viewBox="0 0 24 24">
+              <path d="M4 19.5h16"></path>
+              <path d="M7 16v-4"></path>
+              <path d="M12 16V8"></path>
+              <path d="M17 16v-6"></path>
+            </svg><span>營收與資產</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-more.html')"><svg viewBox="0 0 24 24">
+              <rect x="4.5" y="4.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="13.5" y="4.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="4.5" y="13.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="13.5" y="13.5" width="6" height="6" rx="1.5"></rect>
+            </svg><span>更多工具</span></button>
+        </nav>
+        <div class="desktop-sidebar-footer">
+          <div class="desktop-sidebar-role">辦理房客退房</div>
+        </div>
+      </div>
+    </aside>
+    <main class="page checkout-page desktop-main">
+      <header class="desktop-topbar" hidden>
+        <div>
+          <div class="desktop-page-kicker">Tenant Checkout</div>
+          <div class="desktop-page-title">辦理房客退房</div>
+        </div>
+        <div class="desktop-topbar-meta">
+          <button class="refresh" type="button" onclick="backToDetail()">返回房客資料</button>
+        </div>
+      </header>
+      <div id="app"><section class="card">載入退房資料中…</section></div>
+    </main>
     <nav class="bottom-nav" aria-hidden="true"><div class="bottom-nav-inner">CMWebs 房東營運</div></nav>
   </div>
   <script>
@@ -144,6 +221,10 @@
         if (document.activeElement !== event.target) ACTIVE_CHECKOUT_FIELD = null;
       }, 250);
     });
+    function goPage(page) {
+      location.href = page + '?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
+    }
+
     function backToDetail() {
       const params = new URLSearchParams();
       if (TENANT_ID) params.set('tenant_id', TENANT_ID);

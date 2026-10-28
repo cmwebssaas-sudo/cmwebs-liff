@@ -30,7 +30,8 @@ test('simple new lease renders an optional contract condition field', () => {
     simpleRoomOptions: () => '',
     handleSimpleRoomChange: () => {},
     updateSimpleLeaseEndDate_: () => {},
-    updateSubmitState: () => {}
+    updateSubmitState: () => {},
+    syncDesktopShell: () => {}
   };
   vm.createContext(context);
   vm.runInContext(page.slice(start, end), context);
