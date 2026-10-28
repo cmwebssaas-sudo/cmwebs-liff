@@ -4842,7 +4842,10 @@ for check-in, otherwise 更多工具), a Workspace footer, the sticky glass top 
 with the page title, Workspace name and a refresh pill (bill notifications
 also keeps 帳單管理), the glass theme and the glass bottom navigation. The bill
 notification send bar floats over the content column on desktop instead of
-spanning the rail. Phone
+spanning the rail. Hero pills and meta lines that were white on the old
+coloured heroes (team, workspaces) now use the glass ink colours, and the
+tenant detail quick-action tile rule is scoped to that page so check-in
+actions keep their navy primary button on phones. Phone
 headers are unchanged; on desktop the theme hides a page's own `.topbar`
 beside the glass top bar. Release `20261028-glass-pages-v1`; read comparison
 identity regenerated.

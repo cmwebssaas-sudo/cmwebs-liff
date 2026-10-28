@@ -535,6 +535,22 @@ body {
   color: var(--glass-ink);
 }
 
+/* Hero pills, meta lines and tenant create's step and progress tiles were
+   white on the old coloured heroes. */
+.app-shell .hero :is(.hero-pill, .progress-item, .simple-step) {
+  border-color: transparent;
+  background: rgba(15, 30, 54, 0.05);
+  color: var(--glass-ink);
+}
+
+.app-shell .hero :is(.hero-meta, .progress-label, .simple-step) {
+  color: var(--glass-ink-muted);
+}
+
+.app-shell .hero :is(.progress-number, .simple-step strong) {
+  color: var(--glass-ink);
+}
+
 .app-shell .summary-item,
 .app-shell .status-box {
   border: 0;
@@ -713,7 +729,7 @@ body {
     grid-column: 1 / -1;
   }
 
-  .app-shell .action-grid .action-button {
+  .app-shell .section-card > .action-grid .action-button {
     min-height: 112px;
     border-color: var(--glass-edge);
     border-radius: 20px;

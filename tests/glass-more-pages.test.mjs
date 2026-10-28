@@ -47,3 +47,15 @@ test('bill notification send bar clears the desktop rail', () => {
   const desktop = html.slice(html.lastIndexOf('@media (min-width: 1024px)'));
   assert.match(desktop, /\.desktop-ready > \.action-bar \{[^}]*left: calc\(var\(--desktop-sidebar-width\) \+ 24px\);/);
 });
+
+test('old white-on-colour hero details stay readable on the glass hero', () => {
+  const css = read('landlord-glass-theme.css');
+  assert.match(css, /\.app-shell \.hero :is\(\.hero-pill, \.progress-item, \.simple-step\) \{[^}]*color: var\(--glass-ink\);/);
+  assert.match(css, /\.app-shell \.hero :is\(\.hero-meta, \.progress-label, \.simple-step\) \{\s*color: var\(--glass-ink-muted\);/);
+});
+
+test('tenant detail quick-action tiles do not restyle other pages\' action buttons', () => {
+  const css = read('landlord-glass-theme.css');
+  assert.match(css, /\.app-shell \.section-card > \.action-grid \.action-button \{\s*min-height: 112px;/);
+  assert.doesNotMatch(css, /\.app-shell \.action-grid \.action-button \{/);
+});

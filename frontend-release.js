@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261028-glass-pages-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-c22565d709efec4fd015b221c4104d258df05534a500a6a835f18782d17759b3";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-056fe60ab1f4224905debe90a827e53249ac61ee264bf020a59b994e1547044c";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';

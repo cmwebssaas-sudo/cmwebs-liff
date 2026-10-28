@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-c22565d709efec4fd015b221c4104d258df05534a500a6a835f18782d17759b3",
+  "comparison_version": "read-056fe60ab1f4224905debe90a827e53249ac61ee264bf020a59b994e1547044c",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -135,7 +135,7 @@
     "landlord-entry.html": "afb4b6661716aebe0e109775e860db66153868e3af46266da427317d07832806",
     "landlord-glass-nav.js": "2619c91d0a65dd9588f0a79f0349c4c07da9fae790830de0cccec9dbd2cdbda2",
     "landlord-glass-shell.js": "c8b47276fa654405f82d53b2f00751878f43396e06070c090d4f2a428da82ae6",
-    "landlord-glass-theme.css": "a5df57a11fc8c30aad73976bd3b206ce6c79cd2d5e35c0f756c211370ed8a00f",
+    "landlord-glass-theme.css": "9816cbcc10de9c6f0f6b8ecb6b6bbcb59b303eb6e6a4cd144e6f13c42dd55828",
     "landlord-home-motion.js": "5c8312783d83514daf2ef4de01138e240d330270a6d43b7c4a3af8bbe903a819",
     "landlord-home.css": "10e539334b20905010ddbcf9fb966d3d90b72634338af8ae908f28e06c2afdde",
     "landlord-home.html": "307e40a5b0ffd992f6153c0a664319c685ce77e725f6a981aeb1c3b265d73789",
