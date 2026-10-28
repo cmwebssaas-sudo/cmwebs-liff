@@ -3,9 +3,9 @@
  * It is intentionally stable for the lifetime of a release so page-navigation
  * URLs can reuse the browser cache without changing API cache behavior.
  */
-window.CMWEBS_RELEASE_VERSION = '20261028-glass-pages-v2';
+window.CMWEBS_RELEASE_VERSION = '20261028-revenue-charts-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-cd0f0ddcb3ad969d023da011b093f68282e231718ca28418c7a97075377a992b";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-27f16f7a80017e048392bf245c4a11ea5704807794660a891a509bd2a80abfbc";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';

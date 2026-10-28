@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 營收儀表板</title>
-<script src="frontend-release.js?v=20261028-glass-pages-v2"></script>
-  <script src="liff-request-auth.js?v=20261028-glass-pages-v2"></script>
-  <script src="landlord-auth.js?v=20261028-glass-pages-v2"></script>
-  <script src="landlord-api.js?v=20261028-glass-pages-v2"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261028-glass-pages-v2">
-  <script src="landlord-glass-nav.js?v=20261028-glass-pages-v2" defer></script>
-  <script src="landlord-glass-shell.js?v=20261028-glass-pages-v2" defer></script>
-  <link rel="stylesheet" href="assets/css/cmwebs-asset-valuation.css?v=20261005-utility-meter-save-v1">
-  <script src="assets/js/cmwebs-asset-valuation.js?v=20261005-utility-meter-save-v1"></script>
+<script src="frontend-release.js?v=20261028-revenue-charts-v1"></script>
+  <script src="liff-request-auth.js?v=20261028-revenue-charts-v1"></script>
+  <script src="landlord-auth.js?v=20261028-revenue-charts-v1"></script>
+  <script src="landlord-api.js?v=20261028-revenue-charts-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261028-revenue-charts-v1">
+  <script src="landlord-glass-nav.js?v=20261028-revenue-charts-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261028-revenue-charts-v1" defer></script>
+  <link rel="stylesheet" href="assets/css/cmwebs-asset-valuation.css?v=20261028-revenue-charts-v1">
+  <script src="assets/js/cmwebs-asset-valuation.js?v=20261028-revenue-charts-v1"></script>
   <style>
     :root { --app-height: 100vh; --nav-height: 64px; --ink: #152238; --muted: #6b778c; --line: #e5eaf1; --brand: #06c755; --blue: #246bfd; --surface: #fff; --canvas: #f4f7fb; --danger: #c83c4a; }
     * { box-sizing: border-box; }
@@ -36,30 +36,46 @@
     .metric:nth-last-child(-n+2) { border-bottom:0; }
     .metric-label { color:var(--muted); font-size:12px; }
     .metric-value { margin-top:7px; font-size:23px; font-weight:900; }
-    .metric-value.green { color:#168653; }
-    .metric-value.red { color:var(--danger); }
     .section { padding:16px; }
     .section-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:11px; }
     .section-title { font-size:16px; font-weight:900; }
     .section-hint { color:var(--muted); font-size:11px; }
-    .chart-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:#fbfcfe; padding:8px; }
-    #revenueChart { display:block; width:100%; min-width:510px; height:auto; }
+    .chart-wrap { position:relative; border:1px solid var(--line); border-radius:12px; background:#fbfcfe; padding:12px 10px 4px; }
+    #revenueChart { display:block; width:100%; height:auto; overflow:visible; }
     .visual-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .visual-card { min-width:0; padding:14px; border:1px solid var(--line); border-radius:14px; background:#fbfcfe; }
     .visual-card.wide { grid-column:1 / -1; }
     .visual-title { margin-bottom:9px; font-size:14px; font-weight:900; }
     .visual-subtitle { min-height:32px; margin-bottom:8px; color:var(--muted); font-size:11px; line-height:1.5; }
-    .mini-chart { display:block; width:100%; height:auto; min-height:120px; }
-    .donut-chart { display:block; width:100%; max-height:170px; }
-    .visual-value { margin-top:7px; font-size:22px; font-weight:900; }
-    .visual-value.danger { color:var(--danger); }
+    .mini-chart { display:block; width:100%; height:auto; margin:4px 0 6px; overflow:visible; }
+    .meter-chart { display:block; width:100%; height:10px; margin:12px 0 6px; }
+    .visual-value { margin-top:7px; font-size:30px; font-weight:800; letter-spacing:-.02em; }
     .visual-footnote { margin-top:7px; color:var(--muted); font-size:11px; line-height:1.5; }
     .visual-card .table-wrap { margin-top:10px; }
     .visual-card table { min-width:0; font-size:11px; }
     .visual-card th, .visual-card td { padding:7px 4px; }
-    .legend { display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; color:var(--muted); font-size:11px; }
-    .legend-item { display:inline-flex; align-items:center; gap:5px; }
-    .legend-dot { width:9px; height:9px; border-radius:50%; }
+    .legend { display:flex; flex-wrap:wrap; gap:16px; margin:0 0 10px; color:var(--muted); font-size:12px; font-weight:700; }
+    .legend-item { display:inline-flex; align-items:center; gap:6px; }
+    .legend-line { width:14px; height:3px; border-radius:2px; }
+    .metric-key { display:inline-block; width:8px; height:8px; margin-right:6px; border-radius:50%; vertical-align:1px; }
+    /* Chart text and hover layer (dataviz method): ink text, hairline axes,
+       one tooltip listing every series at the hovered month. */
+    svg .viz-tick { fill:#7a8496; font-size:11px; font-variant-numeric:tabular-nums; }
+    svg .viz-label { fill:#4b5565; font-size:12px; }
+    svg .viz-value { fill:var(--ink); font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .viz-crosshair { opacity:0; }
+    svg.is-hovering .viz-crosshair { opacity:1; }
+    .viz-hit, .viz-bar { outline:none; cursor:pointer; }
+    .viz-bar path { transition:opacity 150ms ease; }
+    .viz-bar:is(:hover, :focus-visible) path { opacity:.75; }
+    .viz-bar:focus-visible .viz-label { font-weight:800; fill:var(--ink); }
+    .viz-tooltip { position:absolute; top:10px; left:0; z-index:5; min-width:156px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.97); box-shadow:0 12px 32px rgba(15,30,54,.12); font-size:12px; opacity:0; pointer-events:none; transition:opacity 120ms ease; }
+    .viz-tooltip.show { opacity:1; }
+    .viz-tooltip-title { margin-bottom:6px; color:var(--muted); font-weight:700; }
+    .viz-tooltip-row { display:flex; align-items:center; gap:8px; padding:2px 0; }
+    .viz-tooltip-row i { width:12px; height:3px; flex:0 0 auto; border-radius:2px; }
+    .viz-tooltip-row strong { color:var(--ink); font-variant-numeric:tabular-nums; }
+    .viz-tooltip-row span { margin-left:auto; color:var(--muted); }
     .table-wrap { overflow-x:auto; }
     table { width:100%; min-width:520px; border-collapse:collapse; font-size:12px; }
     th, td { padding:9px 7px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
@@ -106,11 +122,10 @@
       .app-shell .metric { border-right:1px solid var(--glass-hairline); border-bottom:1px solid var(--glass-hairline); }
       .app-shell .metric:nth-child(3n) { border-right:0; }
       .app-shell .metric:nth-last-child(-n+3) { border-bottom:0; }
-      .app-shell .mini-chart { max-height:220px; }
       .app-shell .visual-card.wide:nth-child(n+4) { grid-column:auto; }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-glass-pages-v2" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-revenue-charts-v1" />
 </head>
 <body>
   <div class="app-shell desktop-ready">
@@ -272,60 +287,158 @@
       return true;
     }
     function formatTimestamp(value) { return value ? new Date(value).toLocaleString('zh-TW', { hour12: false }) : '—'; }
-    function chartPoint(value, max, index, count) {
-      const x = count <= 1 ? 64 : 64 + (536 * index / (count - 1));
-      const y = 218 - (max > 0 ? (number(value) / max) * 178 : 0);
-      return { x: x, y: y };
+    // Validated categorical slots (dataviz reference palette). Each money
+    // entity keeps its colour on every chart; text stays in ink colours.
+    const VIZ = { receivable: '#2a78d6', collected: '#1baf7a', outstanding: '#eb6834', contracts: '#6250d6', grid: '#e6e9ef', axis: '#c9cfd8', surface: '#ffffff' };
+    const SERIES = [
+      { key: 'receivable', label: '應收', color: VIZ.receivable },
+      { key: 'collected', label: '實收', color: VIZ.collected },
+      { key: 'outstanding', label: '未收', color: VIZ.outstanding }
+    ];
+    function compactMoney(value) {
+      const amount = number(value);
+      if (Math.abs(amount) >= 100000000) return (amount / 100000000).toLocaleString('zh-TW', { maximumFractionDigits: 2 }) + '億';
+      return Math.abs(amount) >= 10000 ? (amount / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + '萬' : Math.round(amount).toLocaleString('zh-TW');
     }
-    function polyline(rows, key, max) {
-      return rows.map(function (row, index) { const point = chartPoint(row[key], max, index, rows.length); return point.x.toFixed(1) + ',' + point.y.toFixed(1); }).join(' ');
+    function niceScale(max, count) {
+      const raw = Math.max(1, max) / count;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(raw)));
+      const step = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(function (value) { return value * magnitude >= raw; }) * magnitude;
+      return { top: step * count, step: step };
+    }
+    function monthLabel(month) {
+      const match = text(month).match(/^\d{4}-(\d{2})$/);
+      return match ? Number(match[1]) + '月' : text(month);
+    }
+    // Charts draw at their real pixel width so labels keep their CSS size.
+    function svgWidth(svg, fallback) {
+      const width = svg.getBoundingClientRect ? svg.getBoundingClientRect().width : 0;
+      return Math.max(240, Math.round(width || fallback));
+    }
+    function barPath(x, y, width, height) {
+      const r = Math.min(4, width, height / 2);
+      return 'M' + x + ' ' + y + 'H' + (x + width - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + width) + ' ' + (y + r) + 'V' + (y + height - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + width - r) + ' ' + (y + height) + 'H' + x + 'Z';
     }
     function renderChart(rows) {
       const svg = document.getElementById('revenueChart');
+      if (!svg) return;
       if (!rows.length) { svg.innerHTML = ''; return; }
-      const max = Math.max(1, ...rows.map(function (row) { return Math.max(number(row.receivable), number(row.collected), number(row.outstanding)); }));
-      const grid = [0, 1, 2, 3, 4].map(function (step) { const y = 218 - step * 44.5; return '<line x1="64" y1="' + y + '" x2="600" y2="' + y + '" stroke="#e5eaf1"/><text x="58" y="' + (y + 4) + '" text-anchor="end" fill="#8792a5" font-size="10">' + Math.round(max * step / 4).toLocaleString('zh-TW') + '</text>'; }).join('');
-      const labels = rows.map(function (row, index) { const point = chartPoint(0, max, index, rows.length); return '<text x="' + point.x + '" y="246" text-anchor="middle" fill="#8792a5" font-size="10">' + safeHtml(row.month) + '</text>'; }).join('');
-      svg.innerHTML = grid + '<polyline points="' + polyline(rows, 'receivable', max) + '" fill="none" stroke="#246bfd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="' + polyline(rows, 'collected', max) + '" fill="none" stroke="#06c755" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="' + polyline(rows, 'outstanding', max) + '" fill="none" stroke="#c83c4a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' + labels;
+      const width = svgWidth(svg, 640);
+      const height = 260;
+      const left = 52, right = 16, top = 16, base = height - 32;
+      const plotWidth = width - left - right, plot = base - top;
+      const scale = niceScale(Math.max.apply(null, rows.map(function (row) { return Math.max(number(row.receivable), number(row.collected), number(row.outstanding)); })), 4);
+      const x = function (index) { return left + (rows.length <= 1 ? plotWidth / 2 : plotWidth * index / (rows.length - 1)); };
+      const y = function (value) { return base - (number(value) / scale.top) * plot; };
+      svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+      let grid = '';
+      for (let i = 0; i <= 4; i += 1) {
+        const gy = y(scale.step * i).toFixed(1);
+        grid += '<line x1="' + left + '" x2="' + (width - right) + '" y1="' + gy + '" y2="' + gy + '" stroke="' + (i ? VIZ.grid : VIZ.axis) + '" shape-rendering="crispEdges"/><text class="viz-tick" x="' + (left - 8) + '" y="' + (Number(gy) + 4) + '" text-anchor="end">' + compactMoney(scale.step * i) + '</text>';
+      }
+      const every = Math.max(1, Math.ceil(rows.length / Math.max(1, Math.floor(plotWidth / 44))));
+      const labels = rows.map(function (row, index) { return index % every && index !== rows.length - 1 ? '' : '<text class="viz-tick" x="' + x(index).toFixed(1) + '" y="' + (height - 10) + '" text-anchor="middle">' + safeHtml(monthLabel(row.month)) + '</text>'; }).join('');
+      const path = function (key) { return rows.map(function (row, index) { return (index ? 'L' : 'M') + x(index).toFixed(1) + ' ' + y(row[key]).toFixed(1); }).join(''); };
+      const last = rows.length - 1;
+      const wash = '<path d="' + path('collected') + 'L' + x(last).toFixed(1) + ' ' + base + 'L' + x(0).toFixed(1) + ' ' + base + 'Z" fill="' + VIZ.collected + '" fill-opacity=".1"/>';
+      const lines = SERIES.map(function (series) { return '<path d="' + path(series.key) + '" fill="none" stroke="' + series.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'; }).join('');
+      const ends = SERIES.map(function (series) { return '<circle cx="' + x(last).toFixed(1) + '" cy="' + y(rows[last][series.key]).toFixed(1) + '" r="4" fill="' + series.color + '" stroke="' + VIZ.surface + '" stroke-width="2"/>'; }).join('');
+      const slot = rows.length <= 1 ? plotWidth : plotWidth / (rows.length - 1);
+      const hits = rows.map(function (row, index) { return '<rect class="viz-hit" data-index="' + index + '" x="' + (x(index) - slot / 2).toFixed(1) + '" y="' + top + '" width="' + slot.toFixed(1) + '" height="' + plot + '" fill="transparent" tabindex="0" role="img" aria-label="' + safeHtml(text(row.month) + '：應收 ' + money(row.receivable) + '，實收 ' + money(row.collected) + '，未收 ' + money(row.outstanding)) + '"/>'; }).join('');
+      svg.innerHTML = grid + wash + '<line class="viz-crosshair" x1="0" x2="0" y1="' + top + '" y2="' + base + '" stroke="#98a2b3" stroke-width="1" shape-rendering="crispEdges"/>' + lines + ends + labels + hits;
+      bindChartTooltip(svg, rows, x);
     }
-    function renderBarChart(id, rows, valueKey, color) {
+    // One tooltip lists every series at the month under the pointer or focus.
+    function bindChartTooltip(svg, rows, x) {
+      const wrap = svg.parentElement;
+      let tip = wrap.querySelector('.viz-tooltip');
+      if (!tip) { tip = document.createElement('div'); tip.className = 'viz-tooltip'; tip.setAttribute('aria-hidden', 'true'); wrap.appendChild(tip); }
+      const crosshair = svg.querySelector('.viz-crosshair');
+      function show(index) {
+        const row = rows[index];
+        tip.textContent = '';
+        const title = document.createElement('div');
+        title.className = 'viz-tooltip-title';
+        title.textContent = text(row.month);
+        tip.appendChild(title);
+        SERIES.forEach(function (series) {
+          const line = document.createElement('div');
+          const key = document.createElement('i');
+          const value = document.createElement('strong');
+          const label = document.createElement('span');
+          line.className = 'viz-tooltip-row';
+          key.style.background = series.color;
+          value.textContent = money(row[series.key]);
+          label.textContent = series.label;
+          line.append(key, value, label);
+          tip.appendChild(line);
+        });
+        const px = x(index);
+        crosshair.setAttribute('x1', px.toFixed(1));
+        crosshair.setAttribute('x2', px.toFixed(1));
+        svg.classList.add('is-hovering');
+        tip.classList.add('show');
+        const box = svg.getBoundingClientRect();
+        const frame = wrap.getBoundingClientRect();
+        const viewWidth = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal.width : box.width;
+        const at = box.left - frame.left + px * (box.width / (viewWidth || box.width));
+        const room = wrap.clientWidth;
+        const tipWidth = tip.offsetWidth;
+        tip.style.left = Math.max(4, Math.min(room - tipWidth - 4, at + (at + 12 + tipWidth > room ? -tipWidth - 12 : 12))) + 'px';
+      }
+      function hide() { svg.classList.remove('is-hovering'); tip.classList.remove('show'); }
+      svg.querySelectorAll('.viz-hit').forEach(function (hit) {
+        const index = Number(hit.getAttribute('data-index'));
+        hit.addEventListener('pointerenter', function () { show(index); });
+        hit.addEventListener('focus', function () { show(index); });
+        hit.addEventListener('click', function () { show(index); });
+      });
+      svg.addEventListener('pointerleave', hide);
+      svg.addEventListener('focusout', hide);
+    }
+    // Horizontal bars: label left, value at the bar tip, one colour per chart.
+    function renderBarChart(id, rows, valueKey, color, format) {
       const svg = document.getElementById(id);
       if (!svg) return;
       rows = Array.isArray(rows) ? rows : [];
+      const width = svgWidth(svg, 320);
+      const rowHeight = 36, barHeight = 14;
+      const height = Math.max(rowHeight, rows.length * rowHeight);
+      svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+      if (!rows.length) { svg.innerHTML = ''; return; }
+      const labelWidth = Math.min(92, Math.round(width * .28));
+      const valueWidth = 104;
+      const plotWidth = Math.max(40, width - labelWidth - valueWidth);
       const max = Math.max(1, ...rows.map(function (row) { return number(row[valueKey]); }));
-      const width = 320;
-      const height = 150;
-      const left = 10;
-      const bottom = 26;
-      const slot = rows.length ? (width - left * 2) / rows.length : width;
-      const bars = rows.map(function (row, index) {
+      svg.innerHTML = '<line x1="' + labelWidth + '" x2="' + labelWidth + '" y1="4" y2="' + (height - 4) + '" stroke="' + VIZ.axis + '" shape-rendering="crispEdges"/>' + rows.map(function (row, index) {
         const value = number(row[valueKey]);
-        const barHeight = value > 0 ? Math.max(4, (value / max) * 98) : 2;
-        const x = left + index * slot + slot * .18;
-        const y = height - bottom - barHeight;
-        const label = row.label || row.status || row.bucket || row.month || '';
-        return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + Math.max(8, slot * .64).toFixed(1) + '" height="' + barHeight.toFixed(1) + '" rx="5" fill="' + color + '" opacity=".88"><title>' + safeHtml(label) + '：' + safeHtml(value) + '</title></rect><text x="' + (x + slot * .32).toFixed(1) + '" y="' + (height - 8) + '" text-anchor="middle" fill="#8792a5" font-size="9">' + safeHtml(label) + '</text>';
+        const length = value > 0 ? Math.max(3, value / max * plotWidth) : 0;
+        const y = index * rowHeight + (rowHeight - barHeight) / 2;
+        const label = text(row.label || row.status || row.bucket || row.month || '');
+        const shown = format(value, row);
+        return '<g class="viz-bar" tabindex="0" role="img" aria-label="' + safeHtml(label + '：' + shown) + '"><title>' + safeHtml(label + '：' + shown) + '</title><rect x="0" y="' + index * rowHeight + '" width="' + width + '" height="' + rowHeight + '" fill="transparent"/><text class="viz-label" x="' + (labelWidth - 10) + '" y="' + (y + barHeight / 2 + 4) + '" text-anchor="end">' + safeHtml(label) + '</text>' + (length ? '<path d="' + barPath(labelWidth, y, length, barHeight) + '" fill="' + color + '"/>' : '') + '<text class="viz-value" x="' + (labelWidth + length + 8) + '" y="' + (y + barHeight / 2 + 4) + '">' + safeHtml(shown) + '</text></g>';
       }).join('');
-      svg.innerHTML = '<line x1="8" y1="' + (height - bottom) + '" x2="' + (width - 8) + '" y2="' + (height - bottom) + '" stroke="#dfe5ed"/>' + bars;
     }
-    function renderDonutChart(id, ratio, color, label) {
+    // A single share reads as a number plus a meter; the track is a pale step of the same hue.
+    function renderMeter(id, ratio, color, track) {
       const svg = document.getElementById(id);
       if (!svg) return;
+      const width = svgWidth(svg, 240);
       const value = ratio === null || ratio === undefined ? 0 : Math.max(0, Math.min(1, number(ratio)));
-      const circumference = 2 * Math.PI * 42;
-      const dash = (circumference * value).toFixed(1);
-      svg.innerHTML = '<circle cx="80" cy="80" r="42" fill="none" stroke="#e9edf2" stroke-width="14"/><circle cx="80" cy="80" r="42" fill="none" stroke="' + color + '" stroke-width="14" stroke-linecap="round" stroke-dasharray="' + dash + ' ' + circumference.toFixed(1) + '" transform="rotate(-90 80 80)"/><text x="80" y="78" text-anchor="middle" fill="#152238" font-size="21" font-weight="900">' + percent(ratio) + '</text><text x="80" y="98" text-anchor="middle" fill="#6b778c" font-size="10">' + safeHtml(label) + '</text>';
+      svg.setAttribute('viewBox', '0 0 ' + width + ' 10');
+      svg.innerHTML = '<rect x="0" y="0" width="' + width + '" height="10" rx="5" fill="' + track + '"/>' + (value > 0 ? '<rect x="0" y="0" width="' + Math.max(10, value * width).toFixed(1) + '" height="10" rx="5" fill="' + color + '"/>' : '');
     }
     function renderVisualCharts() {
       const status = Array.isArray(PAGE_DATA.status_distribution) ? PAGE_DATA.status_distribution : [];
       const aging = Array.isArray(PAGE_DATA.overdue_aging) ? PAGE_DATA.overdue_aging : [];
       const expiry = Array.isArray(PAGE_DATA.contract_expiry) ? PAGE_DATA.contract_expiry : [];
       const occupancy = PAGE_DATA.occupancy || {};
-      renderBarChart('paymentStatusChart', status, 'amount', '#246bfd');
-      renderBarChart('overdueAgingChart', aging, 'amount', '#c83c4a');
-      renderBarChart('contractExpiryChart', expiry, 'count', '#7654c4');
-      renderDonutChart('overdueRatioChart', PAGE_DATA.metrics && PAGE_DATA.metrics.overdue_ratio, '#c83c4a', '遲繳金額比例');
-      renderDonutChart('occupancyChart', occupancy.occupancy_rate, '#06c755', '可用房間入住率');
+      const moneyLabel = function (value) { return 'NT$ ' + compactMoney(value); };
+      renderBarChart('paymentStatusChart', status, 'amount', VIZ.receivable, moneyLabel);
+      renderBarChart('overdueAgingChart', aging, 'amount', VIZ.outstanding, moneyLabel);
+      renderBarChart('contractExpiryChart', expiry, 'count', VIZ.contracts, function (value) { return value + ' 份'; });
+      renderMeter('overdueRatioChart', PAGE_DATA.metrics && PAGE_DATA.metrics.overdue_ratio, VIZ.outstanding, '#fbe3d8');
+      renderMeter('occupancyChart', occupancy.occupancy_rate, VIZ.collected, '#d4f1e5');
     }
     function renderTable(rows) {
       if (!rows.length) return '<div class="empty"><div class="state-title">沒有可顯示的營收資料</div><div class="state-text">目前期間沒有符合工作區範圍的有效帳單。</div></div>';
@@ -365,7 +478,7 @@
       const aging = Array.isArray(PAGE_DATA.overdue_aging) ? PAGE_DATA.overdue_aging : [];
       const expiry = Array.isArray(PAGE_DATA.contract_expiry) ? PAGE_DATA.contract_expiry : [];
       const occupancy = PAGE_DATA.occupancy || {};
-      const dashboard = '<div class="header"><div><div class="eyebrow">CMWebs 智慧租管</div><h1>營收儀表板</h1><p class="subtitle">只顯示目前房東工作區的聚合資料，數值與圖形同步來自同一份聚合結果。</p></div><button class="refresh" type="button" onclick="loadReport()">重新整理</button></div>' + renderFilters(properties) + '<section class="card summary"><div class="metric"><div class="metric-label">本期應收</div><div class="metric-value">' + money(kpis.receivable) + '</div></div><div class="metric"><div class="metric-label">本期實收</div><div class="metric-value green">' + money(kpis.collected) + '</div></div><div class="metric"><div class="metric-label">本期未收</div><div class="metric-value red">' + money(kpis.outstanding) + '</div></div><div class="metric"><div class="metric-label">收款率</div><div class="metric-value">' + percent(kpis.collection_rate) + '</div></div><div class="metric"><div class="metric-label">遲繳比例</div><div class="metric-value red">' + percent(metrics.overdue_ratio) + '</div></div><div class="metric"><div class="metric-label">入住率</div><div class="metric-value green">' + percent(occupancy.occupancy_rate) + '</div></div></section>' + (PAGE_DATA.has_data ? '<section class="card section"><div class="section-title-row"><div class="section-title">月份營收上升／下降曲線</div><button class="download" type="button" onclick="downloadCsv()">下載 CSV</button></div><div class="chart-wrap"><svg id="revenueChart" viewBox="0 0 640 260" role="img" aria-label="月份應收、實收與未收上升下降折線圖"></svg></div><div class="legend"><span class="legend-item"><i class="legend-dot" style="background:#246bfd"></i>應收</span><span class="legend-item"><i class="legend-dot" style="background:#06c755"></i>實收</span><span class="legend-item"><i class="legend-dot" style="background:#c83c4a"></i>未收</span></div></section><section class="card section"><div class="section-title">繳款狀態、遲繳與營運圖形</div><div class="visual-grid"><div class="visual-card wide"><div class="visual-title">繳款狀態分布</div><div class="visual-subtitle">已繳款、部分繳款、待繳款與遲繳的金額比較。</div><svg id="paymentStatusChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="繳款狀態分布圖"></svg>' + renderStatusTable(status) + '</div><div class="visual-card"><div class="visual-title">遲繳比例</div><div class="visual-subtitle">以目前期間應收金額為分母，遲繳未收金額為分子。</div><svg id="overdueRatioChart" class="donut-chart" viewBox="0 0 160 160" role="img" aria-label="遲繳比例圖"></svg><div class="visual-value danger">' + percent(metrics.overdue_ratio) + '</div><div class="visual-footnote">遲繳 ' + number(metrics.overdue_count) + ' 筆／共 ' + number(metrics.bill_count) + ' 筆</div></div><div class="visual-card"><div class="visual-title">入住率</div><div class="visual-subtitle">依目前 Workspace 房間狀態計算，停用房間不列入分母。</div><svg id="occupancyChart" class="donut-chart" viewBox="0 0 160 160" role="img" aria-label="入住率圖"></svg><div class="visual-value">' + percent(occupancy.occupancy_rate) + '</div>' + renderOccupancyTable(occupancy) + '</div><div class="visual-card wide"><div class="visual-title">遲繳天數分布</div><div class="visual-subtitle">依到期日與報表基準日分組，讓房東快速辨識逾期集中區段。</div><svg id="overdueAgingChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="遲繳天數分布圖"></svg>' + renderAgingTable(aging) + '</div><div class="visual-card wide"><div class="visual-title">合約到期分布</div><div class="visual-subtitle">列出 30／60／90 天內即將到期的有效合約數量。</div><svg id="contractExpiryChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="合約到期分布圖"></svg>' + renderExpiryTable(expiry) + '</div></div></section><section class="card section"><div class="section-title-row"><div class="section-title">月份明細</div><div class="section-hint">數值表格 fallback</div></div>' + renderTable(rows) + '</section><section class="card section"><div class="section-title-row"><div class="section-title">物件績效</div><div class="section-hint">依應收排序</div></div>' + renderPropertyTable(properties) + '</section>' : '<section class="card empty"><div class="state-title">沒有可顯示的營收資料</div><div class="state-text">請調整期間或確認目前工作區已有有效帳單或房間資料。</div></section>') + '<div class="updated">資料更新：' + safeHtml(formatTimestamp(PAGE_DATA.updated_at)) + '</div>';
+      const dashboard = '<div class="header"><div><div class="eyebrow">CMWebs 智慧租管</div><h1>營收儀表板</h1><p class="subtitle">只顯示目前房東工作區的聚合資料，數值與圖形同步來自同一份聚合結果。</p></div><button class="refresh" type="button" onclick="loadReport()">重新整理</button></div>' + renderFilters(properties) + '<section class="card summary"><div class="metric"><div class="metric-label"><i class="metric-key" style="background:' + VIZ.receivable + '"></i>本期應收</div><div class="metric-value">' + money(kpis.receivable) + '</div></div><div class="metric"><div class="metric-label"><i class="metric-key" style="background:' + VIZ.collected + '"></i>本期實收</div><div class="metric-value">' + money(kpis.collected) + '</div></div><div class="metric"><div class="metric-label"><i class="metric-key" style="background:' + VIZ.outstanding + '"></i>本期未收</div><div class="metric-value">' + money(kpis.outstanding) + '</div></div><div class="metric"><div class="metric-label">收款率</div><div class="metric-value">' + percent(kpis.collection_rate) + '</div></div><div class="metric"><div class="metric-label">遲繳比例</div><div class="metric-value">' + percent(metrics.overdue_ratio) + '</div></div><div class="metric"><div class="metric-label">入住率</div><div class="metric-value">' + percent(occupancy.occupancy_rate) + '</div></div></section>' + (PAGE_DATA.has_data ? '<section class="card section"><div class="section-title-row"><div><div class="section-title">每月應收、實收與未收</div><div class="section-hint">滑過或點選月份，查看三項金額</div></div><button class="download" type="button" onclick="downloadCsv()">下載 CSV</button></div><div class="legend">' + SERIES.map(function (series) { return '<span class="legend-item"><i class="legend-line" style="background:' + series.color + '"></i>' + series.label + '</span>'; }).join('') + '</div><div class="chart-wrap"><svg id="revenueChart" viewBox="0 0 640 260" role="img" aria-label="月份應收、實收與未收上升下降折線圖"></svg></div></section><section class="card section"><div class="section-title">繳款狀態、遲繳與營運圖形</div><div class="visual-grid"><div class="visual-card wide"><div class="visual-title">繳款狀態分布</div><div class="visual-subtitle">已繳款、部分繳款、待繳款與遲繳的金額比較。</div><svg id="paymentStatusChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="繳款狀態分布圖"></svg>' + renderStatusTable(status) + '</div><div class="visual-card"><div class="visual-title">遲繳比例</div><div class="visual-subtitle">以目前期間應收金額為分母，遲繳未收金額為分子。</div><div class="visual-value">' + percent(metrics.overdue_ratio) + '</div><svg id="overdueRatioChart" class="meter-chart" viewBox="0 0 240 10" role="img" aria-label="遲繳比例圖：' + percent(metrics.overdue_ratio) + '"></svg><div class="visual-footnote">遲繳 ' + number(metrics.overdue_count) + ' 筆／共 ' + number(metrics.bill_count) + ' 筆</div></div><div class="visual-card"><div class="visual-title">入住率</div><div class="visual-subtitle">依目前 Workspace 房間狀態計算，停用房間不列入分母。</div><div class="visual-value">' + percent(occupancy.occupancy_rate) + '</div><svg id="occupancyChart" class="meter-chart" viewBox="0 0 240 10" role="img" aria-label="入住率圖：' + percent(occupancy.occupancy_rate) + '"></svg>' + renderOccupancyTable(occupancy) + '</div><div class="visual-card wide"><div class="visual-title">遲繳天數分布</div><div class="visual-subtitle">依到期日與報表基準日分組，讓房東快速辨識逾期集中區段。</div><svg id="overdueAgingChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="遲繳天數分布圖"></svg>' + renderAgingTable(aging) + '</div><div class="visual-card wide"><div class="visual-title">合約到期分布</div><div class="visual-subtitle">列出 30／60／90 天內即將到期的有效合約數量。</div><svg id="contractExpiryChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="合約到期分布圖"></svg>' + renderExpiryTable(expiry) + '</div></div></section><section class="card section"><div class="section-title-row"><div class="section-title">月份明細</div><div class="section-hint">數值表格 fallback</div></div>' + renderTable(rows) + '</section><section class="card section"><div class="section-title-row"><div class="section-title">物件績效</div><div class="section-hint">依應收排序</div></div>' + renderPropertyTable(properties) + '</section>' : '<section class="card empty"><div class="state-title">沒有可顯示的營收資料</div><div class="state-text">請調整期間或確認目前工作區已有有效帳單或房間資料。</div></section>') + '<div class="updated">資料更新：' + safeHtml(formatTimestamp(PAGE_DATA.updated_at)) + '</div>';
       document.getElementById('app').innerHTML = dashboard;
       const workspace = PAGE_DATA.workspace || PAGE_DATA.workspace_context;
       const workspaceName = (workspace && workspace.workspace_name) || PAGE_DATA.workspace_name;
@@ -410,6 +523,13 @@
     }
     setAppHeight();
     window.addEventListener('resize', setAppHeight);
+    let chartResizeTimer = 0;
+    window.addEventListener('resize', function () {
+      clearTimeout(chartResizeTimer);
+      chartResizeTimer = setTimeout(function () {
+        if (PAGE_DATA && PAGE_DATA.has_data) { renderChart(Array.isArray(PAGE_DATA.months) ? PAGE_DATA.months : []); renderVisualCharts(); }
+      }, 150);
+    });
     (async function () { try { if (await initLineUserId()) await loadReport(); } catch (error) { showToast(error.message || '登入失敗', true); } }());
   </script>
 </body>
