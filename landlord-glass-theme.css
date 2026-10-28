@@ -380,6 +380,28 @@ body {
     font-weight: 700;
   }
 
+  /* Pages with their own phone header hand the title to the desktop top
+     bar; its text actions become glass pills. */
+  .desktop-ready .desktop-main > .topbar {
+    display: none;
+  }
+
+  .desktop-topbar-meta .refresh {
+    flex: 0 0 auto;
+    min-height: 40px;
+    margin-left: 6px;
+    padding: 0 16px;
+    border: 1px solid var(--glass-edge);
+    border-radius: 999px;
+    background: var(--glass-surface-strong);
+    color: var(--glass-ink);
+    font: inherit;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: var(--glass-shadow);
+  }
+
   :where(.app-shell) :is(.card, .dashboard-card, .section-card, .header-card, .property-card, .hero, .actions-card, .toolbar-card, .filter-card) {
     border-radius: 22px;
   }
