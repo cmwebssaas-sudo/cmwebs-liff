@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 營收儀表板</title>
-<script src="frontend-release.js?v=20261028-entry-register-fix-v1"></script>
-  <script src="liff-request-auth.js?v=20261028-entry-register-fix-v1"></script>
-  <script src="landlord-auth.js?v=20261028-entry-register-fix-v1"></script>
-  <script src="landlord-api.js?v=20261028-entry-register-fix-v1"></script>
+<script src="frontend-release.js?v=20261028-revenue-glass-v1"></script>
+  <script src="liff-request-auth.js?v=20261028-revenue-glass-v1"></script>
+  <script src="landlord-auth.js?v=20261028-revenue-glass-v1"></script>
+  <script src="landlord-api.js?v=20261028-revenue-glass-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261028-revenue-glass-v1">
+  <script src="landlord-glass-nav.js?v=20261028-revenue-glass-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261028-revenue-glass-v1" defer></script>
   <link rel="stylesheet" href="assets/css/cmwebs-asset-valuation.css?v=20261005-utility-meter-save-v1">
   <script src="assets/js/cmwebs-asset-valuation.js?v=20261005-utility-meter-save-v1"></script>
   <style>
@@ -78,28 +81,117 @@
     .toast.show { display:block; }
     .toast.error { background:var(--danger); }
     @media (max-width:420px) { .visual-grid { grid-template-columns:1fr; } .visual-card.wide { grid-column:auto; } }
+
+    /* Bright glass (2026-10-28): same shell, colours and pills as the other
+       landlord pages; the valuation block trades its green for navy. */
+    .app-shell .refresh { flex:0 0 auto; min-height:40px; padding:0 16px; white-space:nowrap; border:1px solid var(--glass-edge); border-radius:999px; background:var(--glass-surface-strong); color:var(--glass-ink); font-weight:800; box-shadow:var(--glass-shadow); }
+    .app-shell .download { border-radius:999px; padding:9px 16px; background:var(--glass-ink); color:#fff; }
+    .app-shell .field select { border-color:var(--glass-hairline); border-radius:999px; padding:9px 14px; background:rgba(255,255,255,.85); }
+    .app-shell .metric { border-color:var(--glass-hairline); }
+    .app-shell :is(.chart-wrap, .visual-card) { border-color:var(--glass-hairline); background:rgba(255,255,255,.55); }
+    .app-shell th, .app-shell td { border-color:var(--glass-hairline); }
+    .app-shell .av-overview-value { background:var(--glass-ink); }
+    .app-shell .av-overview-income { background:rgba(15,30,54,.05); color:var(--glass-ink); }
+    .app-shell .av-rates button { border-color:var(--glass-hairline); border-radius:999px; background:rgba(255,255,255,.7); color:var(--glass-ink); }
+    .app-shell .av-rates button[aria-pressed=true] { border-color:var(--glass-ink); background:var(--glass-ink); color:#fff; }
+    .app-shell .av-metrics > div { background:rgba(15,30,54,.04); }
+    .app-shell .av-investment { border-color:var(--glass-hairline); background:rgba(255,255,255,.5); }
+    .app-shell .av-controls :is(input, select) { border-color:var(--glass-hairline); border-radius:12px; }
+    .app-shell .av-chart-grid article { border-color:var(--glass-hairline); background:rgba(255,255,255,.55); }
+    .desktop-topbar-meta .refresh { margin-left:6px; }
+    @media (min-width:1024px) {
+      .app-shell .page.desktop-main { padding:16px 32px 48px 24px; }
+      .app-shell .header { display:none; }
+      .app-shell .summary { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .app-shell .metric { border-right:1px solid var(--glass-hairline); border-bottom:1px solid var(--glass-hairline); }
+      .app-shell .metric:nth-child(3n) { border-right:0; }
+      .app-shell .metric:nth-last-child(-n+3) { border-bottom:0; }
+      .app-shell .mini-chart { max-height:220px; }
+      .app-shell .visual-card.wide:nth-child(n+4) { grid-column:auto; }
+    }
   </style>
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-revenue-glass-v1" />
 </head>
 <body>
-  <div class="app-shell av-desktop">
-    <aside class="av-sidebar" aria-label="房東桌面導覽">
-      <div class="eyebrow">CMWEBS</div><h2>智慧租管</h2>
-      <nav>
-        <button type="button" onclick="goPage('landlord-home.html')">總覽</button>
-        <button type="button" onclick="goPage('landlord-tenants.html')">房客</button>
-        <button type="button" onclick="goPage('landlord-properties.html')">物件與房間</button>
-        <button type="button" onclick="goPage('landlord-contract-requests.html')">合約</button>
-        <button type="button" onclick="goPage('landlord-tenants.html')">退房</button>
-        <button type="button" onclick="goPage('landlord-arrears.html')">帳款</button>
-        <button type="button" aria-current="page">營收與資產</button>
-        <button type="button" onclick="goPage('landlord-more.html')">更多工具</button>
-      </nav>
+  <div class="app-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand">
+          <div class="desktop-brand-label">CMWEBS</div>
+          <div class="desktop-brand-title">智慧租管</div>
+        </div>
+<nav class="desktop-nav">
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')"><svg viewBox="0 0 24 24">
+              <path d="M4 11.5L12 5l8 6.5"></path>
+              <path d="M6.5 10.5V19h11v-8.5"></path>
+              <path d="M9.5 19v-5h5v5"></path>
+            </svg><span>總覽</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+              <circle cx="9" cy="8" r="3"></circle>
+              <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+              <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+              <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+            </svg><span>房客</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')"><svg viewBox="0 0 24 24">
+              <path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path>
+              <path d="M8 20v-7h8v7"></path>
+              <path d="M9 8.5h.01M15 8.5h.01"></path>
+            </svg><span>物件與房間</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-contract-requests.html')"><svg viewBox="0 0 24 24">
+              <path d="M7 3.5h7l3 3V20H7z"></path>
+              <path d="M14 3.5V7h3"></path>
+              <path d="M9.5 12h5"></path>
+              <path d="M9.5 15.5h5"></path>
+            </svg><span>合約</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+              <path d="M13 4.5H6.5v15H13"></path>
+              <path d="M10 12h10"></path>
+              <path d="M16.5 8.5L20 12l-3.5 3.5"></path>
+            </svg><span>退房</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')"><svg viewBox="0 0 24 24">
+              <rect x="3.5" y="6" width="17" height="12" rx="2"></rect>
+              <path d="M3.5 10h17"></path>
+              <path d="M7 14.5h3"></path>
+            </svg><span>帳款</span></button>
+          <button class="desktop-nav-item active" type="button" aria-current="page" onclick="goPage('landlord-revenue-dashboard.html')"><svg viewBox="0 0 24 24">
+              <path d="M4 19.5h16"></path>
+              <path d="M7 16v-4"></path>
+              <path d="M12 16V8"></path>
+              <path d="M17 16v-6"></path>
+            </svg><span>營收與資產</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-more.html')"><svg viewBox="0 0 24 24">
+              <rect x="4.5" y="4.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="13.5" y="4.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="4.5" y="13.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="13.5" y="13.5" width="6" height="6" rx="1.5"></rect>
+            </svg><span>更多工具</span></button>
+        </nav>
+        <div class="desktop-sidebar-footer">
+          <div class="desktop-context-label">Workspace</div>
+          <div id="desktopWorkspaceName" class="desktop-context-value">目前 Workspace</div>
+          <div class="desktop-sidebar-role">營收與資產</div>
+          <button class="desktop-logout-button" type="button" onclick="desktopLogout()">登出</button>
+        </div>
+      </div>
     </aside>
-    <main id="app" class="page" aria-live="polite">
-      <section class="card state">
-        <div class="state-title">正在載入營收儀表板</div>
-        <div class="state-text">正在確認目前房東工作區與報表權限。</div>
-      </section>
+    <main class="page desktop-main">
+      <header class="desktop-topbar" hidden>
+        <div>
+          <div class="desktop-page-kicker">Revenue &amp; Assets</div>
+          <div class="desktop-page-title">營收與資產</div>
+        </div>
+        <div class="desktop-topbar-meta">
+          <span class="desktop-status-pill">Workspace</span>
+          <span id="desktopTopbarWorkspaceName">目前 Workspace</span>
+          <button class="refresh" type="button" onclick="loadReport()">重新整理</button>
+        </div>
+      </header>
+      <div id="app" aria-live="polite">
+        <section class="card state">
+          <div class="state-title">正在載入營收儀表板</div>
+          <div class="state-text">正在確認目前房東工作區與報表權限。</div>
+        </section>
+      </div>
     </main>
     <nav class="bottom-nav" aria-label="房東導覽">
       <div class="bottom-nav-inner">
@@ -153,6 +245,10 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2400);
     }
+    function desktopLogout() {
+      if (window.CMWebsLandlordAuth && typeof window.CMWebsLandlordAuth.logout === 'function') { window.CMWebsLandlordAuth.logout(); return; }
+      location.href = LANDLORD_ENTRY_URL;
+    }
     function goPage(page) {
       const separator = page.indexOf('?') >= 0 ? '&' : '?';
       location.href = page + separator + 'v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') + (TEST_MODE ? '&test=1' : '');
@@ -177,7 +273,7 @@
     }
     function formatTimestamp(value) { return value ? new Date(value).toLocaleString('zh-TW', { hour12: false }) : '—'; }
     function chartPoint(value, max, index, count) {
-      const x = count <= 1 ? 40 : 40 + (560 * index / (count - 1));
+      const x = count <= 1 ? 64 : 64 + (536 * index / (count - 1));
       const y = 218 - (max > 0 ? (number(value) / max) * 178 : 0);
       return { x: x, y: y };
     }
@@ -188,7 +284,7 @@
       const svg = document.getElementById('revenueChart');
       if (!rows.length) { svg.innerHTML = ''; return; }
       const max = Math.max(1, ...rows.map(function (row) { return Math.max(number(row.receivable), number(row.collected), number(row.outstanding)); }));
-      const grid = [0, 1, 2, 3, 4].map(function (step) { const y = 218 - step * 44.5; return '<line x1="40" y1="' + y + '" x2="600" y2="' + y + '" stroke="#e5eaf1"/><text x="34" y="' + (y + 4) + '" text-anchor="end" fill="#8792a5" font-size="10">' + Math.round(max * step / 4).toLocaleString('zh-TW') + '</text>'; }).join('');
+      const grid = [0, 1, 2, 3, 4].map(function (step) { const y = 218 - step * 44.5; return '<line x1="64" y1="' + y + '" x2="600" y2="' + y + '" stroke="#e5eaf1"/><text x="58" y="' + (y + 4) + '" text-anchor="end" fill="#8792a5" font-size="10">' + Math.round(max * step / 4).toLocaleString('zh-TW') + '</text>'; }).join('');
       const labels = rows.map(function (row, index) { const point = chartPoint(0, max, index, rows.length); return '<text x="' + point.x + '" y="246" text-anchor="middle" fill="#8792a5" font-size="10">' + safeHtml(row.month) + '</text>'; }).join('');
       svg.innerHTML = grid + '<polyline points="' + polyline(rows, 'receivable', max) + '" fill="none" stroke="#246bfd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="' + polyline(rows, 'collected', max) + '" fill="none" stroke="#06c755" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="' + polyline(rows, 'outstanding', max) + '" fill="none" stroke="#c83c4a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' + labels;
     }
@@ -271,6 +367,9 @@
       const occupancy = PAGE_DATA.occupancy || {};
       const dashboard = '<div class="header"><div><div class="eyebrow">CMWebs 智慧租管</div><h1>營收儀表板</h1><p class="subtitle">只顯示目前房東工作區的聚合資料，數值與圖形同步來自同一份聚合結果。</p></div><button class="refresh" type="button" onclick="loadReport()">重新整理</button></div>' + renderFilters(properties) + '<section class="card summary"><div class="metric"><div class="metric-label">本期應收</div><div class="metric-value">' + money(kpis.receivable) + '</div></div><div class="metric"><div class="metric-label">本期實收</div><div class="metric-value green">' + money(kpis.collected) + '</div></div><div class="metric"><div class="metric-label">本期未收</div><div class="metric-value red">' + money(kpis.outstanding) + '</div></div><div class="metric"><div class="metric-label">收款率</div><div class="metric-value">' + percent(kpis.collection_rate) + '</div></div><div class="metric"><div class="metric-label">遲繳比例</div><div class="metric-value red">' + percent(metrics.overdue_ratio) + '</div></div><div class="metric"><div class="metric-label">入住率</div><div class="metric-value green">' + percent(occupancy.occupancy_rate) + '</div></div></section>' + (PAGE_DATA.has_data ? '<section class="card section"><div class="section-title-row"><div class="section-title">月份營收上升／下降曲線</div><button class="download" type="button" onclick="downloadCsv()">下載 CSV</button></div><div class="chart-wrap"><svg id="revenueChart" viewBox="0 0 640 260" role="img" aria-label="月份應收、實收與未收上升下降折線圖"></svg></div><div class="legend"><span class="legend-item"><i class="legend-dot" style="background:#246bfd"></i>應收</span><span class="legend-item"><i class="legend-dot" style="background:#06c755"></i>實收</span><span class="legend-item"><i class="legend-dot" style="background:#c83c4a"></i>未收</span></div></section><section class="card section"><div class="section-title">繳款狀態、遲繳與營運圖形</div><div class="visual-grid"><div class="visual-card wide"><div class="visual-title">繳款狀態分布</div><div class="visual-subtitle">已繳款、部分繳款、待繳款與遲繳的金額比較。</div><svg id="paymentStatusChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="繳款狀態分布圖"></svg>' + renderStatusTable(status) + '</div><div class="visual-card"><div class="visual-title">遲繳比例</div><div class="visual-subtitle">以目前期間應收金額為分母，遲繳未收金額為分子。</div><svg id="overdueRatioChart" class="donut-chart" viewBox="0 0 160 160" role="img" aria-label="遲繳比例圖"></svg><div class="visual-value danger">' + percent(metrics.overdue_ratio) + '</div><div class="visual-footnote">遲繳 ' + number(metrics.overdue_count) + ' 筆／共 ' + number(metrics.bill_count) + ' 筆</div></div><div class="visual-card"><div class="visual-title">入住率</div><div class="visual-subtitle">依目前 Workspace 房間狀態計算，停用房間不列入分母。</div><svg id="occupancyChart" class="donut-chart" viewBox="0 0 160 160" role="img" aria-label="入住率圖"></svg><div class="visual-value">' + percent(occupancy.occupancy_rate) + '</div>' + renderOccupancyTable(occupancy) + '</div><div class="visual-card wide"><div class="visual-title">遲繳天數分布</div><div class="visual-subtitle">依到期日與報表基準日分組，讓房東快速辨識逾期集中區段。</div><svg id="overdueAgingChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="遲繳天數分布圖"></svg>' + renderAgingTable(aging) + '</div><div class="visual-card wide"><div class="visual-title">合約到期分布</div><div class="visual-subtitle">列出 30／60／90 天內即將到期的有效合約數量。</div><svg id="contractExpiryChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="合約到期分布圖"></svg>' + renderExpiryTable(expiry) + '</div></div></section><section class="card section"><div class="section-title-row"><div class="section-title">月份明細</div><div class="section-hint">數值表格 fallback</div></div>' + renderTable(rows) + '</section><section class="card section"><div class="section-title-row"><div class="section-title">物件績效</div><div class="section-hint">依應收排序</div></div>' + renderPropertyTable(properties) + '</section>' : '<section class="card empty"><div class="state-title">沒有可顯示的營收資料</div><div class="state-text">請調整期間或確認目前工作區已有有效帳單或房間資料。</div></section>') + '<div class="updated">資料更新：' + safeHtml(formatTimestamp(PAGE_DATA.updated_at)) + '</div>';
       document.getElementById('app').innerHTML = dashboard;
+      const workspace = PAGE_DATA.workspace || PAGE_DATA.workspace_context;
+      const workspaceName = (workspace && workspace.workspace_name) || PAGE_DATA.workspace_name;
+      if (workspaceName) ['desktopWorkspaceName', 'desktopTopbarWorkspaceName'].forEach(function (id) { document.getElementById(id).textContent = text(workspaceName); });
       const valuation = document.createElement('div');
       document.getElementById('app').insertBefore(valuation, document.getElementById('app').querySelector('.summary'));
       VALUATION_VISUAL_STATE = CMWebsAssetValuation.mount(valuation, PAGE_DATA.annual_income, VALUATION_VISUAL_STATE);
