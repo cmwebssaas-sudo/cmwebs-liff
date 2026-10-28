@@ -59,3 +59,49 @@ test('tenant detail quick-action tiles do not restyle other pages\' action butto
   assert.match(css, /\.app-shell \.section-card > \.action-grid \.action-button \{\s*min-height: 112px;/);
   assert.doesNotMatch(css, /\.app-shell \.action-grid \.action-button \{/);
 });
+
+// Second batch: pages whose phone header is rendered by script (or sits in a
+// hero card) get the same rail and a static desktop top bar.
+const SECOND_BATCH = {
+  'landlord-workspaces.html': { title: '切換管理團隊', active: '更多工具' },
+  'landlord-messages.html': { title: '房客訊息管理', active: '更多工具' },
+  'landlord-paid-bills.html': { title: '已繳帳單管理', active: '帳款' },
+  'landlord-line-logs.html': { title: 'LINE 對話紀錄', active: '更多工具' },
+  'landlord-payment-report-review.html': { title: '付款回報審核', active: '帳款' },
+  'landlord-contract-documents.html': { title: '文件總覽', active: '合約' },
+  'landlord-tenant-create.html': { title: '建立租約', active: '房客' },
+  'landlord-tenant-checkout.html': { title: '辦理房客退房', active: '退房' }
+};
+
+for (const [page, expected] of Object.entries(SECOND_BATCH)) {
+  test(`${page} uses the glass desktop shell`, () => {
+    const html = read(page);
+    assert.match(html, /<div class="app-shell[^"]* desktop-ready">\s*<aside class="desktop-sidebar"/);
+    const current = [...html.matchAll(/<button class="desktop-nav-item active" type="button" aria-current="page"[\s\S]*?<\/button>/g)];
+    assert.equal(current.length, 1);
+    assert.match(current[0][0], new RegExp(`<span>${expected.active}</span></button>$`));
+    assert.match(html, new RegExp(`<(?:main|div) class="page[^"]* desktop-main"[^>]*>\\s*<header class="desktop-topbar" hidden>[\\s\\S]*?class="desktop-page-title">${expected.title}</div>`));
+  });
+}
+
+test('pages whose script replaces #app keep the desktop top bar outside it', () => {
+  for (const page of ['landlord-payment-report-review.html', 'landlord-tenant-checkout.html']) {
+    const html = read(page);
+    assert.match(html, /<\/header>\n      <div id="app"[^>]*>/, page);
+    assert.match(html, /\.desktop-main > #app > \.(?:header|topbar) \{ display: none; \}/, page);
+    assert.match(html, /\.app-shell\.desktop-ready \{ max-width: none; \}/, page);
+  }
+});
+
+test('tenant create mirrors its changing title in the desktop top bar', () => {
+  const html = read('landlord-tenant-create.html');
+  const titleSets = html.match(/if \(pageTitle\) pageTitle\.textContent = [^\n]+;\n\s*syncDesktopShell\(\);/g) || [];
+  assert.equal(titleSets.length, 3);
+  assert.match(html, /function syncDesktopShell\(\) \{[\s\S]*?desktopTitle\.textContent = title\.textContent;/);
+});
+
+test('every glass page defines goPage for its desktop rail', () => {
+  for (const page of [...Object.keys(PAGES), ...Object.keys(SECOND_BATCH)]) {
+    assert.match(read(page), /function goPage\(/, page);
+  }
+});

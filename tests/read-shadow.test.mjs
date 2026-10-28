@@ -6,7 +6,7 @@ import { richDataset,originalGas,access,fixture,plain } from './fixtures/read-pa
 import { createReadCalculator } from '../cloudflare/read-api/src/read-calculator.js';
 import { createReadServices } from '../cloudflare/read-api/src/read-runtime.js';
 
-const report={route:'tenants',variant:'default',release:'20261028-glass-pages-v1',outcome:'compared',
+const report={route:'tenants',variant:'default',release:'20261028-glass-pages-v2',outcome:'compared',
   clock_paths:[],
   receipt:'00000000-0000-4000-8000-000000000001',
   paths:['data.summary.total_amount'],elapsed_ms:100,headers_ms:90};

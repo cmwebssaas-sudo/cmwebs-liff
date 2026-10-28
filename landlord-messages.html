@@ -11,9 +11,12 @@
   <title>CMWebs 房客訊息管理</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261028-glass-pages-v1"></script>
-  <script src="liff-request-auth.js?v=20261028-glass-pages-v1"></script>
-  <script src="landlord-auth.js?v=20261028-glass-pages-v1"></script>
+<script src="frontend-release.js?v=20261028-glass-pages-v2"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261028-glass-pages-v2" />
+  <script src="landlord-glass-nav.js?v=20261028-glass-pages-v2" defer></script>
+  <script src="landlord-glass-shell.js?v=20261028-glass-pages-v2" defer></script>
+  <script src="liff-request-auth.js?v=20261028-glass-pages-v2"></script>
+  <script src="landlord-auth.js?v=20261028-glass-pages-v2"></script>
 
   <style>
     :root {
@@ -734,13 +737,84 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="repair-dispatch.css?v=20261028-glass-pages-v1">
-  <script src="repair-dispatch.js?v=20261028-glass-pages-v1"></script>
+  <link rel="stylesheet" href="repair-dispatch.css?v=20261028-glass-pages-v2">
+  <script src="repair-dispatch.js?v=20261028-glass-pages-v2"></script>
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-glass-pages-v2" />
 </head>
 
 <body>
-  <div class="app-shell">
-    <main class="page">
+  <div class="app-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand">
+          <div class="desktop-brand-label">CMWEBS</div>
+          <div class="desktop-brand-title">智慧租管</div>
+        </div>
+<nav class="desktop-nav">
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')"><svg viewBox="0 0 24 24">
+              <path d="M4 11.5L12 5l8 6.5"></path>
+              <path d="M6.5 10.5V19h11v-8.5"></path>
+              <path d="M9.5 19v-5h5v5"></path>
+            </svg><span>總覽</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+              <circle cx="9" cy="8" r="3"></circle>
+              <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+              <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+              <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+            </svg><span>房客</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')"><svg viewBox="0 0 24 24">
+              <path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path>
+              <path d="M8 20v-7h8v7"></path>
+              <path d="M9 8.5h.01M15 8.5h.01"></path>
+            </svg><span>物件與房間</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-contract-requests.html')"><svg viewBox="0 0 24 24">
+              <path d="M7 3.5h7l3 3V20H7z"></path>
+              <path d="M14 3.5V7h3"></path>
+              <path d="M9.5 12h5"></path>
+              <path d="M9.5 15.5h5"></path>
+            </svg><span>合約</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+              <path d="M13 4.5H6.5v15H13"></path>
+              <path d="M10 12h10"></path>
+              <path d="M16.5 8.5L20 12l-3.5 3.5"></path>
+            </svg><span>退房</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')"><svg viewBox="0 0 24 24">
+              <rect x="3.5" y="6" width="17" height="12" rx="2"></rect>
+              <path d="M3.5 10h17"></path>
+              <path d="M7 14.5h3"></path>
+            </svg><span>帳款</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-revenue-dashboard.html')"><svg viewBox="0 0 24 24">
+              <path d="M4 19.5h16"></path>
+              <path d="M7 16v-4"></path>
+              <path d="M12 16V8"></path>
+              <path d="M17 16v-6"></path>
+            </svg><span>營收與資產</span></button>
+          <button class="desktop-nav-item active" type="button" aria-current="page" onclick="goPage('landlord-more.html')"><svg viewBox="0 0 24 24">
+              <rect x="4.5" y="4.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="13.5" y="4.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="4.5" y="13.5" width="6" height="6" rx="1.5"></rect>
+              <rect x="13.5" y="13.5" width="6" height="6" rx="1.5"></rect>
+            </svg><span>更多工具</span></button>
+        </nav>
+        <div class="desktop-sidebar-footer">
+          <div class="desktop-context-label">Workspace</div>
+          <div id="desktopWorkspaceName" class="desktop-context-value">目前 Workspace</div>
+          <div class="desktop-sidebar-role">房客訊息管理</div>
+        </div>
+      </div>
+    </aside>
+    <main class="page desktop-main">
+      <header class="desktop-topbar" hidden>
+        <div>
+          <div class="desktop-page-kicker">Tenant Messages</div>
+          <div class="desktop-page-title">房客訊息管理</div>
+        </div>
+        <div class="desktop-topbar-meta">
+          <span class="desktop-status-pill">Workspace</span>
+          <span id="desktopTopbarWorkspaceName">目前 Workspace</span>
+          <button class="refresh" type="button" onclick="loadPage()">重新整理</button>
+        </div>
+      </header>
       <div id="app" class="loading">
         資料載入中...
       </div>
@@ -1983,6 +2057,13 @@
 
       const summary =
         PAGE_DATA.summary || {};
+
+      const desktopContext = PAGE_DATA.workspace_context || {};
+      const desktopName = (desktopContext.workspace || PAGE_DATA.workspace || {}).workspace_name || landlord.landlord_name;
+      ['desktopWorkspaceName', 'desktopTopbarWorkspaceName'].forEach(function (id) {
+        const node = document.getElementById(id);
+        if (node) node.textContent = desktopName || '目前 Workspace';
+      });
 
       app.className = '';
 

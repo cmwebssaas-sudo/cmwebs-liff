@@ -12,7 +12,7 @@ const releaseScript = readFileSync(
 
 assert.match(
   releaseScript,
-  /CMWEBS_RELEASE_VERSION\s*=\s*'20261028-glass-pages-v1'/,
+  /CMWEBS_RELEASE_VERSION\s*=\s*'20261028-glass-pages-v2'/,
   'the release URL must change so LINE does not reuse the broken page'
 );
 
