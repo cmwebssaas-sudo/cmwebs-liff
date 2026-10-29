@@ -1,9 +1,27 @@
 (function (root) {
   'use strict';
   const rates = [2, 3, 4, 4.5];
-  const colors = ['#246bfd', '#09a77b', '#725ac1', '#eb9a38', '#d65878', '#37899b', '#597bbf', '#5c9d51', '#b782ba', '#be7a57', '#8594ad', '#bfac38'];
+  // Validated categorical slots (dataviz reference palette): income is aqua,
+  // valuation blue, invested cost orange; a loss uses the critical status red.
+  const viz = { income: '#1baf7a', value: '#2a78d6', cost: '#eb6834', loss: '#d03b3b', grid: '#e6e9ef', axis: '#c9cfd8', surface: '#ffffff' };
   const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const money = value => value === null ? '—' : 'NT$ ' + Math.round(value).toLocaleString('zh-TW');
+  const compact = value => Math.abs(value) >= 100000000 ? (value / 100000000).toLocaleString('zh-TW', { maximumFractionDigits: 2 }) + '億'
+    : Math.abs(value) >= 10000 ? (value / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + '萬' : Math.round(value).toLocaleString('zh-TW');
+  // Rounded data end, square at the baseline; negative bars hang below it.
+  function barPath(x, base, top, width) {
+    const h = Math.abs(base - top);
+    const r = Math.min(4, width / 2, h);
+    if (top <= base) return 'M' + x + ' ' + base + 'V' + (top + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + r) + ' ' + top + 'H' + (x + width - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + width) + ' ' + (top + r) + 'V' + base + 'Z';
+    return 'M' + x + ' ' + base + 'V' + (top - r) + 'A' + r + ' ' + r + ' 0 0 0 ' + (x + r) + ' ' + top + 'H' + (x + width - r) + 'A' + r + ' ' + r + ' 0 0 0 ' + (x + width) + ' ' + (top - r) + 'V' + base + 'Z';
+  }
+  // Charts draw at the card's real width so text stays at its CSS size.
+  function chartWidth(host, columns) {
+    const width = host && host.clientWidth ? host.clientWidth : 0;
+    if (!width) return 600;
+    const cols = columns === 1 || width <= 600 ? 1 : 2;
+    return Math.max(260, Math.floor((width - 14 * (cols - 1)) / cols) - 30);
+  }
 
   function rollingMoney(value, previous, animate) {
     if (value === null || !Number.isFinite(value)) return '—';
@@ -98,61 +116,92 @@
     return value;
   }
 
-  function saleChart(value, invested) {
-    const points = [['總投入', invested], ['出售淨額', value.net_sale], ['出售獲利', value.sale_profit]].filter(([, amount]) => amount !== null);
+  // Clean axis steps (1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8 x 10^n) with a little headroom.
+  function niceScale(max, count) {
+    const raw = Math.max(1, max) / count;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(value => value * magnitude >= raw) * magnitude;
+    return { top: step * count, step };
+  }
+
+  function axis(scale, count, left, right, width, base, plot) {
+    return Array.from({ length: count + 1 }, (_, i) => {
+      const y = (base - (scale.step * i / scale.top) * plot).toFixed(1);
+      return '<line x1="' + left + '" x2="' + (width - right) + '" y1="' + y + '" y2="' + y + '" stroke="' + (i ? viz.grid : viz.axis) + '" shape-rendering="crispEdges"/><text class="av-tick" x="' + (left - 8) + '" y="' + (Number(y) + 4) + '" text-anchor="end">' + compact(scale.step * i) + '</text>';
+    }).join('');
+  }
+
+  function saleChart(value, invested, width = 600) {
+    const points = [['總投入', invested, viz.cost], ['出售淨額', value.net_sale, viz.value], ['出售獲利', value.sale_profit, viz.income]].filter(([, amount]) => amount !== null);
     if (!points.length) return '';
     const max = Math.max(1, ...points.map(([, amount]) => Math.abs(amount)));
-    return '<svg viewBox="0 0 640 240" role="img" aria-label="總投入、出售淨額與預估獲利比較"><line x1="32" x2="608" y1="120" y2="120" stroke="#8594ad"/>' + points.map(([label, amount], i) => {
-      const height = Math.abs(amount) / max * 85;
-      const x = 70 + i * 190;
-      return '<g><title>' + escape(label + '：' + money(amount)) + '</title><rect class="av-mark" x="' + x + '" y="' + (amount >= 0 ? 120 - height : 120) + '" width="120" height="' + height + '" rx="4" fill="' + (amount < 0 ? '#c83c4a' : colors[i]) + '"/><text x="' + (x + 60) + '" y="220" text-anchor="middle" font-size="14">' + escape(label) + '</text><text x="' + (x + 60) + '" y="238" text-anchor="middle" font-size="12">' + escape(money(amount)) + '</text></g>';
+    const loss = points.some(([, amount]) => amount < 0);
+    const base = loss ? 112 : 172;
+    const span = loss ? 72 : 136;
+    const slot = width / points.length;
+    const barWidth = Math.min(24, slot * .5);
+    return '<svg class="av-svg" viewBox="0 0 ' + width + ' 240" role="img" aria-label="總投入、出售淨額與預估獲利比較"><line x1="0" x2="' + width + '" y1="' + base + '" y2="' + base + '" stroke="' + viz.axis + '" shape-rendering="crispEdges"/>' + points.map(([label, amount, color], i) => {
+      const height = Math.abs(amount) / max * span;
+      const center = slot * (i + .5);
+      const end = amount >= 0 ? base - height : base + height;
+      return '<g><title>' + escape(label + '：' + money(amount)) + '</title>' + (height > 0 ? '<path class="av-mark av-bar" d="' + barPath(center - barWidth / 2, base, end, barWidth) + '" fill="' + (amount < 0 ? viz.loss : color) + '"/>' : '') + '<text class="av-value" x="' + center + '" y="' + (amount >= 0 ? end - 8 : end + 18) + '" text-anchor="middle">' + escape(money(amount)) + '</text><text class="av-tick" x="' + center + '" y="232" text-anchor="middle">' + escape(label) + '</text></g>';
     }).join('') + '</svg>';
   }
 
-  function chart(rows, key, label, bars, reference = null) {
+  function chart(rows, key, label, bars, reference = null, width = 600) {
     if (!rows.length) return '<p class="av-note">沒有年度資料。</p>';
-    const max = Math.max(1, reference || 0, ...rows.map(row => Number(row[key]) || 0));
+    const color = key === 'gross_value' ? viz.value : viz.income;
+    const left = 56, right = 16, top = 16, base = 172, plot = base - top;
+    const scale = niceScale(Math.max(1, reference || 0, ...rows.map(row => Number(row[key]) || 0)), 3);
     const span = Math.max(1, rows[rows.length - 1].year - rows[0].year + 1);
-    const slot = 550 / span;
-    const points = rows.filter(row => typeof row[key] === 'number' && Number.isFinite(row[key])).map(row => ({ x: 64 + slot * (row.year - rows[0].year + .5), y: 186 - (row[key] / max) * 140, row }));
+    const slot = (width - left - right) / span;
+    const y = value => base - (value / scale.top) * plot;
+    const points = rows.filter(row => typeof row[key] === 'number' && Number.isFinite(row[key])).map(row => ({ x: left + slot * (row.year - rows[0].year + .5), y: y(row[key]), row }));
     const segments = [];
     points.forEach((point, i) => {
       if (!i || point.row.year !== points[i - 1].row.year + 1) segments.push([]);
       segments[segments.length - 1].push(point);
     });
-    const ticks = [0, .5, 1].map(ratio => '<line x1="64" x2="620" y1="' + (186 - ratio * 140) + '" y2="' + (186 - ratio * 140) + '" stroke="#e3eaf3"/><text x="58" y="' + (190 - ratio * 140) + '" text-anchor="end" font-size="10" fill="#6b778c">' + (max * ratio / 10000).toFixed(1) + '萬</text>').join('');
-    const series = bars ? points.map(p => '<rect x="' + (p.x - slot * .29) + '" y="' + p.y + '" width="' + slot * .58 + '" height="' + (186 - p.y) + '" rx="3" fill="#246bfd"><title>' + escape(p.row.year) + '：' + money(p.row[key]) + '</title></rect>').join('') : segments.filter(segment => segment.length > 1).map(segment => '<polyline points="' + segment.map(p => p.x + ',' + p.y).join(' ') + '" fill="none" stroke="#09a77b" stroke-width="3"/>').join('') + points.map(p => '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="#09a77b"><title>' + escape(p.row.year) + '：' + money(p.row[key]) + '</title></circle>').join('');
-    const interactive = series.replace(/<(rect|circle) /g, '<$1 class="av-mark" ').replace(/<polyline /g, '<polyline pathLength="1" ');
+    const barWidth = Math.min(24, slot * .5);
+    const coords = segment => segment.map(p => p.x.toFixed(1) + ' ' + p.y.toFixed(1));
+    // Missing years break the line: each run of consecutive years is its own wash and line.
+    const lines = bars ? '' : segments.filter(segment => segment.length > 1).map(segment => '<path class="av-area" d="M' + coords(segment).join('L') + 'L' + segment[segment.length - 1].x.toFixed(1) + ' ' + base + 'L' + segment[0].x.toFixed(1) + ' ' + base + 'Z" fill="' + color + '" fill-opacity=".1"/><polyline pathLength="1" points="' + coords(segment).map(point => point.replace(' ', ',')).join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>').join('');
     // A group owns each visible mark and the larger transparent tap target.
-    let index = 0;
-    const marks = interactive.replace(/<(rect|circle)\b[\s\S]*?<\/\1>/g, mark => {
-      const p = points[index++];
-      return '<g role="button" tabindex="0" data-chart-year="' + p.row.year + '" aria-label="' + escape(p.row.year + ' 年，' + label + '，' + money(p.row[key]) + '，查看明細') + '">' + mark + '<rect x="' + (p.x - Math.max(12, slot * .3)) + '" y="' + (bars ? Math.min(p.y, 162) : p.y - 12) + '" width="' + Math.max(24, slot * .6) + '" height="' + (bars ? Math.max(24, 186 - p.y) : 24) + '" fill="transparent"/></g>';
-    });
+    const marks = points.map(p => {
+      const visible = bars
+        ? '<path class="av-mark av-bar" d="' + barPath(p.x - barWidth / 2, base, p.y, barWidth) + '" fill="' + color + '"/>'
+        : '<circle class="av-mark" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="4" fill="' + color + '" stroke="' + viz.surface + '" stroke-width="2"/>';
+      const hitWidth = Math.max(24, slot * .8);
+      return '<g role="button" tabindex="0" data-chart-year="' + p.row.year + '" aria-label="' + escape(p.row.year + ' 年，' + label + '，' + money(p.row[key]) + '，查看明細') + '"><title>' + escape(p.row.year + '：' + money(p.row[key])) + '</title>' + visible + '<rect x="' + (p.x - hitWidth / 2).toFixed(1) + '" y="' + (bars ? top : p.y - 14).toFixed(1) + '" width="' + hitWidth.toFixed(1) + '" height="' + (bars ? plot : 28) + '" fill="transparent"/></g>';
+    }).join('');
+    const last = points[points.length - 1];
+    const endLabel = last ? '<text class="av-value" x="' + last.x.toFixed(1) + '" y="' + Math.max(12, last.y - 10).toFixed(1) + '" text-anchor="middle">' + escape(compact(last.row[key])) + '</text>' : '';
+    const referenceY = reference === null ? 0 : y(reference).toFixed(1);
+    const referenceLine = reference === null ? '' : '<line x1="' + left + '" x2="' + (width - right) + '" y1="' + referenceY + '" y2="' + referenceY + '" stroke="' + viz.cost + '" stroke-width="1.5" stroke-dasharray="5 4"><title>總投入成本：' + money(reference) + '</title></line><text class="av-tick" x="' + (width - right) + '" y="' + (referenceY - 6) + '" text-anchor="end">總投入</text>';
+    const years = points.map(p => '<text class="av-tick" x="' + p.x.toFixed(1) + '" y="194" text-anchor="middle">' + escape(p.row.year) + '</text>').join('');
     const extrema = points.length ? '<p class="av-note">最高：' + money(Math.max(...points.map(p => p.row[key]))) + ' · 最低：' + money(Math.min(...points.map(p => p.row[key]))) + '</p>' : '';
-    const referenceLine = reference === null ? '' : '<line x1="64" x2="620" y1="' + (186 - reference / max * 140) + '" y2="' + (186 - reference / max * 140) + '" stroke="#eb9a38" stroke-width="2" stroke-dasharray="6 4"><title>總投入成本：' + money(reference) + '</title></line>';
-    return '<svg viewBox="0 0 640 220" role="group" aria-label="' + escape(label) + '">' + ticks + marks + referenceLine + points.map(p => '<text x="' + p.x + '" y="210" text-anchor="middle" font-size="10" fill="#6b778c">' + escape(p.row.year) + '</text>').join('') + '</svg>' + extrema + (reference === null ? '' : '<p class="av-note">橘色虛線 · 總投入成本：' + money(reference) + '；綠色曲線 · 收益情境估值（不是已實現獲利）。</p>');
+    return '<svg class="av-svg" viewBox="0 0 ' + width + ' 204" role="group" aria-label="' + escape(label) + '">' + axis(scale, 3, left, right, width, base, plot) + lines + referenceLine + marks + endLabel + years + '</svg>' + extrema + (reference === null ? '' : '<p class="av-note">橘色虛線 · 總投入成本：' + money(reference) + '；藍色曲線 · 收益情境估值（不是已實現獲利）。</p>');
   }
 
-  function pie(months) {
+  // Twelve months read better as columns than as a twelve-colour pie.
+  function monthColumns(months, width = 600) {
     const total = months.reduce((sum, row) => sum + row.collected, 0);
     if (total <= 0) return '<p class="av-note">本年沒有已確認實收，無法繪製比例。</p>';
-    let offset = 0;
-    const arcs = months.map(row => {
-      const index = Number(row.month.slice(5)) - 1;
-      const share = row.collected / total;
-      const point = (radius, angle) => [100 + radius * Math.cos(angle), 100 + radius * Math.sin(angle)].join(' ');
-      const start = offset / 100 * Math.PI * 2 - Math.PI / 2;
-      const end = start + share * Math.PI * 2;
-      const large = share > .5 ? 1 : 0;
-      const path = share >= 1
-        ? 'M 100 20 A 80 80 0 1 1 100 180 A 80 80 0 1 1 100 20 M 100 48 A 52 52 0 1 0 100 152 A 52 52 0 1 0 100 48 Z'
-        : 'M ' + point(80, start) + ' A 80 80 0 ' + large + ' 1 ' + point(80, end) + ' L ' + point(52, end) + ' A 52 52 0 ' + large + ' 0 ' + point(52, start) + ' Z';
-      const segment = share > 0 ? '<path data-pie-month="' + escape(row.month) + '" data-rotation="' + (-(offset + share * 50) * 3.6) + '" d="' + path + '" fill="' + colors[index] + '" fill-rule="evenodd"><title>' + escape(row.month) + '：' + money(row.collected) + '</title></path>' : '';
-      offset += share * 100;
-      return segment;
+    const left = 56, right = 8, top = 16, base = 172, plot = base - top;
+    const scale = niceScale(Math.max(1, ...months.map(row => row.collected)), 3);
+    const slot = (width - left - right) / 12;
+    const barWidth = Math.min(18, slot * .6);
+    const byMonth = new Map(months.map(row => [Number(row.month.slice(5)), row]));
+    const columns = Array.from({ length: 12 }, (_, i) => {
+      const row = byMonth.get(i + 1);
+      const center = left + slot * (i + .5);
+      const tick = '<text class="av-tick" x="' + center.toFixed(1) + '" y="194" text-anchor="middle">' + (i + 1) + '</text>';
+      if (!row || !(row.collected > 0)) return tick;
+      const end = base - (row.collected / scale.top) * plot;
+      const share = (row.collected / total * 100).toFixed(1);
+      return '<g role="button" tabindex="0" data-month="' + escape(row.month) + '" aria-label="' + escape(row.month + '，已確認實收 ' + money(row.collected) + '，年內占比 ' + share + '%，查看明細') + '"><title>' + escape(row.month + '：' + money(row.collected)) + '</title><path class="av-mark av-bar" d="' + barPath(center - barWidth / 2, base, end, barWidth) + '" fill="' + viz.income + '"/><rect x="' + (center - slot / 2).toFixed(1) + '" y="' + top + '" width="' + slot.toFixed(1) + '" height="' + plot + '" fill="transparent"/></g>' + tick;
     }).join('');
-    return '<div class="av-pie"><svg viewBox="0 0 200 200" role="group" aria-label="所選年度每月實收比例"><g data-pie-ring>' + arcs + '</g><text x="100" y="97" text-anchor="middle" fill="#152238" font-size="15">月份收入</text><text x="100" y="117" text-anchor="middle" fill="#6b778c" font-size="12">實收占比</text></svg><ul>' + months.map(row => '<li><button type="button" data-pie-month="' + escape(row.month) + '"><i style="background:' + colors[Number(row.month.slice(5)) - 1] + '"></i>' + escape(row.month) + ' <span>' + money(row.collected) + '</span></button></li>').join('') + '</ul></div>';
+    return '<svg class="av-svg" viewBox="0 0 ' + width + ' 204" role="group" aria-label="所選年度每月實收">' + axis(scale, 3, left, right, width, base, plot) + columns + '</svg><p class="av-note">合計 ' + money(total) + ' · 橫軸為月份；點擊柱查看年內占比。</p>';
   }
 
   function mount(element, rows, previous) {
@@ -243,18 +292,19 @@
           ['出售後可拿回現金', money(sale.cash_received)]
         ].map(([label, amount]) => '<div><small>' + escape(label) + '</small><strong>' + amount + '</strong></div>').join('') + '</div><p class="av-note">' + (saleInputs.operating.trim() ? '' : '歷年營運支出尚未填寫，不計算含出租總淨獲利。') + (saleInputs.loan.trim() ? '' : ' 剩餘貸款尚未填寫，不計算可拿回現金；無貸款請填 0。') + '</p>';
         saleError.textContent = sale.fees === null ? '出售稅費與仲介費未填完整；尚未計算出售獲利。' : invested === null ? '總投入未填完整；尚未計算出售回報。' : '';
-        element.querySelector('[data-sale-chart]').innerHTML = saleChart(sale, invested);
+        element.querySelector('[data-sale-chart]').innerHTML = saleChart(sale, invested, chartWidth(element.querySelector('[data-sale-chart]'), 1));
         element.querySelector('[data-sale-chart]').setAttribute('data-paused', String(paused));
       } catch (failure) {
         saleError.textContent = '出售欄位請填有限的 0 或正數金額。';
         element.querySelector('[data-sale-result]').innerHTML = '';
         element.querySelector('[data-sale-chart]').innerHTML = '';
       }
+      const width = chartWidth(element.querySelector('[data-charts]'), 2);
       if (redraw) {
-        element.querySelector('[data-charts]').innerHTML = '<div class="av-chart-grid"' + (paused ? ' data-paused="true"' : '') + '><article><h3>每年實收 · 柱狀圖</h3>' + chart(modeled, 'income', '各年已確認實收柱狀圖', true) + '</article><article><h3>每年實收 · 高低曲線</h3>' + chart(modeled, 'income', '各年已確認實收曲線', false) + '</article><article><div data-valuation-chart><h3>毛收益情境估值 · ' + rate + '%</h3>' + chart(modeled, 'gross_value', '各年毛收益情境估值曲線', false, invested) + '</div></article><article><h3>' + selected + ' 年 · 月份圓餅圖</h3>' + pie(row.months || []) + '</article></div>';
+        element.querySelector('[data-charts]').innerHTML = '<div class="av-chart-grid"' + (paused ? ' data-paused="true"' : '') + '><article><h3>每年實收 · 柱狀圖</h3>' + chart(modeled, 'income', '各年已確認實收柱狀圖', true, null, width) + '</article><article><h3>每年實收 · 高低曲線</h3>' + chart(modeled, 'income', '各年已確認實收曲線', false, null, width) + '</article><article><div data-valuation-chart><h3>毛收益情境估值 · ' + rate + '%</h3>' + chart(modeled, 'gross_value', '各年毛收益情境估值曲線', false, invested, width) + '</div></article><article><h3>' + selected + ' 年 · 每月實收</h3>' + monthColumns(row.months || [], width) + '</article></div>';
         element.querySelector('[data-chart-detail]').innerHTML = '';
       }
-      element.querySelector('[data-valuation-chart]').innerHTML = '<h3>估值與投入對照 · ' + rate + '%</h3>' + chart(modeled, 'gross_value', '年度估值與總投入成本', false, invested);
+      element.querySelector('[data-valuation-chart]').innerHTML = '<h3>估值與投入對照 · ' + rate + '%</h3>' + chart(modeled, 'gross_value', '年度估值與總投入成本', false, invested, width);
       element.querySelector('[data-table]').innerHTML = '<table><thead><tr><th>年度</th><th>實收</th><th>情境估值 ' + rate + '%</th><th>有紀錄月份</th></tr></thead><tbody>' + modeled.map(value => '<tr><td>' + value.year + '</td><td>' + money(value.income) + '</td><td>' + money(value.gross_value) + '</td><td>' + value.recorded_months + '／12</td></tr>').join('') + '</tbody></table>';
       element.querySelectorAll('[data-rate]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.rate) === rate)));
       element.querySelectorAll('[data-basis]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.basis === mode)));
@@ -279,10 +329,10 @@
     });
     function showDetail(event) {
       if (event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
-      const target = event.target.closest('[data-chart-year], [data-pie-month]');
+      const target = event.target.closest('[data-chart-year], [data-month]');
       if (!target) return;
       if (event.type === 'keydown') event.preventDefault();
-      const month = target.dataset.pieMonth;
+      const month = target.dataset.month;
       const row = rows.find(value => value.year === (month ? selected : Number(target.dataset.chartYear)));
       if (!row) return;
       const months = row.months || [];
@@ -291,9 +341,7 @@
         if (!value) return;
         const total = months.reduce((sum, value) => sum + value.collected, 0);
         element.querySelector('[data-chart-detail]').innerHTML = '<h3>' + escape(month) + ' 月份明細</h3><p>已確認實收 ' + money(value.collected) + ' · 年內占比 ' + (total > 0 ? (value.collected / total * 100).toFixed(2) : '0.00') + '%</p>';
-        const arc = Array.from(element.querySelectorAll('[data-rotation]')).find(arc => arc.dataset.pieMonth === month);
-        const ring = element.querySelector('[data-pie-ring]');
-        if (arc && ring) ring.style.transform = 'rotate(' + arc.dataset.rotation + 'deg)';
+        element.querySelectorAll('[data-month]').forEach(column => column.setAttribute('aria-pressed', String(column.dataset.month === month)));
       } else {
         element.querySelector('[data-chart-detail]').innerHTML = '<h3>' + row.year + ' 年明細</h3><p>已確認實收 ' + money(row.collected) + ' · ' + rate + '% 情境估值 ' + money(calculate(row, rate, '').gross_value) + ' · 有紀錄 ' + row.recorded_months + '／12 月</p><ul>' + months.map(value => '<li>' + escape(value.month) + '：' + money(value.collected) + '</li>').join('') + '</ul>';
       }
@@ -305,7 +353,21 @@
       element.querySelector('[data-motion]').textContent = '繼續圖表動畫';
     }
     update();
+    // Charts are drawn at the card's width; redraw this widget when that width changes.
+    let drawnWidth = chartWidth(element.querySelector('[data-charts]'), 2);
+    redrawActive = () => {
+      const next = chartWidth(element.querySelector('[data-charts]'), 2);
+      if (next !== drawnWidth && element.isConnected !== false) { drawnWidth = next; update(); }
+    };
     return visualState;
+  }
+  let redrawActive = null;
+  let resizeTimer = 0;
+  if (typeof root.addEventListener === 'function') {
+    root.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { if (redrawActive) redrawActive(); }, 150);
+    });
   }
   root.CMWebsAssetValuation = { calculate, basis, investmentReturns, saleScenario, rollingMoney, mount };
 })(globalThis);

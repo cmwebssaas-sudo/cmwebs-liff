@@ -4880,6 +4880,39 @@ sync and `goPage` on every glass page. `tests/phase255-...` and
 Checked with synthetic data at 1280px and 390px, including an automated
 low-contrast scan (white text on a light background): none found.
 
+## 2026-10-28 Revenue and assets charts redesigned
+
+`landlord-revenue-dashboard.html` and `assets/js/cmwebs-asset-valuation.js`
+charts follow the dataviz method with the validated reference palette
+(blue `#2a78d6` 應收/估值, aqua `#1baf7a` 實收, orange `#eb6834` 未收/總投入,
+violet `#6250d6` 合約; `validate_palette.js --pairs all` passes, aqua's
+sub-3:1 contrast is relieved by the tables and labels). Each money entity
+keeps one colour on every chart and KPI values stay in ink with a small key.
+
+- Monthly chart: 2px lines, a 10% wash under 實收, 萬/億 axis labels on clean
+  steps, end dots with a surface ring, and one crosshair tooltip (hover,
+  click or keyboard focus) listing all three series; built with
+  `textContent`.
+- Payment status, overdue aging and contract expiry: horizontal 14px bars
+  with a 4px rounded end and the value at the tip.
+- Overdue ratio and occupancy: the donuts become a large number and a meter
+  on a pale track of the same hue.
+- Valuation block: rounded yearly bars, 2px lines with a wash that still
+  breaks at missing years, a labelled dashed 總投入 reference, and the
+  twelve-colour monthly pie replaced by twelve month columns (click a column
+  for its share). Charts render at the card's real width and redraw on
+  resize, so nothing scrolls sideways on phones.
+
+Release `20261028-revenue-charts-v1`; the valuation CSS/JS cache key on the
+revenue and home pages moved to the same release. Read comparison identity
+regenerated.
+
+Tests: `tests/revenue-chart-design.test.mjs` (new) covers the palette, ink
+text, tooltip safety, 萬/億 labels with clean steps and the valuation chart
+geometry; `tests/asset-income-valuation.test.mjs` now checks month columns
+(selected month marked) instead of pie rotation. Checked with synthetic data
+at 1280px and 390px, including hover.
+
 ## 2026-10-29 LINE login renews an expired ID token
 
 In an external (desktop) browser LIFF keeps its 30-day access token, so

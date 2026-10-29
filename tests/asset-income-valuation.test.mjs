@@ -136,20 +136,20 @@ test('investment returns distinguish actual collected income, invested capital a
   assert.throws(() => returns(rows, 200, { purchase: '1e308', renovation: '1e308' }, ''), /investment/i);
 });
 
-test('actual widget events show year/month details, rotate pie and retain charts during cost entry', () => {
+test('actual widget events show year/month details, mark the chosen month and retain charts during cost entry', () => {
   const nodes = new Map();
   const node = () => ({ innerHTML: '', textContent: '', value: '', style: {}, dataset: {}, handlers: {}, attrs: {},
     insertAdjacentHTML() {}, addEventListener(name, handler) { this.handlers[name] = handler; },
     setAttribute(name, value) { this.attrs[name] = value; }, removeAttribute(name) { delete this.attrs[name]; } });
   const purchase = Object.assign(node(), { dataset: { investment: 'purchase' } });
   const renovation = Object.assign(node(), { dataset: { investment: 'renovation' } });
-  const arc = Object.assign(node(), { dataset: { pieMonth: '2024-01', rotation: '-90' } });
+  const column = Object.assign(node(), { dataset: { month: '2024-01' } });
   const host = { innerHTML: '', querySelector(selector) { if (!nodes.has(selector)) nodes.set(selector, node()); return nodes.get(selector); },
-    querySelectorAll(selector) { return selector === '[data-investment]' ? [purchase, renovation] : selector === '[data-rotation]' ? [arc] : []; } };
+    querySelectorAll(selector) { return selector === '[data-investment]' ? [purchase, renovation] : selector === '[data-month]' ? [column] : []; } };
   frontend.CMWebsAssetValuation.mount(host, [{ year: 2024, collected: 100, recorded_months: 2, months: [{ month: '2024-01', collected: 50 }, { month: '2024-02', collected: 50 }] }]);
   const charts = nodes.get('[data-charts]');
   assert.match(charts.innerHTML, /data-chart-year="2024"/);
-  assert.match(charts.innerHTML, /<path data-pie-month="2024-01"/);
+  assert.match(charts.innerHTML, /<g role="button" tabindex="0" data-month="2024-01"/);
   assert.match(charts.innerHTML, /最高：NT\$ 100 · 最低：NT\$ 100/);
   const originalCharts = charts.innerHTML;
   purchase.value = '1000'; purchase.handlers.input();
@@ -159,10 +159,10 @@ test('actual widget events show year/month details, rotate pie and retain charts
   charts.handlers.click({ type: 'click', target: { closest() { return { dataset: { chartYear: '2024' } }; } } });
   assert.match(nodes.get('[data-chart-detail]').innerHTML, /2024-02：NT\$ 50/);
   let prevented = false;
-  charts.handlers.keydown({ type: 'keydown', key: 'Enter', preventDefault() { prevented = true; }, target: { closest() { return { dataset: { pieMonth: '2024-01' } }; } } });
+  charts.handlers.keydown({ type: 'keydown', key: 'Enter', preventDefault() { prevented = true; }, target: { closest() { return { dataset: { month: '2024-01' } }; } } });
   assert.equal(prevented, true);
   assert.match(nodes.get('[data-chart-detail]').innerHTML, /50\.00%/);
-  assert.equal(nodes.get('[data-pie-ring]').style.transform, 'rotate(-90deg)');
+  assert.equal(column.attrs['aria-pressed'], 'true');
   const motion = nodes.get('[data-motion]');
   motion.handlers.click({ currentTarget: motion });
   assert.equal(nodes.get('.av-chart-grid').attrs['data-paused'], 'true');
@@ -172,7 +172,7 @@ test('actual widget events show year/month details, rotate pie and retain charts
   assert.equal(nodes.get('[data-returns]').innerHTML, '');
 });
 
-test('motion is finite, reduced-motion cannot be overridden, and full-share pie uses a real ring path', () => {
+test('motion is finite, reduced-motion cannot be overridden, and a single month draws a real column', () => {
   const css = readFileSync(new URL('../assets/css/cmwebs-asset-valuation.css', import.meta.url), 'utf8');
   assert.match(css, /@keyframes av-grow/);
   assert.match(css, /@keyframes av-draw/);
@@ -183,7 +183,7 @@ test('motion is finite, reduced-motion cannot be overridden, and full-share pie 
   const nodes = new Map();
   const host = { innerHTML: '', querySelector(selector) { if (!nodes.has(selector)) nodes.set(selector, { innerHTML: '', textContent: '', value: '', insertAdjacentHTML() {}, addEventListener() {}, setAttribute() {}, removeAttribute() {} }); return nodes.get(selector); }, querySelectorAll() { return []; } };
   frontend.CMWebsAssetValuation.mount(host, [{ year: 2024, collected: 100, recorded_months: 1, months: [{ month: '2024-01', collected: 100 }] }]);
-  assert.match(nodes.get('[data-charts]').innerHTML, /fill-rule="evenodd"/);
+  assert.match(nodes.get('[data-charts]').innerHTML, /data-month="2024-01"[^>]*>[\s\S]*?<path class="av-mark av-bar" d="M[^"]+Z"/);
   assert.doesNotMatch(nodes.get('[data-charts]').innerHTML, /NaN|Infinity/);
 });
 
