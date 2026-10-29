@@ -152,7 +152,7 @@
     }
   }
 
-  function bridgePost(action, params, timeoutMs) {
+  function bridgePost(action, params, timeoutMs, options) {
     if (!config.apiUrl) {
       return Promise.reject(
         new Error('API_URL_REQUIRED')
@@ -249,7 +249,11 @@
           data.payload || {};
         const code =
           text(result.code);
-        maybeHandleAuthFailure(result);
+        // Email login runs before any session exists, so AUTH_REQUIRED there
+        // means the Email cannot log in yet; the login form explains that.
+        if (!(options && options.keepPageOnAuthFailure)) {
+          maybeHandleAuthFailure(result);
+        }
 
         if (result.success === true) {
           protectReadsAfterWrite(action,result);
@@ -471,7 +475,8 @@
         {
           email: text(email).trim()
         },
-        EMAIL_BRIDGE_TIMEOUT_MS
+        EMAIL_BRIDGE_TIMEOUT_MS,
+        { keepPageOnAuthFailure: true }
       );
     },
 
@@ -494,7 +499,8 @@
           challenge_id: text(challengeId).trim(),
           code: text(code).trim()
         },
-        EMAIL_BRIDGE_TIMEOUT_MS
+        EMAIL_BRIDGE_TIMEOUT_MS,
+        { keepPageOnAuthFailure: true }
       ).then(maybeStoreSession);
     },
 
