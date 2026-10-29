@@ -372,6 +372,11 @@
   }
 
   function lineIdToken() {
+    // The shared helper also renews an expired ID token in external browsers.
+    const shared = window.CMWebsLiffRequestAuth;
+    if (shared && typeof shared.getIdToken === 'function') {
+      return text(shared.getIdToken());
+    }
     // LIFF SDK 2.31+ throws from getIDToken() before liff.init(); an Email
     // page without a session must still reach its login form.
     try {

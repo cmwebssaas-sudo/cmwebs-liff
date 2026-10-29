@@ -8,12 +8,12 @@
   />
   <title>CMWebs 房東入口</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261028-glass-pages-v2"></script>
-  <script src="liff-request-auth.js?v=20261028-glass-pages-v2"></script>
-  <script src="landlord-auth.js?v=20261028-glass-pages-v2"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261028-glass-pages-v2" />
-  <script src="landlord-glass-nav.js?v=20261028-glass-pages-v2" defer></script>
-  <script src="landlord-glass-shell.js?v=20261028-glass-pages-v2" defer></script>
+<script src="frontend-release.js?v=20261029-line-relogin-v1"></script>
+  <script src="liff-request-auth.js?v=20261029-line-relogin-v1"></script>
+  <script src="landlord-auth.js?v=20261029-line-relogin-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261029-line-relogin-v1" />
+  <script src="landlord-glass-nav.js?v=20261029-line-relogin-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261029-line-relogin-v1" defer></script>
 
   <style>
     :root {
@@ -355,7 +355,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261028-glass-pages-v2" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261029-line-relogin-v1" />
 </head>
 
 <body>
@@ -1221,6 +1221,20 @@
         return false;
       }
 
+      // getProfile() keeps working on the 30-day access token after the
+      // one-hour ID token the backend verifies has expired.
+      const requestAuth =
+        typeof CMWebsLiffRequestAuth === 'undefined' ? null : CMWebsLiffRequestAuth;
+      if (requestAuth && requestAuth.idTokenExpired()) {
+        if (liff.isInClient()) {
+          renderEntryLoginExpired();
+          return false;
+        }
+        if (requestAuth.reloginIfIdTokenExpired(entryReloginUrl(false))) {
+          return false;
+        }
+      }
+
       let profile;
       try {
         profile = await liff.getProfile();
@@ -1547,6 +1561,17 @@
             'landlord_entry_status',
             {}
           );
+
+        if (
+          result &&
+          result.success !== true &&
+          result.code === 'AUTH_REQUIRED'
+        ) {
+          // The backend could not verify the LINE identity; offer a fresh
+          // LINE login instead of a dead-end error card.
+          renderEntryLoginExpired();
+          return;
+        }
 
         if (
           !result ||
