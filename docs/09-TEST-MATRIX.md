@@ -4936,3 +4936,18 @@ Tests: `tests/line-id-token-expiry.test.mjs` (new) covers the external-browser
 renewal, the guard, fresh tokens, the LINE app, an uninitialised SDK, the
 landlord auth params, the entry page renewal and the `AUTH_REQUIRED` card.
 The real LINE redirect needs a live LINE login and is checked after release.
+
+## 2026-10-29 Email login explains why a code was not sent
+
+`landlord-entry.html` now names three Email login failures instead of the
+generic network hint: an Email that has not finished Email verification
+(`AUTH_REQUIRED`, with the way to enable it from Settings after a LINE login),
+a mail delivery failure (`EMAIL_DELIVERY_FAILED`) and a server timeout
+(`API_TIMEOUT`). `landlord-auth.js` no longer sends the Email login request
+or code check back to the entry page on `AUTH_REQUIRED`; that redirect
+dropped `mode=email` and left the user on the LINE login. Protected requests
+still redirect as before.
+
+Tests: `tests/email-login-error-messages.test.mjs` (new) covers the kept login
+form for both Email login calls, the unchanged redirect for protected
+requests, the three messages and the existing codes and fallback.

@@ -8,12 +8,12 @@
   />
   <title>CMWebs 房東入口</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261029-revenue-charts-v1"></script>
-  <script src="liff-request-auth.js?v=20261029-revenue-charts-v1"></script>
-  <script src="landlord-auth.js?v=20261029-revenue-charts-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261029-revenue-charts-v1" />
-  <script src="landlord-glass-nav.js?v=20261029-revenue-charts-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261029-revenue-charts-v1" defer></script>
+<script src="frontend-release.js?v=20261029-email-login-messages-v1"></script>
+  <script src="liff-request-auth.js?v=20261029-email-login-messages-v1"></script>
+  <script src="landlord-auth.js?v=20261029-email-login-messages-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261029-email-login-messages-v1" />
+  <script src="landlord-glass-nav.js?v=20261029-email-login-messages-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261029-email-login-messages-v1" defer></script>
 
   <style>
     :root {
@@ -355,7 +355,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261029-revenue-charts-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261029-email-login-messages-v1" />
 </head>
 
 <body>
@@ -721,6 +721,15 @@
       }
       if (code === 'CHALLENGE_LOCKED') {
         return '驗證碼嘗試次數過多，請重新取得新的驗證碼。';
+      }
+      if (code === 'AUTH_REQUIRED') {
+        return '這個 Email 尚未開通 Email 登入。請先用 LINE 登入，到「設定」完成 Email 驗證後再使用。';
+      }
+      if (code === 'EMAIL_DELIVERY_FAILED') {
+        return '系統暫時無法寄出驗證碼，請稍後再試；若一直失敗，請先改用 LINE 登入。';
+      }
+      if (code === 'API_TIMEOUT') {
+        return '伺服器回應逾時，請稍後再試。';
       }
       return fallback || '若 Email 可使用，我們會寄出一次性驗證碼。';
     }
