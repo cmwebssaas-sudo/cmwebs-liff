@@ -109,28 +109,32 @@ function requestLandlordEmailLogin_(
   email,
   requestId
 ) {
+  const timing =
+    landlordEmailAuthTiming_('login_request');
   const normalizedEmail =
     landlordEmailAuthNormalizeEmail_(
       email
     );
   if (!normalizedEmail) {
-    return landlordEmailAuthGenericLoginFailure_();
+    return timing.done(landlordEmailAuthGenericLoginFailure_());
   }
 
   const user =
     landlordEmailAuthFindActiveVerifiedLandlordByEmail_(
       normalizedEmail
     );
+  timing.step('find_user');
   if (!user) {
-    return landlordEmailAuthGenericLoginFailure_();
+    return timing.done(landlordEmailAuthGenericLoginFailure_());
   }
 
-  return landlordEmailAuthIssueChallenge_({
+  return timing.done(landlordEmailAuthIssueChallenge_({
     user: user,
     email: normalizedEmail,
     requestId: requestId,
-    purpose: 'login'
-  });
+    purpose: 'login',
+    timing: timing
+  }));
 }
 
 function verifyLandlordEmailLogin_(
@@ -138,9 +142,11 @@ function verifyLandlordEmailLogin_(
   code,
   requestId
 ) {
+  const timing = landlordEmailAuthTiming_('login_verify');
   const loginChallenge = landlordEmailAuthFindChallenge_(challengeId);
+  timing.step('find_challenge');
   if (loginChallenge && /^reg_/.test(String(loginChallenge.user_id || ''))) {
-    return landlordEmailAuthError_('INVALID_CHALLENGE', '請從建立帳號頁完成註冊驗證');
+    return timing.done(landlordEmailAuthError_('INVALID_CHALLENGE', '請從建立帳號頁完成註冊驗證'));
   }
   const verified =
     landlordEmailAuthVerifyChallenge_(
@@ -149,23 +155,55 @@ function verifyLandlordEmailLogin_(
       requestId,
       ''
     );
-  if (!verified.success) return verified;
+  timing.step('check_code');
+  if (!verified.success) return timing.done(verified);
 
   const user =
     landlordEmailAuthFindUserById_(
       verified.data.user_id
     );
+  timing.step('find_user');
   if (!landlordEmailAuthUserCanLogin_(user)) {
-    return landlordEmailAuthGenericLoginFailure_();
+    return timing.done(landlordEmailAuthGenericLoginFailure_());
   }
 
   const access =
     landlordEmailAuthResolveUserAccess_(
       user
     );
-  if (!access.success) return access;
+  timing.step('resolve_access');
+  if (!access.success) return timing.done(access);
 
-  return landlordEmailAuthCreateSessionForAccess_(user, access, requestId);
+  const session = landlordEmailAuthCreateSessionForAccess_(user, access, requestId);
+  timing.step('create_session');
+  return timing.done(session);
+}
+
+// Writes one execution-log line per Email login call so a slow step can be
+// found. Only step names, the result code and milliseconds are logged; never
+// the Email, code or token.
+function landlordEmailAuthTiming_(flow) {
+  const startedAt = Date.now();
+  let lastAt = startedAt;
+  const steps = [];
+  return {
+    step(name) {
+      const now = Date.now();
+      steps.push(name + '=' + (now - lastAt) + 'ms');
+      lastAt = now;
+    },
+    done(result) {
+      try {
+        console.log(
+          'EMAIL_LOGIN_TIMING ' + flow + ' ' +
+          landlordEmailAuthText_(result && result.code) +
+          ' total=' + (Date.now() - startedAt) + 'ms' +
+          (steps.length ? ' ' + steps.join(' ') : '')
+        );
+      } catch (_) {}
+      return result;
+    }
+  };
 }
 
 function landlordEmailAuthCreateSessionForAccess_(user, access, requestId) {
@@ -312,6 +350,7 @@ function landlordEmailAuthIssueChallenge_(
         emailHash,
         nowIso
       );
+    if (options.timing) options.timing.step('rate_check');
     if (!rate.success) return rate;
 
     const otp =
@@ -338,6 +377,7 @@ function landlordEmailAuthIssueChallenge_(
     } else {
       landlordEmailAuthSendOtpEmail_(options.email, otp, options.purpose);
     }
+    if (options.timing) options.timing.step('send_mail');
   } catch (error) {
     return landlordEmailAuthError_(
       'EMAIL_DELIVERY_FAILED',
@@ -349,6 +389,7 @@ function landlordEmailAuthIssueChallenge_(
     sheet,
     record
   );
+  if (options.timing) options.timing.step('save_challenge');
 
   return landlordEmailAuthResult_(
     true,

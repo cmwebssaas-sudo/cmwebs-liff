@@ -4936,3 +4936,19 @@ Tests: `tests/line-id-token-expiry.test.mjs` (new) covers the external-browser
 renewal, the guard, fresh tokens, the LINE app, an uninitialised SDK, the
 landlord auth params, the entry page renewal and the `AUTH_REQUIRED` card.
 The real LINE redirect needs a live LINE login and is checked after release.
+
+## 2026-10-29 Email login step timings in the execution log
+
+`apps-script/V2_LANDLORD_EMAIL_AUTH.js` writes one `EMAIL_LOGIN_TIMING` line
+per Email login request and code check: the result code, the total and the
+milliseconds of each step (`find_user`, `rate_check`, `send_mail`,
+`save_challenge`; `find_challenge`, `check_code`, `find_user`,
+`resolve_access`, `create_session`). It never logs the Email, the code, the
+challenge id or the session token. Comparing the total with the execution
+duration shows whether time goes to these steps or to the request wrapper.
+`cloudflare/read-api/read-source-manifest.json` only records the new source
+digest; the generated Worker calculator is unchanged.
+
+Tests: `tests/phase217-landlord-email-auth.runtime.test.mjs` adds the step
+lines for a successful login, failure lines with their code, no Email, code,
+challenge id or token in the log, and login without a console.

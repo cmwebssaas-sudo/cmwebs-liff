@@ -584,3 +584,53 @@ guardedTest('Phase 217 accepts Email challenges before 10 minutes and rejects th
     assert.equal(expired.code, 'CHALLENGE_EXPIRED');
   }
 });
+
+// Slow logins are diagnosed from the execution log: one line per call with
+// the step names and milliseconds, never the Email, the code or the token.
+function captureTimingLog(api) {
+  const lines = [];
+  api.console = { log: (line) => lines.push(String(line)) };
+  return lines;
+}
+
+guardedTest('Email login timing logs each step without the Email, code or token', () => {
+  const { api, sheets, state } = createRuntime();
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+  const lines = captureTimingLog(api);
+
+  const requested = api.requestLandlordEmailLogin_('owner@example.com', 'timing-request');
+  assert.equal(requested.success, true, requested.code);
+  const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
+  const code = extractOtpCode(state.mailSends[0]);
+  const verified = api.verifyLandlordEmailLogin_(challenge.challenge_id, code, 'timing-verify');
+  assert.equal(verified.success, true, verified.code);
+
+  assert.equal(lines.length, 2);
+  assert.match(lines[0], /^EMAIL_LOGIN_TIMING login_request OK total=\d+ms find_user=\d+ms rate_check=\d+ms send_mail=\d+ms save_challenge=\d+ms$/);
+  assert.match(lines[1], /^EMAIL_LOGIN_TIMING login_verify OK total=\d+ms find_challenge=\d+ms check_code=\d+ms find_user=\d+ms resolve_access=\d+ms create_session=\d+ms$/);
+  const logged = lines.join('\n');
+  for (const secret of ['owner@example.com', code, challenge.challenge_id, verified.data.session_token]) {
+    assert.equal(logged.includes(secret), false, 'timing log must not contain ' + secret);
+  }
+});
+
+guardedTest('Email login timing records failures with their code', () => {
+  const { api, sheets } = createRuntime({ sendEmailError: new Error('Service invoked too many times') });
+  const lines = captureTimingLog(api);
+  assert.equal(api.requestLandlordEmailLogin_('nobody@example.com', 'timing-unknown').code, 'AUTH_REQUIRED');
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+  assert.equal(api.requestLandlordEmailLogin_('owner@example.com', 'timing-mail-failure').code, 'EMAIL_DELIVERY_FAILED');
+  assert.equal(api.verifyLandlordEmailLogin_('missing-challenge', '123456', 'timing-bad').success, false);
+
+  assert.match(lines[0], /^EMAIL_LOGIN_TIMING login_request AUTH_REQUIRED total=\d+ms find_user=\d+ms$/);
+  assert.match(lines[1], /^EMAIL_LOGIN_TIMING login_request EMAIL_DELIVERY_FAILED total=\d+ms find_user=\d+ms rate_check=\d+ms$/);
+  assert.match(lines[2], /^EMAIL_LOGIN_TIMING login_verify INVALID_CHALLENGE total=\d+ms find_challenge=\d+ms check_code=\d+ms$/);
+  assert.doesNotMatch(lines.join('\n'), /example\.com|too many times/);
+});
+
+guardedTest('Email login still works when the runtime has no console', () => {
+  const { api, sheets } = createRuntime();
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+  api.console = undefined;
+  assert.equal(api.requestLandlordEmailLogin_('owner@example.com', 'timing-no-console').success, true);
+});
