@@ -4912,3 +4912,27 @@ text, tooltip safety, 萬/億 labels with clean steps and the valuation chart
 geometry; `tests/asset-income-valuation.test.mjs` now checks month columns
 (selected month marked) instead of pie rotation. Checked with synthetic data
 at 1280px and 390px, including hover.
+
+## 2026-10-29 LINE login renews an expired ID token
+
+In an external (desktop) browser LIFF keeps its 30-day access token, so
+`liff.getProfile()` keeps working after the one-hour ID token that Apps
+Script verifies with LINE has expired. Every protected request then failed
+with `AUTH_REQUIRED` and the entry page showed a dead-end 「房東入口載入失敗」
+card whose refresh reused the same expired token.
+
+`liff-request-auth.js` now checks the decoded ID token's `exp` (30 s margin).
+When it has expired outside the LINE app, it runs `liff.logout()` and
+`liff.login()` back to the current page without OAuth parameters, and sends no
+token while the redirect runs. A per-tab guard (2 minutes) stops a skewed
+device clock from looping; the server then decides on the token. The LINE app
+renews the token on launch and is not redirected. `landlord-auth.js` uses the
+shared helper. The entry page renews before `getProfile()`, shows the
+「LINE 登入已過期」 card inside the LINE app, and shows the same card when
+`landlord_entry_status` returns `AUTH_REQUIRED`. Release
+`20261029-line-relogin-v1`; read comparison identity regenerated.
+
+Tests: `tests/line-id-token-expiry.test.mjs` (new) covers the external-browser
+renewal, the guard, fresh tokens, the LINE app, an uninitialised SDK, the
+landlord auth params, the entry page renewal and the `AUTH_REQUIRED` card.
+The real LINE redirect needs a live LINE login and is checked after release.
