@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-f2f7dc41126853ead4620f33d6a9e23bd8c08bb1ee0ebaa4311076a1256581d8",
+  "comparison_version": "read-ad27f2f7d1982afc7f2dfae6c25ad58870b839ec5e6f4e642d2cf060502d1234",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -127,12 +127,12 @@
     "landlord-announcements.html": "01b979dbe01299eeaf71e954add68bbfdd29f3b3ff8c4567c05e30b90c54b4ec",
     "landlord-api.js": "cf3c4006855a3d98489d9bad1ccea889f32beaa0317458125ac209fb5f89994c",
     "landlord-arrears.html": "569b4247a641a605ee571120c9d1a0948070ca62c4731a860f8dead14b28a74e",
-    "landlord-auth.js": "5e7303ff28eaa0369a6c83442d57f546207d821f40aad5584e70ea8a31c4ae41",
+    "landlord-auth.js": "3ec526f4017390a5fa3f64db1741c3708f55d58118bef9f210f5a3b9ba0b95fb",
     "landlord-bill-notifications.html": "1da83f82f885e48f84c44962e2bc0f50089792866b9456f3bbad1fd613db37d3",
     "landlord-billing.html": "837f2d3f91a82535b317c0510f428204df62298f046713d002b77b8d165b4d10",
     "landlord-contract-documents.html": "ddf747eda3473c3b25f6a4dfe7bf41bcd04af5807dd00a2ff576413c30f5fd15",
     "landlord-contract-requests.html": "31a9444e20716ce86e594ba229e53d814a82a3af3e04b82ae68a84f7a30cfdbe",
-    "landlord-entry.html": "178c7a77183c41fcbd12a27592eba4d87593bf164125775e85a3f8178c321887",
+    "landlord-entry.html": "515da908d04bf95228c9308adf284a3fab1a332e74e17e4a4576263d00b814bf",
     "landlord-glass-nav.js": "2619c91d0a65dd9588f0a79f0349c4c07da9fae790830de0cccec9dbd2cdbda2",
     "landlord-glass-shell.js": "c8b47276fa654405f82d53b2f00751878f43396e06070c090d4f2a428da82ae6",
     "landlord-glass-theme.css": "9816cbcc10de9c6f0f6b8ecb6b6bbcb59b303eb6e6a4cd144e6f13c42dd55828",
