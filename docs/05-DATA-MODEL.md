@@ -235,6 +235,27 @@ request_id
 - Uses HMAC-SHA256 with the same required Apps Script Property
   `CMWEBS_EMAIL_LOGIN_HASH_SECRET`.
 
+### `V2_email_login_timing`
+
+Diagnostic sheet created by the first Email login request when it does not
+exist, with these headers:
+
+```text
+logged_at
+flow
+code
+total_ms
+request_ms
+steps
+```
+
+- One row per Email login request (`login_request`) and code check
+  (`login_verify`): the result code, the milliseconds inside the login
+  function, the milliseconds since the web request started, and each step.
+- Holds no Email, code, challenge id, user id or session token.
+- Keeps the newest 300 rows; older rows are removed once it passes 400.
+- A failed write never fails the login.
+
 ### Evidence boundary
 
 - Local tests and static validators can prove the additive schema contract,
