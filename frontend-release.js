@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261029-email-login-messages-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-297037c1d8f855f07b2c5dc06d1a15ebe2396d2d706f783ddcfbc8cdd0b7be4a";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-b8c3e6eaa8d0af6a73366c665408d411228dd80a46d3405ccb61c693734abceb";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';

@@ -4980,3 +4980,16 @@ keeps the newest 300 rows, and a failed write never fails the login.
 Tests: `tests/phase217-landlord-email-auth.runtime.test.mjs` adds the saved
 rows and headers, the request start time, no private values in the sheet, the
 row limit, and login when the sheet write fails.
+
+## 2026-10-31 Email login checks the sheet schema once per request
+
+`V2_email_login_timing` showed every Email login step taking 2–3 s, while the
+step that reuses a sheet handle took 0.2 s. `landlordEmailAuthRequiredSheet_`
+ran `workspaceEnsureSchema_`, which reads the headers of every workspace sheet,
+on each sheet access in POST requests. `apps-script/V2_LANDLORD_EMAIL_AUTH.js`
+now runs it once per execution. A failed check runs again on the next access,
+and a missing sheet still fails. Other modules keep their own schema calls.
+
+Tests: `tests/phase217-landlord-email-auth.runtime.test.mjs` adds one check
+across a login request and code check, a new check in each execution, a retry
+after a failed check, and the missing-sheet error.
