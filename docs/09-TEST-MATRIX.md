@@ -4967,3 +4967,16 @@ digest; the generated Worker calculator is unchanged.
 Tests: `tests/phase217-landlord-email-auth.runtime.test.mjs` adds the step
 lines for a successful login, failure lines with their code, no Email, code,
 challenge id or token in the log, and login without a console.
+
+## 2026-10-30 Email login timings saved to a sheet
+
+The Apps Script execution page shows no console output for this project, so
+`apps-script/V2_LANDLORD_EMAIL_AUTH.js` also appends each `EMAIL_LOGIN_TIMING`
+record to `V2_email_login_timing` (created on first use): time, flow, result
+code, `total_ms`, `request_ms` since the web request started, and the step
+milliseconds. It never stores the Email, code, challenge id, user id or token,
+keeps the newest 300 rows, and a failed write never fails the login.
+
+Tests: `tests/phase217-landlord-email-auth.runtime.test.mjs` adds the saved
+rows and headers, the request start time, no private values in the sheet, the
+row limit, and login when the sheet write fails.

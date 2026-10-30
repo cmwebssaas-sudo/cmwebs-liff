@@ -634,3 +634,82 @@ guardedTest('Email login still works when the runtime has no console', () => {
   api.console = undefined;
   assert.equal(api.requestLandlordEmailLogin_('owner@example.com', 'timing-no-console').success, true);
 });
+
+// The execution log shows no console output for this project, so the same
+// timing is also kept in a small sheet that can be read back.
+class TimingSheet {
+  constructor(rows = []) { this.rows = rows.map((row) => row.slice()); }
+  appendRow(row) { this.rows.push(row.slice()); }
+  getLastRow() { return this.rows.length; }
+  deleteRows(start, count) { this.rows.splice(start - 1, count); }
+}
+
+function withTimingSheet(api, sheets, { existing, failWith } = {}) {
+  if (existing) sheets.V2_email_login_timing = existing;
+  api.SpreadsheetApp = {
+    getActiveSpreadsheet: () => ({
+      getSheetByName: (name) => {
+        if (failWith && name === 'V2_email_login_timing') throw failWith;
+        return sheets[name] || null;
+      },
+      insertSheet: (name) => (sheets[name] = new TimingSheet())
+    })
+  };
+}
+
+guardedTest('Email login timing rows are saved to a sheet without the Email, code or token', () => {
+  const { api, sheets, state } = createRuntime();
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+  withTimingSheet(api, sheets);
+  captureTimingLog(api);
+
+  api.V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ = { started_at: Date.now() - 5000 };
+  const requested = api.requestLandlordEmailLogin_('owner@example.com', 'sheet-request');
+  assert.equal(requested.success, true, requested.code);
+  const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
+  const code = extractOtpCode(state.mailSends[0]);
+  api.V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ = undefined;
+  const verified = api.verifyLandlordEmailLogin_(challenge.challenge_id, code, 'sheet-verify');
+  assert.equal(verified.success, true, verified.code);
+
+  const rows = sheets.V2_email_login_timing.rows;
+  assert.deepEqual([...rows[0]], ['logged_at', 'flow', 'code', 'total_ms', 'request_ms', 'steps']);
+  assert.equal(rows.length, 3);
+  assert.match(rows[1][0], /^\d{4}-\d\d-\d\dT/);
+  assert.deepEqual([...rows[1].slice(1, 3)], ['login_request', 'OK']);
+  assert.equal(typeof rows[1][3], 'number');
+  assert.ok(rows[1][4] >= 5000, 'request_ms counts from the start of the web request');
+  assert.match(rows[1][5], /^find_user=\d+ms rate_check=\d+ms send_mail=\d+ms save_challenge=\d+ms$/);
+  assert.deepEqual([...rows[2].slice(1, 3)], ['login_verify', 'OK']);
+  assert.equal(rows[2][4], '', 'no request start outside a web request');
+  assert.match(rows[2][5], /^find_challenge=\d+ms check_code=\d+ms find_user=\d+ms resolve_access=\d+ms create_session=\d+ms$/);
+
+  const saved = JSON.stringify(rows);
+  for (const secret of ['owner@example.com', code, challenge.challenge_id, verified.data.session_token, 'user-1']) {
+    assert.equal(saved.includes(secret), false, 'timing sheet must not contain ' + secret);
+  }
+});
+
+guardedTest('Email login timing sheet keeps only the newest rows', () => {
+  const { api, sheets } = createRuntime();
+  const old = [['logged_at', 'flow', 'code', 'total_ms', 'request_ms', 'steps']];
+  for (let i = 0; i < 400; i++) old.push(['old-' + i, 'login_request', 'OK', 1, '', '']);
+  withTimingSheet(api, sheets, { existing: new TimingSheet(old) });
+  captureTimingLog(api);
+
+  api.requestLandlordEmailLogin_('nobody@example.com', 'sheet-trim');
+  const rows = sheets.V2_email_login_timing.rows;
+  assert.equal(rows.length, 301, 'header plus the newest 300 rows');
+  assert.equal(rows[0][0], 'logged_at');
+  assert.equal(rows[1][0], 'old-101', 'the oldest 101 rows were removed');
+  assert.equal(rows[300][2], 'AUTH_REQUIRED');
+});
+
+guardedTest('Email login still works when the timing sheet cannot be written', () => {
+  const { api, sheets } = createRuntime();
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+  withTimingSheet(api, sheets, { failWith: new Error('Service Spreadsheets timed out') });
+  const lines = captureTimingLog(api);
+  assert.equal(api.requestLandlordEmailLogin_('owner@example.com', 'sheet-failure').success, true);
+  assert.equal(lines.length, 1, 'the execution-log line is still written');
+});

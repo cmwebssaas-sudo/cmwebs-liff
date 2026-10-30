@@ -6,6 +6,12 @@ const V2_LANDLORD_EMAIL_AUTH_USER_SHEET_ =
   'V2_users';
 const V2_LANDLORD_EMAIL_AUTH_MEMBER_SHEET_ =
   'V2_workspace_members';
+const V2_LANDLORD_EMAIL_AUTH_TIMING_SHEET_ =
+  'V2_email_login_timing';
+const V2_LANDLORD_EMAIL_AUTH_TIMING_HEADERS_ = [
+  'logged_at', 'flow', 'code', 'total_ms', 'request_ms', 'steps'
+];
+const V2_LANDLORD_EMAIL_AUTH_TIMING_MAX_ROWS_ = 300;
 const V2_LANDLORD_EMAIL_AUTH_CHALLENGE_MIN_SECONDS_ = 60;
 const V2_LANDLORD_EMAIL_AUTH_CHALLENGE_TTL_SECONDS_ = 10 * 60;
 const V2_LANDLORD_EMAIL_AUTH_RATE_WINDOW_SECONDS_ = 15 * 60;
@@ -179,9 +185,9 @@ function verifyLandlordEmailLogin_(
   return timing.done(session);
 }
 
-// Writes one execution-log line per Email login call so a slow step can be
-// found. Only step names, the result code and milliseconds are logged; never
-// the Email, code or token.
+// Writes one execution-log line and one timing-sheet row per Email login call
+// so a slow step can be found. Only step names, the result code and
+// milliseconds are recorded; never the Email, code or token.
 function landlordEmailAuthTiming_(flow) {
   const startedAt = Date.now();
   let lastAt = startedAt;
@@ -193,17 +199,55 @@ function landlordEmailAuthTiming_(flow) {
       lastAt = now;
     },
     done(result) {
+      const code = landlordEmailAuthText_(result && result.code);
+      const total = Date.now() - startedAt;
       try {
         console.log(
-          'EMAIL_LOGIN_TIMING ' + flow + ' ' +
-          landlordEmailAuthText_(result && result.code) +
-          ' total=' + (Date.now() - startedAt) + 'ms' +
+          'EMAIL_LOGIN_TIMING ' + flow + ' ' + code +
+          ' total=' + total + 'ms' +
           (steps.length ? ' ' + steps.join(' ') : '')
         );
       } catch (_) {}
+      landlordEmailAuthSaveTiming_(flow, code, total, steps);
       return result;
     }
   };
+}
+
+// The execution log does not show console output for this project, so the
+// same timing is kept in a small sheet. It never blocks or fails a login.
+function landlordEmailAuthSaveTiming_(flow, code, totalMs, steps) {
+  try {
+    const requestState =
+      typeof V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ !== 'undefined'
+        ? V2_REQUEST_RUNTIME_SNAPSHOT_STATE_
+        : null;
+    const requestMs =
+      requestState && requestState.started_at
+        ? Date.now() - requestState.started_at
+        : '';
+    const ss =
+      typeof runtimeSpreadsheet_ === 'function'
+        ? runtimeSpreadsheet_()
+        : SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(V2_LANDLORD_EMAIL_AUTH_TIMING_SHEET_);
+    if (!sheet) {
+      sheet = ss.insertSheet(V2_LANDLORD_EMAIL_AUTH_TIMING_SHEET_);
+      sheet.appendRow(V2_LANDLORD_EMAIL_AUTH_TIMING_HEADERS_);
+    }
+    sheet.appendRow([
+      new Date().toISOString(),
+      flow,
+      code,
+      totalMs,
+      requestMs,
+      steps.join(' ')
+    ]);
+    const lastRow = sheet.getLastRow();
+    if (lastRow > V2_LANDLORD_EMAIL_AUTH_TIMING_MAX_ROWS_ + 100) {
+      sheet.deleteRows(2, lastRow - 1 - V2_LANDLORD_EMAIL_AUTH_TIMING_MAX_ROWS_);
+    }
+  } catch (_) {}
 }
 
 function landlordEmailAuthCreateSessionForAccess_(user, access, requestId) {
