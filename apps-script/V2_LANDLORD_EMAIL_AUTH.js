@@ -722,11 +722,12 @@ function landlordEmailAuthResolveLineAccess_(
   }
 
   if (typeof workspaceLandlordResolveAccess_ === 'function') {
+    landlordEmailAuthEnsureSchemaOnce_();
     const access =
       workspaceLandlordResolveAccess_(
         lineUserId,
         {
-          skip_schema_ensure: false,
+          skip_schema_ensure: true,
           skip_legacy_context_creation: true
         }
       );
@@ -773,12 +774,13 @@ function landlordEmailAuthResolveUserAccess_(
     typeof workspaceLandlordResolveAccess_ === 'function'
   ) {
     const accessOptions = {
-      skip_schema_ensure: false,
+      skip_schema_ensure: true,
       skip_legacy_context_creation: true
     };
     if (options.require_onboarding === true) {
       accessOptions.require_onboarding = true;
-      accessOptions.skip_schema_ensure = true;
+    } else {
+      landlordEmailAuthEnsureSchemaOnce_();
     }
 
     const access =
@@ -1062,6 +1064,7 @@ function landlordEmailAuthMemberSheet_() {
 // The schema check reads the headers of every workspace sheet, which takes
 // seconds, and one request reaches this module several times. Globals last one
 // execution, so each request still checks once. A failed check runs again.
+// Access lookups call this and pass skip_schema_ensure for the same reason.
 function landlordEmailAuthEnsureSchemaOnce_() {
   if (V2_LANDLORD_EMAIL_AUTH_SCHEMA_CHECKED_) return;
   if (typeof workspaceEnsureSchema_ === 'function') {
