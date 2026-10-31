@@ -4993,3 +4993,17 @@ and a missing sheet still fails. Other modules keep their own schema calls.
 Tests: `tests/phase217-landlord-email-auth.runtime.test.mjs` adds one check
 across a login request and code check, a new check in each execution, a retry
 after a failed check, and the missing-sheet error.
+
+## 2026-10-31 Email access lookups share the once-per-request schema check
+
+Version 238 timing showed `check_code` and `find_user` drop to 0.5 s, but
+`resolve_access` stayed at 4.3 s. `landlordEmailAuthResolveUserAccess_` and
+`landlordEmailAuthResolveLineAccess_` passed `skip_schema_ensure: false` to
+`workspaceLandlordResolveAccess_`, so a landlord with a linked LINE account ran
+a second full check. Both now call `landlordEmailAuthEnsureSchemaOnce_` and pass
+`skip_schema_ensure: true`. A failed check still stops the lookup. The
+`require_onboarding` path keeps skipping the check, as it did before.
+
+Tests: `tests/phase217-landlord-email-auth.runtime.test.mjs` adds a stub that
+runs the lookup's own check unless told to skip it, one check across the login
+and LINE verification paths, and no access read after a failed check.

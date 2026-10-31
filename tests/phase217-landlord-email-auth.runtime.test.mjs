@@ -714,22 +714,57 @@ guardedTest('Email login still works when the timing sheet cannot be written', (
   assert.equal(lines.length, 1, 'the execution-log line is still written');
 });
 
+// The real access lookup runs its own schema check unless told to skip it, which
+// the default stub does not, so a test that counts checks must mimic that.
+function countSchemaChecks(api) {
+  const counter = { checks: 0, accessCalls: [] };
+  api.workspaceEnsureSchema_ = () => { counter.checks += 1; return true; };
+  const resolveAccess = api.workspaceLandlordResolveAccess_;
+  api.workspaceLandlordResolveAccess_ = (lineUserId, options) => {
+    counter.accessCalls.push(options);
+    if (!options || options.skip_schema_ensure !== true) api.workspaceEnsureSchema_();
+    return resolveAccess(lineUserId, options);
+  };
+  return counter;
+}
+
 // The schema check reads the headers of every workspace sheet. Running it on
 // each sheet access made every Email login step take seconds.
 guardedTest('Email login checks the sheet schema once per execution', () => {
   const { api, sheets, state } = createRuntime();
   enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
-  let checks = 0;
-  api.workspaceEnsureSchema_ = () => { checks += 1; return true; };
+  const counter = countSchemaChecks(api);
 
   const requested = api.requestLandlordEmailLogin_('owner@example.com', 'schema-request');
   assert.equal(requested.success, true, requested.code);
-  assert.equal(checks, 1, 'a login request reads two sheets but checks once');
+  assert.equal(counter.checks, 1, 'a login request reads two sheets but checks once');
 
   const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
   const verified = api.verifyLandlordEmailLogin_(challenge.challenge_id, extractOtpCode(state.mailSends[0]), 'schema-verify');
   assert.equal(verified.success, true, verified.code);
-  assert.equal(checks, 1, 'the code check reuses the same execution');
+  assert.equal(counter.checks, 1, 'the code check reuses the same execution');
+  assert.ok(counter.accessCalls.length >= 1, 'the code check reaches the access lookup');
+  assert.equal(counter.accessCalls[0].skip_legacy_context_creation, true);
+});
+
+guardedTest('A LINE Email access lookup checks the schema once for the whole request', () => {
+  const { api } = createRuntime();
+  const counter = countSchemaChecks(api);
+  const requested = api.requestLandlordEmailVerificationByLineUid_('line-1', 'owner@example.com', 'schema-line');
+  assert.equal(requested.success, true, requested.code);
+  assert.equal(counter.accessCalls.length >= 1, true, 'the LINE path reaches the access lookup');
+  assert.equal(counter.checks, 1, 'the lookup and later sheet reads share one check');
+});
+
+guardedTest('A failed schema check stops the LINE Email access lookup', () => {
+  const { api } = createRuntime();
+  const counter = countSchemaChecks(api);
+  api.workspaceEnsureSchema_ = () => { throw new Error('Service Spreadsheets timed out'); };
+  assert.throws(
+    () => api.requestLandlordEmailVerificationByLineUid_('line-1', 'owner@example.com', 'schema-line-fail'),
+    /timed out/
+  );
+  assert.equal(counter.accessCalls.length, 0, 'access is not read without a passed check');
 });
 
 guardedTest('Each execution runs its own Email login schema check', () => {
