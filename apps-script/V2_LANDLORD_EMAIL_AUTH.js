@@ -12,6 +12,7 @@ const V2_LANDLORD_EMAIL_AUTH_TIMING_HEADERS_ = [
   'logged_at', 'flow', 'code', 'total_ms', 'request_ms', 'steps'
 ];
 const V2_LANDLORD_EMAIL_AUTH_TIMING_MAX_ROWS_ = 300;
+let V2_LANDLORD_EMAIL_AUTH_SCHEMA_CHECKED_ = false;
 const V2_LANDLORD_EMAIL_AUTH_CHALLENGE_MIN_SECONDS_ = 60;
 const V2_LANDLORD_EMAIL_AUTH_CHALLENGE_TTL_SECONDS_ = 10 * 60;
 const V2_LANDLORD_EMAIL_AUTH_RATE_WINDOW_SECONDS_ = 15 * 60;
@@ -1058,12 +1059,21 @@ function landlordEmailAuthMemberSheet_() {
   );
 }
 
-function landlordEmailAuthRequiredSheet_(
-  sheetName
-) {
+// The schema check reads the headers of every workspace sheet, which takes
+// seconds, and one request reaches this module several times. Globals last one
+// execution, so each request still checks once. A failed check runs again.
+function landlordEmailAuthEnsureSchemaOnce_() {
+  if (V2_LANDLORD_EMAIL_AUTH_SCHEMA_CHECKED_) return;
   if (typeof workspaceEnsureSchema_ === 'function') {
     workspaceEnsureSchema_();
   }
+  V2_LANDLORD_EMAIL_AUTH_SCHEMA_CHECKED_ = true;
+}
+
+function landlordEmailAuthRequiredSheet_(
+  sheetName
+) {
+  landlordEmailAuthEnsureSchemaOnce_();
   const ss =
     typeof runtimeSpreadsheet_ === 'function'
       ? runtimeSpreadsheet_()

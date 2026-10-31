@@ -713,3 +713,52 @@ guardedTest('Email login still works when the timing sheet cannot be written', (
   assert.equal(api.requestLandlordEmailLogin_('owner@example.com', 'sheet-failure').success, true);
   assert.equal(lines.length, 1, 'the execution-log line is still written');
 });
+
+// The schema check reads the headers of every workspace sheet. Running it on
+// each sheet access made every Email login step take seconds.
+guardedTest('Email login checks the sheet schema once per execution', () => {
+  const { api, sheets, state } = createRuntime();
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+  let checks = 0;
+  api.workspaceEnsureSchema_ = () => { checks += 1; return true; };
+
+  const requested = api.requestLandlordEmailLogin_('owner@example.com', 'schema-request');
+  assert.equal(requested.success, true, requested.code);
+  assert.equal(checks, 1, 'a login request reads two sheets but checks once');
+
+  const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
+  const verified = api.verifyLandlordEmailLogin_(challenge.challenge_id, extractOtpCode(state.mailSends[0]), 'schema-verify');
+  assert.equal(verified.success, true, verified.code);
+  assert.equal(checks, 1, 'the code check reuses the same execution');
+});
+
+guardedTest('Each execution runs its own Email login schema check', () => {
+  for (const run of [1, 2]) {
+    const { api } = createRuntime();
+    let checks = 0;
+    api.workspaceEnsureSchema_ = () => { checks += 1; return true; };
+    api.requestLandlordEmailLogin_('nobody@example.com', 'schema-fresh-' + run);
+    assert.ok(checks >= 1, 'a new execution starts unchecked');
+  }
+});
+
+guardedTest('A failed Email login schema check runs again on the next sheet access', () => {
+  const { api } = createRuntime();
+  let checks = 0;
+  api.workspaceEnsureSchema_ = () => {
+    checks += 1;
+    if (checks === 1) throw new Error('Service Spreadsheets timed out');
+    return true;
+  };
+  assert.throws(() => api.requestLandlordEmailLogin_('owner@example.com', 'schema-fail'), /timed out/);
+  assert.equal(api.requestLandlordEmailLogin_('owner@example.com', 'schema-retry').code, 'AUTH_REQUIRED');
+  assert.equal(checks, 2);
+});
+
+guardedTest('A missing Email login sheet still fails after the schema check passed', () => {
+  const { api, sheets } = createRuntime();
+  api.workspaceEnsureSchema_ = () => true;
+  api.requestLandlordEmailLogin_('nobody@example.com', 'schema-first');
+  delete sheets.V2_users;
+  assert.throws(() => api.requestLandlordEmailLogin_('nobody@example.com', 'schema-second'), /Missing sheet: V2_users/);
+});
