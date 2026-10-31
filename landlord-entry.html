@@ -8,12 +8,12 @@
   />
   <title>CMWebs 房東入口</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261029-email-login-messages-v1"></script>
-  <script src="liff-request-auth.js?v=20261029-email-login-messages-v1"></script>
-  <script src="landlord-auth.js?v=20261029-email-login-messages-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261029-email-login-messages-v1" />
-  <script src="landlord-glass-nav.js?v=20261029-email-login-messages-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261029-email-login-messages-v1" defer></script>
+<script src="frontend-release.js?v=20261101-landlord-logout-v1"></script>
+  <script src="liff-request-auth.js?v=20261101-landlord-logout-v1"></script>
+  <script src="landlord-auth.js?v=20261101-landlord-logout-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261101-landlord-logout-v1" />
+  <script src="landlord-glass-nav.js?v=20261101-landlord-logout-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261101-landlord-logout-v1" defer></script>
 
   <style>
     :root {
@@ -355,7 +355,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261029-email-login-messages-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261101-landlord-logout-v1" />
 </head>
 
 <body>
@@ -447,6 +447,10 @@
     const EMAIL_LOGIN_MODE =
       URL_PARAMS.get('mode') ===
       'email';
+
+    const LOGGED_OUT_MODE =
+      URL_PARAMS.get('logged_out') ===
+      '1';
 
     const LINE_FALLBACK_INTENT_KEY =
       'cmwebs_landlord_line_fallback_intent';
@@ -1003,6 +1007,27 @@
           button.disabled = false;
           button.setAttribute('aria-busy', 'false');
         }
+      }
+    }
+
+    // landlord-auth.js sends every logout here because this page always loads
+    // the LIFF SDK, which Email sessions skip. The LINE app does not support
+    // liff.logout. A failed step keeps logged_out so a refresh retries it.
+    async function finishLogout() {
+      sessionStorage.removeItem('cmwebs_landlord_return_to');
+      clearLineFallbackIntent();
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (liff.isLoggedIn() && !liff.isInClient()) liff.logout();
+        const url = new URL(location.href);
+        url.searchParams.delete('logged_out');
+        history.replaceState(null, '', url.href);
+        renderEmailLogin({ message: '你已登出。' });
+      } catch (error) {
+        renderEmailLogin({
+          message: 'LINE 登出未完成，請重新整理此頁再試一次。',
+          error: true
+        });
       }
     }
 
@@ -1712,7 +1737,8 @@
       );
     }
 
-    loadPage();
+    if (LOGGED_OUT_MODE) finishLogout();
+    else loadPage();
   </script>
 </body>
 </html>

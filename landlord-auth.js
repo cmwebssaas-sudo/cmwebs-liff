@@ -14,6 +14,9 @@
   };
   const BRIDGE_TIMEOUT_MS = 25000;
   const EMAIL_BRIDGE_TIMEOUT_MS = 60000;
+  // Apps Script needs several seconds to revoke; the token is already gone
+  // locally, so a slow answer must not keep the person on the page.
+  const LOGOUT_BRIDGE_TIMEOUT_MS = 10000;
   const WRITE_GUARD_KEY = 'cmwebs_landlord_read_write_guard_v1';
   // Match the canonical sync policy's read actions. Unknown successful landlord
   // actions conservatively protect subsequent reads as possible writes.
@@ -345,6 +348,26 @@
     window.location.replace(target);
   }
 
+  // Logging out of LINE needs the LIFF SDK, which Email sessions skip loading,
+  // so the entry page finishes that step.
+  function redirectAfterLogout() {
+    window.location.replace(
+      (config.entryPage || 'landlord-entry.html') +
+      '?mode=email&logged_out=1'
+    );
+  }
+
+  function showLogoutBusy() {
+    try {
+      document
+        .querySelectorAll('.desktop-logout-button')
+        .forEach(function (button) {
+          button.disabled = true;
+          button.textContent = '登出中…';
+        });
+    } catch (error) {}
+  }
+
   function maybeStoreSession(result) {
     const data =
       result && result.data
@@ -397,6 +420,8 @@
       id_token: lineIdToken()
     };
   }
+
+  let logoutInFlight = null;
 
   const api = {
     init(options) {
@@ -543,26 +568,34 @@
     },
 
     logout() {
+      if (logoutInFlight) return logoutInFlight;
       const token =
         getSessionToken();
       setSessionToken('');
-      if (!token) {
-        return Promise.resolve({
+      showLogoutBusy();
+      const revoked = token
+        ? bridgePost(
+          'landlord_email_session_revoke',
+          {
+            landlord_session_token: token
+          },
+          LOGOUT_BRIDGE_TIMEOUT_MS,
+          { keepPageOnAuthFailure: true }
+        ).catch(function () {
+          return {
+            success: true,
+            code: 'LOCAL_SESSION_CLEARED'
+          };
+        })
+        : Promise.resolve({
           success: true,
           code: 'OK'
         });
-      }
-      return bridgePost(
-        'landlord_email_session_revoke',
-        {
-          landlord_session_token: token
-        }
-      ).catch(function () {
-        return {
-          success: true,
-          code: 'LOCAL_SESSION_CLEARED'
-        };
+      logoutInFlight = revoked.then(function (result) {
+        redirectAfterLogout();
+        return result;
       });
+      return logoutInFlight;
     }
   };
 

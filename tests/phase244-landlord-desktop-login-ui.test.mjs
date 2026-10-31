@@ -182,7 +182,7 @@ function createEntryRuntime(search = '') {
 
   vm.createContext(context);
   vm.runInContext(
-    inlineScript.replace(/\n\s*loadPage\(\);\s*$/, '\n'),
+    inlineScript.replace(/\n\s*if \(LOGGED_OUT_MODE\) finishLogout\(\);\s*else loadPage\(\);\s*$/, '\n'),
     context,
     { filename: 'landlord-entry.html:inline-script' }
   );
