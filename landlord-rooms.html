@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>CMWebs 房間中心</title>
-  <script src="frontend-release.js?v=20261029-email-login-messages-v1"></script>
-  <script src="liff-request-auth.js?v=20261029-email-login-messages-v1"></script>
-  <script src="landlord-auth.js?v=20261029-email-login-messages-v1"></script>
-  <script src="landlord-api.js?v=20261029-email-login-messages-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261029-email-login-messages-v1" />
-  <script src="landlord-glass-nav.js?v=20261029-email-login-messages-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261029-email-login-messages-v1" defer></script>
+  <script src="frontend-release.js?v=20261101-landlord-logout-v1"></script>
+  <script src="liff-request-auth.js?v=20261101-landlord-logout-v1"></script>
+  <script src="landlord-auth.js?v=20261101-landlord-logout-v1"></script>
+  <script src="landlord-api.js?v=20261101-landlord-logout-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261101-landlord-logout-v1" />
+  <script src="landlord-glass-nav.js?v=20261101-landlord-logout-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261101-landlord-logout-v1" defer></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -203,7 +203,7 @@
       .filter { flex: 1 1 auto; }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261029-email-login-messages-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261101-landlord-logout-v1" />
 </head>
 <body>
   <div class="app-shell desktop-ready">
@@ -349,7 +349,7 @@
       initAuth();
       return Boolean(LINE_USER_ID);
     }
-    function desktopLogout() { if (window.CMWebsLandlordAuth && typeof window.CMWebsLandlordAuth.logout === 'function') { window.CMWebsLandlordAuth.logout().finally(function () { location.href = LANDLORD_ENTRY_URL; }); return; } location.href = LANDLORD_ENTRY_URL; }
+    function desktopLogout() { if (window.CMWebsLandlordAuth && typeof window.CMWebsLandlordAuth.logout === 'function') { window.CMWebsLandlordAuth.logout(); return; } location.href = LANDLORD_ENTRY_URL; }
     function showToast(message) { const node = document.getElementById('toast'); node.textContent = message; node.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { node.classList.remove('show'); }, 2400); }
     function roomOccupancy(room) { return room.effective_status || room.room_status || 'vacant'; }
     function statusLabel(room) { if (room.account_status === 'archived') return '已封存'; const status = roomOccupancy(room); if (status === 'upcoming') return '已出租・待起租'; if (status === 'needs_review') return '入住狀態待確認'; if (status === 'occupied') return '已出租'; if (status === 'maintenance') return '維修中'; if (status === 'unavailable') return '暫停使用'; return '空房'; }

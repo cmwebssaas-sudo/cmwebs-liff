@@ -5007,3 +5007,22 @@ a second full check. Both now call `landlordEmailAuthEnsureSchemaOnce_` and pass
 Tests: `tests/phase217-landlord-email-auth.runtime.test.mjs` adds a stub that
 runs the lookup's own check unless told to skip it, one check across the login
 and LINE verification paths, and no access read after a failed check.
+
+## 2026-11-01 Landlord desktop logout leaves the page and ends the LINE session
+
+`CMWebsLandlordAuth.logout()` resolved without navigating, and eight desktop
+pages relied on it, so the button appeared to do nothing and a LINE session
+stayed active. The rooms page redirected itself but also kept the LINE session.
+
+`landlord-auth.js` now clears the Email token, revokes it with a 10-second limit
+and always goes to `landlord-entry.html?mode=email&logged_out=1`. That page
+always loads the LIFF SDK, so it runs `liff.logout` and clears the saved return
+page before showing the login form. `mode=email` stops automatic LINE login. The
+LINE app skips `liff.logout`, and a failed step keeps `logged_out` so a refresh
+retries it. LINE's own website sign-in is outside this change, so choosing LINE
+login again may not ask for a password.
+
+Tests: `tests/landlord-logout.test.mjs` covers LINE and Email logout, a slow and
+a rejected revoke, the busy button and repeat clicks, the nine desktop pages,
+and the entry page's logout, LINE app, signed-out and failure paths. A real LINE
+sign-out was not run; the preview used stubs.
