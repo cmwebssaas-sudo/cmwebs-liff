@@ -7,7 +7,7 @@ export const canonicalFields = fields => JSON.stringify(Object.fromEntries(Objec
 export async function sha256(value) { return hex(await crypto.subtle.digest('SHA-256', encoder.encode(value))); }
 function failure(code, status) { return Response.json({ success:false, code, message:'Read replica synchronization failed', data:null }, { status, headers:{'cache-control':'no-store'} }); }
 function stop(code, status = 400) { throw Object.assign(new Error(code), { code, status }); }
-async function boundedBody(request) {
+export async function boundedBody(request) {
   if (!request.body) stop('INVALID_BATCH');
   const reader = request.body.getReader();
   const parts = []; let size = 0;
@@ -23,7 +23,7 @@ async function boundedBody(request) {
   for (const part of parts) { buffer.set(part,offset); offset += part.length; }
   return new TextDecoder('utf-8',{fatal:true}).decode(buffer);
 }
-async function verifySignature(request, body, secret) {
+export async function verifySignature(request, body, secret) {
   const timestamp = request.headers.get('X-CMWebs-Timestamp') || '';
   const nonce = request.headers.get('X-CMWebs-Nonce') || '';
   const signature = request.headers.get('X-CMWebs-Signature') || '';

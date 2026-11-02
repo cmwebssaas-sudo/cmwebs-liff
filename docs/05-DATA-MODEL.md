@@ -571,3 +571,13 @@ and maintenance overhead apply;no remote migration/deployment is claimed.
 Rollback before release:revert this increment. After a future authorized release,
 review an additive migration dropping only these19 named indexes;retain every
 row and previously provisioned migration. Performance/device gates stay open.
+
+## 2026-11-03 V3 `line_channels` (Cloudflare D1)
+
+Migration `cloudflare/read-api/migrations/0010_line_channels.sql` adds one row per
+Workspace: login channel ID, LIFF ID, messaging channel ID, webhook key, status,
+`encrypted_secrets`, `verified_at` and `updated_at`. Channel IDs, LIFF ID and
+webhook key are unique. Status is `draft`, `verifying`, `active`, `suspended` or
+`revoked`; revoking removes the ciphertext. Secrets use AES-GCM with the Worker
+secret `LINE_CHANNEL_SECRET_KEY`, bound to the Workspace ID. Not applied to
+Production yet. This table is not synced from Google Sheets.

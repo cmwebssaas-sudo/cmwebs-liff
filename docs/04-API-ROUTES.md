@@ -1360,3 +1360,12 @@ kind; clients cannot supply it. Operator-only timing exports add this enum,
 server attempt timestamp and the existing opaque receipt for approved sample
 coverage. Migration0006 is additive; historical rows remain unknown. No new
 public API, sensitive value or formal Sheet write. See READ-SHADOW.md.
+
+## 2026-11-03 Worker internal route for V3 LINE channels
+
+`POST /internal/line-channels` on the read Worker is an internal route, not a
+browser route. Apps Script must check Workspace, role and permission, then sign
+the request with `LINE_REGISTRY_SIGNING_SECRET`. Actions: `upsert`, `set_status`
+and `get`. Responses return public fields and `has_secrets`, never secret values.
+The route returns `LINE_CHANNEL_NOT_CONFIGURED` until both Worker secrets exist.
+Not deployed; no Apps Script caller exists yet. See `docs/V3-BYO-LINE-OA-SPEC.md`.

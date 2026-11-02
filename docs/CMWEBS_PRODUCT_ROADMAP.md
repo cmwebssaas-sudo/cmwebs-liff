@@ -64,7 +64,7 @@ it into a smart rental-management system.
 | Area | Status |
 | --- | --- |
 | Membership, room limits, bank-transfer subscription and platform admin | Released on 2026-10-11 |
-| BYO LINE OA and Channel Registry | Specified in `docs/V3-BYO-LINE-OA-SPEC.md`; not implemented |
+| BYO LINE OA and Channel Registry | Specified in `docs/V3-BYO-LINE-OA-SPEC.md`; registry source added, not deployed |
 | Central multi-tenant data environment and monitoring | Partial; primary data remains in Google Sheets |
 | Online payment providers | Not started; bank transfer only |
 | Third-party electronic signature | Not started |
@@ -72,8 +72,9 @@ it into a smart rental-management system.
 
 ### V3 delivery order
 
-1. Backup and restore rehearsal plus the operations runbook, tracked by Issue #298.
-2. BYO LINE OA, tracked by Issue #296.
+1. BYO LINE OA, tracked by Issue #296. The owner chose on 2026-11-03 not to wait
+   for the isolated restore rehearsal.
+2. Backup and restore rehearsal plus the operations runbook, tracked by Issue #298.
 3. Data migration planning and monitoring.
 4. Online payment providers.
 5. Standard smart-device module.

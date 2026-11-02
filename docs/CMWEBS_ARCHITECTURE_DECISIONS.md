@@ -359,5 +359,5 @@ See `docs/V3-BYO-LINE-OA-SPEC.md`.
 - The Worker verifies each channel's webhook signature before forwarding events.
 - The existing Workspace becomes the first registry record without changing its
   users, LIFF, login or notifications.
-- Backup and restore rehearsal comes before any change to live notifications,
-  login or webhooks.
+- On 2026-11-03 the owner removed the isolated restore rehearsal as a gate. Each
+  live release still needs deployment approval, a current backup and a rollback.

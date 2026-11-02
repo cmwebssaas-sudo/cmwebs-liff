@@ -26,6 +26,8 @@
 - 未獲明確授權，不得 deploy、push、merge、變更 Production Sheet、
   Properties、triggers、LINE、LIFF、Webhook、Rich Menu 或外部帳號。
 - Script Properties 只能記錄 key presence，絕不讀取、提交或輸出 secret 值。
+- 房東 LINE 頻道機密只由 Cloudflare Worker 加密保存與解密，不寫入 Sheets、Git、
+  瀏覽器或 Script Properties。
 - 每個寫入操作必須驗證 Workspace、角色與權限；`workspace_id` 是新架構
   主鍵，`landlord_id` 僅為相容欄位。
 - 不得猜測 Production 狀態。無法驗證時標記 `HUMAN_REQUIRED`。
