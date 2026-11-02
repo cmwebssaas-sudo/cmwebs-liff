@@ -1,6 +1,6 @@
 # V3 房東自有 LINE 官方帳號規格
 
-**狀態：** 草稿，待負責人核准
+**狀態：** 設計決定已確認，尚未實作
 **Issue：** [#296](https://github.com/cmwebssaas-sudo/cmwebs-liff/issues/296)
 **日期：** 2026-11-02（Asia/Taipei）
 
@@ -85,8 +85,8 @@ LINE、LIFF、Webhook 或 Rich Menu。每個實作階段都要另外授權。
 
 `status` 狀態：`draft`、`verifying`、`active`、`suspended`、`revoked`。
 
-現有 LINE 機密由 Apps Script Properties 保存。改由 Worker 保存前，要先核准
-本設計並更新工程規則。
+現有 LINE 機密由 Apps Script Properties 保存。實作階段 2 前要先更新工程規則，
+納入 Worker 保存方式。
 
 ### 4.2 發送
 
@@ -215,11 +215,14 @@ LINE、LIFF、Webhook 或 Rich Menu。每個實作階段都要另外授權。
 | 新增房東增加人工維護 | 精靈與批次發布都要能自動重試，並有集中監控 |
 | 資料量增加，Google Sheets 撐不住 | 試營運期間監控，資料庫搬遷另開 Issue |
 
-## 10. 待負責人決定
+## 10. 負責人決定
 
-1. 階段 1 是否排在所有 V3 正式程式之前（本規格建議是）。
-2. 房東是否一律使用自己 OA 的 LINE 身分，或同時保留 Email 登入（本規格
-   建議兩者都保留）。
-3. 機密資料保存在 Cloudflare 或既有 Core（本規格建議 Cloudflare，因為
-   Webhook 與發送都由 Worker 處理）。
-4. 第一位試營運的外部房東。
+2026-11-02 已確認：
+
+1. 階段 1（備份復原與操作手冊）排在所有 V3 正式程式之前。
+2. 房東同時保留自己 OA 的 LINE 身分與 Email 登入。
+3. 機密資料保存在 Cloudflare，因為 Webhook 與發送都由 Worker 處理。
+
+尚待決定：
+
+- 第一位試營運的外部房東，最晚在階段 8 開始前確認。

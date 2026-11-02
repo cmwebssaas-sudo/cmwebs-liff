@@ -346,9 +346,9 @@ confirmation from C3 and the 24-hour/7-day observation gates in
   malformed response returns to Apps Script); other pages one at a time after
   the owner checks rooms on a phone.
 
-## 2026-11-02 proposed V3 BYO LINE OA boundary
+## 2026-11-02 V3 BYO LINE OA boundary
 
-Status: proposed for Issue #296; not implemented or deployed.
+Status: approved by the owner for Issue #296; not implemented or deployed.
 See `docs/V3-BYO-LINE-OA-SPEC.md`.
 
 - Each landlord's LINE Official Account, LINE Login channel and LIFF stay under
