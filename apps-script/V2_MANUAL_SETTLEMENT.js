@@ -839,7 +839,9 @@ function manualSettleLandlordBillByLineUid_(
         const pushResult =
           pushLineTextMessage_(
             tenantLineUserId,
-            noticeText
+            noticeText,
+            '',
+            bill.workspace_id
           );
 
         tenantNotificationResult = {

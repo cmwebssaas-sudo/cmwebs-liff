@@ -3795,7 +3795,9 @@ function landlordSendTenantMessageByLineUid_(
     const pushResult =
       pushLineTextMessage_(
         tenantLineUserId,
-        text
+        text,
+        '',
+        tenant.workspace_id
       );
 
     if (!pushResult.success) {
@@ -4471,7 +4473,41 @@ function buildTenantLineMessage_(tenant, messageType, messageText) {
 /**
  * 呼叫 LINE Messaging API Push Message
  */
-function pushLineTextMessage_(toLineUserId, text, retryKey) {
+/**
+ * V3 LINE send entry. Every LINE push goes through here with its Workspace.
+ * All Workspaces still use the existing token; the route exists so a later
+ * release can send through each landlord's own channel.
+ */
+function lineSendRoute_(workspaceId) {
+  return {
+    transport: 'legacy',
+    workspace_id: String(workspaceId || '').trim()
+  };
+}
+
+function lineBuildPushRequest_(workspaceId, token, toLineUserId, text, retryKey) {
+  lineSendRoute_(workspaceId);
+  const headers = { Authorization: 'Bearer ' + token };
+  if (retryKey) headers['X-Line-Retry-Key'] = retryKey;
+  return {
+    url: 'https://api.line.me/v2/bot/message/push',
+    method: 'post',
+    contentType: 'application/json',
+    headers: headers,
+    payload: JSON.stringify({
+      to: toLineUserId,
+      messages: [
+        {
+          type: 'text',
+          text: text
+        }
+      ]
+    }),
+    muteHttpExceptions: true
+  };
+}
+
+function pushLineTextMessage_(toLineUserId, text, retryKey, workspaceId) {
   const token = PropertiesService
     .getScriptProperties()
     .getProperty('LINE_CHANNEL_ACCESS_TOKEN');
@@ -4484,27 +4520,8 @@ function pushLineTextMessage_(toLineUserId, text, retryKey) {
     };
   }
 
-  const url = 'https://api.line.me/v2/bot/message/push';
-  const headers = { Authorization: 'Bearer ' + token };
-  if (retryKey) headers['X-Line-Retry-Key'] = retryKey;
-
-  const payload = {
-    to: toLineUserId,
-    messages: [
-      {
-        type: 'text',
-        text: text
-      }
-    ]
-  };
-
-  const res = UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    headers: headers,
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  });
+  const request = lineBuildPushRequest_(workspaceId, token, toLineUserId, text, retryKey);
+  const res = UrlFetchApp.fetch(request.url, request);
 
   const statusCode = res.getResponseCode();
   const body = res.getContentText();

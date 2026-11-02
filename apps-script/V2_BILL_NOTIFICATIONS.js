@@ -1020,35 +1020,13 @@ function sendLandlordBillNotificationsByLineUid_(
             item,
           message:
             message,
-          request: {
-            url:
-              'https://api.line.me/v2/bot/message/push',
-            method:
-              'post',
-            contentType:
-              'application/json',
-            headers: {
-              Authorization:
-                'Bearer ' +
-                token
-            },
-            payload:
-              JSON.stringify({
-                to:
-                  item
-                    .tenant_line_user_id,
-                messages: [
-                  {
-                    type:
-                      'text',
-                    text:
-                      message
-                  }
-                ]
-              }),
-            muteHttpExceptions:
-              true
-          }
+          request:
+            lineBuildPushRequest_(
+              item.workspace_id,
+              token,
+              item.tenant_line_user_id,
+              message
+            )
         });
       }
     );

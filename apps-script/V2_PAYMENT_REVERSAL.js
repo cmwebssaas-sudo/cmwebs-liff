@@ -482,7 +482,9 @@ function reopenLandlordBillByLineUid_(
         const pushResult =
           pushLineTextMessage_(
             tenantLineUserId,
-            noticeText
+            noticeText,
+            '',
+            bill.workspace_id
           );
 
         notificationResult = {

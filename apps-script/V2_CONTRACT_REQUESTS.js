@@ -4934,7 +4934,8 @@ function contractRequestNotifyLandlordNewRequest_(
       note:
         'request_id=' +
         request.request_id
-    }
+    },
+    request.workspace_id
   );
 }
 
@@ -5056,7 +5057,8 @@ function contractRequestNotifyLandlordCancelledRequest_(
       note:
         'request_id=' +
         request.request_id
-    }
+    },
+    request.workspace_id
   );
 }
 
@@ -5224,7 +5226,8 @@ function contractRequestNotifyTenantRequestUpdated_(
         request.request_id +
         ', status=' +
         status
-    }
+    },
+    request.workspace_id
   );
 }
 
@@ -5232,7 +5235,8 @@ function contractRequestNotifyTenantRequestUpdated_(
 function contractRequestPushLine_(
   toLineUserId,
   text,
-  logData
+  logData,
+  workspaceId
 ) {
   try {
     if (
@@ -5251,7 +5255,9 @@ function contractRequestPushLine_(
     const pushResult =
       pushLineTextMessage_(
         toLineUserId,
-        text
+        text,
+        '',
+        workspaceId
       );
 
     const success =

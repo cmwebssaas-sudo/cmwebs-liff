@@ -764,7 +764,9 @@ function autoReminderExecute_(options) {
       try {
         pushResult = pushLineTextMessage_(
           group.tenantLineUserId,
-          messageText
+          messageText,
+          '',
+          group.workspaceId
         );
       } catch (pushError) {
         pushResult = {

@@ -830,7 +830,9 @@ function submitTenantMessageByLineUid_(
       pushResult =
         pushLineTextMessage_(
           landlordLineUserId,
-          notifyText
+          notifyText,
+          '',
+          canonical.workspace_id
         );
     }
 
