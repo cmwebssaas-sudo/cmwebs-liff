@@ -72,7 +72,7 @@ it into a smart rental-management system.
 
 ### V3 delivery order
 
-1. Backup and restore rehearsal plus the operations runbook.
+1. Backup and restore rehearsal plus the operations runbook, tracked by Issue #298.
 2. BYO LINE OA, tracked by Issue #296.
 3. Data migration planning and monitoring.
 4. Online payment providers.
