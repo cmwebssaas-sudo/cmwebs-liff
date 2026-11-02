@@ -1134,7 +1134,7 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - [ ] 100／500／1,000 房客資料量測試
 - [ ] LINE API 配額與錯誤
 - [ ] Apps Script 執行時間
-- [ ] 備份與還原演練
+- [ ] 備份與還原演練（計畫見 `docs/BACKUP-RESTORE-PLAN.md`，尚未執行）
 
 ## 2026-09-18 一次性測試帳單作廢／封存
 
