@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-195f2b026cf409429c8e91abdd065bde281d8e0f10eb18bd262010079929c963",
+  "comparison_version": "read-48c1128396570af2f510ae113f2304cc946db69baf17683b1a472281cac4f8f5",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -170,6 +170,7 @@
     "package.json": "5f958c22c7fdf20859e146f0602fff931768076e566068e2da4d3bdc3af5dc10",
     "platform-admin.html": "cd6c5d2c25e1acb389371cb4bac5d4e2d8a608d5f5f954fcda5bbc0483574d15",
     "platform-core-subscription.js": "7999c2ed146667f30ab2ed6a2c2551df8ff08f98a4cc087b415e9d8f93277c8b",
+    "privacy.html": "05e862dd28dfbd4fc3105897d975be6ed1749511f9234ff6c7171cea59fdd066",
     "repair-dispatch.css": "225a14df414e4d1711afe71ebc7431efdf415dcbcec93432dc326270c12d7949",
     "repair-dispatch.js": "172ba8611d3336eade17e5051a4f835975df384fc6ee35b8d1d75f6d62a75633",
     "scripts/generate-read-calculator.mjs": "415bfa685b328248e451df326825bbe08f2a2ad7d1beb1ee078c12d0cc04e5a4",
