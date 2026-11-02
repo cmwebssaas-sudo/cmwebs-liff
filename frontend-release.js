@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261101-landlord-logout-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-195f2b026cf409429c8e91abdd065bde281d8e0f10eb18bd262010079929c963";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-48c1128396570af2f510ae113f2304cc946db69baf17683b1a472281cac4f8f5";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';
