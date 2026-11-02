@@ -345,3 +345,19 @@ confirmation from C3 and the 24-hour/7-day observation gates in
 - Rollout: rooms page first with automatic fallback (3 s timeout, non-2xx or
   malformed response returns to Apps Script); other pages one at a time after
   the owner checks rooms on a phone.
+
+## 2026-11-02 V3 BYO LINE OA boundary
+
+Status: approved by the owner for Issue #296; not implemented or deployed.
+See `docs/V3-BYO-LINE-OA-SPEC.md`.
+
+- Each landlord's LINE Official Account, LINE Login channel and LIFF stay under
+  the same LINE provider, because user IDs differ per provider.
+- A Workspace has one active channel record. Secrets are encrypted and only the
+  Worker can decrypt them.
+- Every LINE push passes through one send path keyed by `workspace_id`.
+- The Worker verifies each channel's webhook signature before forwarding events.
+- The existing Workspace becomes the first registry record without changing its
+  users, LIFF, login or notifications.
+- Backup and restore rehearsal comes before any change to live notifications,
+  login or webhooks.

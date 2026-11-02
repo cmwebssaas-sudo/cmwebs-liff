@@ -1,7 +1,7 @@
 # CMWebs Product Roadmap
 
 **Status: AUTHORITATIVE**
-**Last updated: 2026-07-29 (Asia/Taipei)**
+**Last updated: 2026-11-02 (Asia/Taipei)**
 
 ## Supersedes
 
@@ -27,6 +27,16 @@ Performance consolidation priorities are:
 
 No V3/V4 feature expansion belongs inside V2.
 
+V2.1 is complete only when all of these have recorded evidence:
+
+1. main landlord pages meet the performance target;
+2. real-device LINE and mobile acceptance passes;
+3. a backup and restore rehearsal succeeds;
+4. the operations runbook is complete; and
+5. one full monthly operating cycle is verified.
+
+`V2_FEATURE_FREEZE=FINAL` has not been recorded as of this update.
+
 ## V3 — Standardized Commercial Multi-tenant SaaS
 
 V3 is a shared standardized product. Each landlord brings and continues using
@@ -48,6 +58,35 @@ landlord pays its own LINE message-plan costs.
 
 **Product promise:** keep the landlord's existing LINE relationship and upgrade
 it into a smart rental-management system.
+
+### V3 delivery status
+
+| Area | Status |
+| --- | --- |
+| Membership, room limits, bank-transfer subscription and platform admin | Released on 2026-10-11 |
+| BYO LINE OA and Channel Registry | Specified in `docs/V3-BYO-LINE-OA-SPEC.md`; not implemented |
+| Central multi-tenant data environment and monitoring | Partial; primary data remains in Google Sheets |
+| Online payment providers | Not started; bank transfer only |
+| Third-party electronic signature | Not started |
+| Standard smart-device module | Planned; not started |
+
+### V3 delivery order
+
+1. Backup and restore rehearsal plus the operations runbook.
+2. BYO LINE OA, tracked by Issue #296.
+3. Data migration planning and monitoring.
+4. Online payment providers.
+5. Standard smart-device module.
+6. Third-party electronic signature, after the standard digital contract proves
+   insufficient.
+
+### Standard smart-device module
+
+The planned order is meter reading, door switch, lock, then camera. One approved
+vendor comes first. Tuya is the preferred candidate, but commercial terms and
+pricing are unconfirmed, so paid landlord use waits for vendor confirmation.
+Each capability requires a separate Issue, permission checks and operation logs.
+Cameras must stay in shared areas and never point at a tenant's door.
 
 ## V4 — Modular LINE Business Platform and AI Growth Engine
 
