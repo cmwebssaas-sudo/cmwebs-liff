@@ -7,6 +7,9 @@ import vm from 'node:vm';
 const root = new URL('../', import.meta.url);
 const source = name => existsSync(new URL(name, root)) ? readFileSync(new URL(name, root), 'utf8') : '';
 const now = Math.floor(Date.now() / 1000);
+const tenantReadHandlers = ['getTenantBindingStatusByLineUid_', 'getTenantHomeByLineUid', 'getTenantBillsByLineUid',
+  'getTenantPaymentReportInitByLineUid', 'getTenantPaymentAccountCoverByLineUid_', 'getTenantMessageInitByLineUid',
+  'getTenantContractInitByLineUid_', 'getTenantContractRequestsByLineUid_'];
 function runtime() {
   const state = { calls: 0, effects: [], entries: new Map(), puts: [], channel: 'synthetic-channel',
     claims: { iss: 'https://access.line.me', aud: 'synthetic-channel', sub: 'synthetic-owner', exp: now + 3600 }, code: 200 };
@@ -30,7 +33,10 @@ function runtime() {
     uploadLandlordPaymentAccountCover_: principal => { state.effects.push('business:' + principal.data.principal_line_user_id); return { success: true }; },
     uploadLandlordContractDocumentByLineUid_: uid => { state.effects.push('business:' + uid); return { success: true }; },
     landlordInitiatedContractUpdateRenewalIntentByLineUid_: uid => { state.effects.push('business:' + uid); return { success: true }; },
-    resolveTenantRequestLineUserId_: (_, action, uid) => uid,
+    resolveTenantRequestLineUserId_: (request, action, uid) =>
+      request.parameter.test === '1' && /^tenant_/.test(action) ? 'synthetic-test-tenant' : uid,
+    ...Object.fromEntries(tenantReadHandlers.map(name => [name, uid => {
+      state.effects.push('tenant:' + uid); return { success: true, data: { principal: uid } }; }])),
     getWorkspaceLandlordHomeNativeByLineUid_: uid => { state.effects.push(uid); return { success: true, data: { principal: uid } }; },
     bindTenantByLineUid_: (uid, phone) => { state.effects.push(uid); return { success: true, data: { principal: uid, phone } }; },
     cancelTenantContractRequestByLineUid_: (uid, id) => { state.effects.push('business:' + uid); return { success: true, data: { principal: uid, id } }; },
@@ -90,6 +96,42 @@ test('tenant request cancellation applies the same verified mutation policy', ()
   const { get } = runtime();
   const result = get({ v2_action: 'tenant_contract_request_cancel', id_token: 'synthetic-token', request_id: 'synthetic-request' });
   assert.equal(result.result.data.principal, 'synthetic-owner'); assert.equal(result.result.data.id, 'synthetic-request');
+});
+
+test('tenant reads resolve only the verified LINE principal', () => {
+  const exchanges = ['tenant_contract_auth_status', 'tenant_contract_invite_auth_status',
+    'tenant_contract_artifact_upload_status', 'tenant_contract_sign_status', 'tenant_repair_tickets_init'];
+  const classification = runtime().context;
+  const reads = [...new Set([...source('apps-script/程式碼.js').matchAll(/v2Action\s*===\s*'(tenant_[a-z_]+)'/g)].map(m => m[1]))]
+    .filter(action => !exchanges.includes(action) && !classification.lineRequestNeedsIdentity_(action));
+  assert.deepEqual([...reads].sort(), ['tenant_bills', 'tenant_binding_status', 'tenant_contract_init',
+    'tenant_contract_requests', 'tenant_home', 'tenant_message_init', 'tenant_payment_account_cover',
+    'tenant_payment_report_init']);
+  for (const action of reads) {
+    for (const credential of [{}, { line_user_id: 'synthetic-owner' },
+      { id_token: 'synthetic-token', line_user_id: 'another-principal' }, { id_token: 'synthetic-token', invalid: true }]) {
+      const { state, get } = runtime(); if (credential.invalid) state.claims.exp = now - 1;
+      const { invalid, ...parameters } = credential;
+      const output = get({ v2_action: action, bridge: '1', request_id: 'synthetic-request', ...parameters });
+      assert.equal(output.result.code, 'AUTH_REQUIRED', action);
+      assert.equal(output.requestId, 'synthetic-request');
+      assert.deepEqual(state.effects, [], action);
+    }
+    for (const parameters of [{ id_token: 'synthetic-token' }, { id_token: 'synthetic-token', line_user_id: 'synthetic-owner' }]) {
+      const { state, get } = runtime();
+      const result = get({ v2_action: action, ...parameters }).result;
+      assert.equal(result.data.principal, 'synthetic-owner', action);
+      assert.deepEqual(state.effects, ['snapshot', 'tenant:synthetic-owner'], action);
+      assert.equal(state.calls, 1, action);
+    }
+  }
+});
+
+test('tenant read test mode keeps its configured test identity', () => {
+  const { state, get } = runtime();
+  const result = get({ v2_action: 'tenant_home', test: '1', line_user_id: 'another-principal' }).result;
+  assert.equal(result.data.principal, 'synthetic-test-tenant');
+  assert.equal(state.calls, 0);
 });
 
 test('credential failures return a controlled response without business effects', () => {

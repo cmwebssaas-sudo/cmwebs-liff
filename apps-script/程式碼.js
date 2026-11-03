@@ -428,7 +428,8 @@ function dispatchV2Get_(e) {
     return jsonOutput_(channelGate, callback);
   }
 
-  const verifiedLineAction = lineRequestNeedsIdentity_(v2Action);
+  const verifiedLineAction = lineRequestNeedsIdentity_(v2Action) ||
+    lineRequestTenantReadNeedsIdentity_(v2Action, e.parameter);
   if (verifiedLineAction) {
     const identity = resolveVerifiedLineRequestIdentity_(e.parameter);
     if (!identity.success) {

@@ -1212,6 +1212,15 @@ Email verification uses the active Email session when available. Contract
 document upload and renewal-intent requests carry the active credential while
 preserving existing Workspace, role and contract authorization.
 
+Tenant reads now require a verified LINE identity. Every remaining `tenant_*`
+GET action (for example `tenant_binding_status`, `tenant_home`, `tenant_bills`,
+`tenant_payment_report_init`, `tenant_payment_account_cover`,
+`tenant_message_init`, `tenant_contract_init` and `tenant_contract_requests`)
+resolves the principal from the verified `id_token` and returns `AUTH_REQUIRED`
+without one. `test=1` keeps its existing test-tenant behaviour. Credential-bound
+exchange polling and POST-only tenant routes are unchanged. No route or Schema
+is added; Apps Script deployment is a separate approved release.
+
 ## Cloudflare read API scaffold (C0; local only)
 
 `GET /health` returns `{ success: true, data: { service:
