@@ -1553,6 +1553,16 @@ if (v2Action === 'tenant_message_submit') {
     return jsonOutput_(result, callback);
   }
 
+  if (v2Action === 'landlord_payment_calendar') {
+    const result = getWorkspaceLandlordPaymentCalendarNativeByLineUid_(lineUserId);
+
+    if (bridge === '1') {
+      return htmlBridgeOutput_(result, requestId);
+    }
+
+    return jsonOutput_(result, callback);
+  }
+
   if (v2Action === 'landlord_bill_test_archive_candidates') {
     const result =
       getWorkspaceLandlordTestBillArchiveCandidatesByLineUid_(
@@ -3572,6 +3582,26 @@ function dispatchV2Post_(e) {
           if (principal) {
             result =
               getWorkspaceLandlordArrearsNativeByLineUid_(
+                principal.data.principal_line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && action === 'landlord_payment_calendar') {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getWorkspaceLandlordPaymentCalendarNativeByLineUid_(
                 principal.data.principal_line_user_id
               );
           }

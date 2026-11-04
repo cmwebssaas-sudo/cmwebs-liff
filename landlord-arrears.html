@@ -1128,6 +1128,330 @@
     .nav-item:active {
       opacity: 0.65;
     }
+
+    /* 繳費月曆：每間房一格，顏色加文字標示已繳、未繳、逾期、未開單與空房。 */
+    .pay-cal {
+      --cal-paid: #10893e;
+      --cal-paid-soft: #eaf9f0;
+      --cal-unpaid: #9a6b00;
+      --cal-unpaid-soft: #fff4d7;
+      --cal-unpaid-bar: #e0a100;
+      --cal-overdue: #d93025;
+      --cal-overdue-soft: #ffe8e6;
+      --cal-nobill: #1a5fc4;
+      --cal-nobill-soft: #e8f0fe;
+      --cal-nobill-bar: #8ab4f8;
+      --cal-vacant: #70757d;
+      --cal-vacant-soft: #f1f3f5;
+      --cal-vacant-bar: #c9ced6;
+    }
+
+    .pay-cal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .pay-cal-head .section-title {
+      margin-bottom: 0;
+    }
+
+    .pay-cal-tabs {
+      display: inline-flex;
+      padding: 3px;
+      border-radius: 11px;
+      background: #eef1f5;
+    }
+
+    .pay-cal-tabs button {
+      min-height: 32px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .pay-cal-tabs button[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .pay-cal-caption {
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .pay-cal-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .pay-cal-stat {
+      min-width: 0;
+      padding: 10px 8px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .pay-cal-stat-label {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pay-cal-stat-value {
+      margin-top: 3px;
+      font-size: 22px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pay-cal-stat-value small {
+      margin-left: 2px;
+      font-size: 12px;
+    }
+
+    .pay-cal-stat-note {
+      margin-top: 2px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .pay-cal-stat.paid { background: var(--cal-paid-soft); color: var(--cal-paid); }
+    .pay-cal-stat.unpaid { background: var(--cal-overdue-soft); color: var(--cal-overdue); }
+    .pay-cal-stat.no_bill { background: var(--cal-nobill-soft); color: var(--cal-nobill); }
+    .pay-cal-stat.vacant { background: var(--cal-vacant-soft); color: var(--cal-vacant); }
+
+    .pay-cal-bar {
+      display: flex;
+      gap: 2px;
+      height: 10px;
+      margin: 12px 0 14px;
+      overflow: hidden;
+      border-radius: 5px;
+      background: #eef1f5;
+    }
+
+    .pay-cal-bar span {
+      min-width: 4px;
+      height: 100%;
+    }
+
+    .pay-cal-bar .paid { background: var(--cal-paid); }
+    .pay-cal-bar .overdue { background: var(--cal-overdue); }
+    .pay-cal-bar .unpaid { background: var(--cal-unpaid-bar); }
+    .pay-cal-bar .no_bill { background: var(--cal-nobill-bar); }
+    .pay-cal-bar .vacant {
+      background: repeating-linear-gradient(135deg, var(--cal-vacant-bar) 0 3px, #e3e6ea 3px 6px);
+    }
+
+    .pay-cal-rooms {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .pay-cal-room {
+      position: relative;
+      min-width: 0;
+      padding: 9px 9px 8px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+    }
+
+    .pay-cal-room-name {
+      overflow: hidden;
+      font-size: 15px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pay-cal-room-meta {
+      overflow: hidden;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pay-cal-room-status {
+      margin-top: 6px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .pay-cal-room-amount {
+      margin-top: 1px;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pay-cal-room.paid,
+    .pay-cal-cell.paid { background: var(--cal-paid-soft); color: var(--cal-paid); }
+    .pay-cal-room.overdue,
+    .pay-cal-cell.overdue { background: var(--cal-overdue); color: #ffffff; }
+    .pay-cal-room.overdue .pay-cal-room-meta { color: rgba(255, 255, 255, 0.85); }
+    .pay-cal-room.unpaid,
+    .pay-cal-cell.unpaid { background: var(--cal-unpaid-soft); color: var(--cal-unpaid); border-color: #f1d38a; }
+    .pay-cal-room.no_bill,
+    .pay-cal-cell.no_bill { background: var(--cal-nobill-soft); color: var(--cal-nobill); border-color: #c6dafc; border-style: dashed; }
+    .pay-cal-room.vacant,
+    .pay-cal-cell.vacant {
+      background: repeating-linear-gradient(135deg, var(--cal-vacant-soft) 0 6px, #e9ecef 6px 12px);
+      color: var(--cal-vacant);
+    }
+
+    .pay-cal-room .pay-cal-room-name { color: var(--text); }
+    .pay-cal-room.overdue .pay-cal-room-name { color: #ffffff; }
+
+    .pay-cal-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+      table-layout: fixed;
+    }
+
+    .pay-cal-table th {
+      padding: 0 2px 2px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .pay-cal-table th:first-child,
+    .pay-cal-table td:first-child {
+      width: 34%;
+      text-align: left;
+    }
+
+    .pay-cal-table th small {
+      display: block;
+      margin-top: 2px;
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .pay-cal-table td {
+      padding: 0 2px;
+      vertical-align: middle;
+    }
+
+    .pay-cal-table td.pay-cal-row-name {
+      padding-left: 8px;
+      border-left: 4px solid transparent;
+    }
+
+    .pay-cal-table tr.owes td.pay-cal-row-name {
+      border-left-color: var(--cal-overdue);
+    }
+
+    .pay-cal-row-room {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .pay-cal-row-tag {
+      display: inline-block;
+      margin-left: 4px;
+      padding: 1px 5px;
+      border-radius: 6px;
+      background: var(--cal-overdue);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      vertical-align: 2px;
+    }
+
+    .pay-cal-cell {
+      min-height: 42px;
+      padding: 5px 2px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .pay-cal-cell-status {
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .pay-cal-cell-amount {
+      margin-top: 1px;
+      font-size: 10px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pay-cal-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .pay-cal-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pay-cal-legend i {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    .pay-cal-legend i.paid { background: var(--cal-paid); }
+    .pay-cal-legend i.overdue { background: var(--cal-overdue); }
+    .pay-cal-legend i.unpaid { background: var(--cal-unpaid-bar); }
+    .pay-cal-legend i.no_bill { background: var(--cal-nobill-bar); }
+    .pay-cal-legend i.vacant {
+      background: repeating-linear-gradient(135deg, var(--cal-vacant-bar) 0 3px, #e3e6ea 3px 6px);
+    }
+
+    .pay-cal-empty {
+      padding: 14px 4px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .pay-cal-empty button {
+      margin-top: 8px;
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    @media (max-width: 360px) {
+      .pay-cal-rooms {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .pay-cal-stat-value {
+        font-size: 19px;
+      }
+    }
   </style>
   <link rel="stylesheet" href="landlord-glass-theme.css?v=20261101-landlord-logout-v1" />
 </head>
@@ -1618,6 +1942,7 @@
     let PAGE_DATA = null;
     let ARREARS = [];
     let TEST_ARCHIVE_CANDIDATE_IDS = new Set();
+    const PAYMENT_CALENDAR = { view: 'month', data: null, error: false };
     let ACTIVE_BILL_ID = '';
     let ACTIVE_REMINDER_BILL_ID = '';
     let ALERT_CALLBACK = null;
@@ -2594,7 +2919,8 @@
       const desktopReadActions = {
         landlord_arrears: true,
         landlord_bill_manual_settlement_status: true,
-        landlord_bill_test_archive_candidates: true
+        landlord_bill_test_archive_candidates: true,
+        landlord_payment_calendar: true
       };
 
       if (desktopReadActions[action] === true) {
@@ -3006,6 +3332,8 @@
             </div>
           </div>
         </section>
+
+        ${renderPaymentCalendarSection()}
 
         <section class="card">
           <div class="section-title">
@@ -4217,6 +4545,256 @@
     // 載入資料
     // ==================================================
 
+    // ==================================================
+    // 繳費月曆
+    // ==================================================
+
+    const PAYMENT_CALENDAR_LABELS = {
+      paid: '✓ 已繳',
+      overdue: '! 逾期',
+      unpaid: '未繳',
+      no_bill: '未開單',
+      vacant: '空房'
+    };
+
+    // 本月格子的排序：要處理的放前面，空房放最後。
+    const PAYMENT_CALENDAR_ORDER = {
+      overdue: 0,
+      unpaid: 1,
+      no_bill: 2,
+      paid: 3,
+      vacant: 4
+    };
+
+    function monthLabel(month, withYear) {
+      const match = rawText(month).match(/^(\d{4})-(\d{2})$/);
+      if (!match) {
+        return safeText(month);
+      }
+      return (withYear ? match[1] + ' 年 ' : '') + Number(match[2]) + ' 月';
+    }
+
+    function renderPaymentCalendarLegend() {
+      return `
+        <div class="pay-cal-legend">
+          <span><i class="paid"></i>已繳清</span>
+          <span><i class="overdue"></i>逾期未繳</span>
+          <span><i class="unpaid"></i>未繳（還沒到期）</span>
+          <span><i class="no_bill"></i>有人住、還沒開帳單</span>
+          <span><i class="vacant"></i>空房</span>
+        </div>
+      `;
+    }
+
+    function renderPaymentCalendarMonth(data) {
+      const months = Array.isArray(data.months) ? data.months : [];
+      const summary = months[months.length - 1] || {};
+      const index = months.length - 1;
+      const rooms = (Array.isArray(data.rooms) ? data.rooms : [])
+        .map(function (room) {
+          return { room: room, cell: (room.cells || [])[index] || { status: 'vacant' } };
+        })
+        .sort(function (a, b) {
+          return (
+            PAYMENT_CALENDAR_ORDER[a.cell.status] - PAYMENT_CALENDAR_ORDER[b.cell.status] ||
+            Number(b.cell.days_overdue || 0) - Number(a.cell.days_overdue || 0)
+          );
+        });
+      const total = Number(summary.room_count || 0);
+      const owing = Number(summary.unpaid_count || 0) + Number(summary.overdue_count || 0);
+      const segments = ['paid', 'overdue', 'unpaid', 'no_bill', 'vacant']
+        .map(function (status) {
+          return { status: status, count: Number(summary[status + '_count'] || 0) };
+        })
+        .filter(function (segment) {
+          return segment.count > 0;
+        });
+
+      return `
+        <div class="pay-cal-caption">
+          ${monthLabel(summary.month, true)}・共 ${total} 間房，已開帳單 ${Number(summary.billed_count || 0)} 間
+        </div>
+
+        <div class="pay-cal-stats">
+          <div class="pay-cal-stat paid">
+            <div class="pay-cal-stat-label">已繳</div>
+            <div class="pay-cal-stat-value">${Number(summary.paid_count || 0)}<small>戶</small></div>
+          </div>
+          <div class="pay-cal-stat unpaid">
+            <div class="pay-cal-stat-label">未繳</div>
+            <div class="pay-cal-stat-value">${owing}<small>戶</small></div>
+            <div class="pay-cal-stat-note">逾期 ${Number(summary.overdue_count || 0)} 戶</div>
+          </div>
+          <div class="pay-cal-stat no_bill">
+            <div class="pay-cal-stat-label">未開單</div>
+            <div class="pay-cal-stat-value">${Number(summary.no_bill_count || 0)}<small>戶</small></div>
+          </div>
+          <div class="pay-cal-stat vacant">
+            <div class="pay-cal-stat-label">空房</div>
+            <div class="pay-cal-stat-value">${Number(summary.vacant_count || 0)}<small>間</small></div>
+          </div>
+        </div>
+
+        <div class="pay-cal-bar" role="img" aria-label="${escapeHtml(
+          segments.map(function (segment) {
+            return PAYMENT_CALENDAR_LABELS[segment.status].replace(/^[✓!] /, '') + ' ' + segment.count;
+          }).join('，')
+        )}">
+          ${segments.map(function (segment) {
+            return `<span class="${segment.status}" style="flex:${segment.count}"></span>`;
+          }).join('')}
+        </div>
+
+        ${
+          rooms.length > 0
+            ? `<div class="pay-cal-rooms">
+                ${rooms.map(function (entry) {
+                  const room = entry.room;
+                  const cell = entry.cell;
+                  const status = PAYMENT_CALENDAR_LABELS[cell.status] ? cell.status : 'vacant';
+                  const owes = status === 'overdue' || status === 'unpaid';
+                  return `
+                    <div class="pay-cal-room ${status}">
+                      <div class="pay-cal-room-name">${safeText(room.room_name)}</div>
+                      <div class="pay-cal-room-meta">${
+                        escapeHtml(rawText(room.tenant_name).trim() || rawText(room.property_name).trim() || ' ')
+                      }</div>
+                      <div class="pay-cal-room-status">${
+                        status === 'overdue'
+                          ? '! 逾期 ' + Number(cell.days_overdue || 0) + ' 天'
+                          : PAYMENT_CALENDAR_LABELS[status]
+                      }</div>
+                      ${owes ? `<div class="pay-cal-room-amount">${money(cell.unpaid_amount)}</div>` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>`
+            : '<div class="pay-cal-empty">目前沒有可顯示的房間。</div>'
+        }
+      `;
+    }
+
+    function renderPaymentCalendarQuarter(data) {
+      const months = Array.isArray(data.months) ? data.months : [];
+      const rooms = Array.isArray(data.rooms) ? data.rooms : [];
+
+      return `
+        <div class="pay-cal-caption">
+          ${monthLabel((months[0] || {}).month, true)} 到 ${monthLabel((months[months.length - 1] || {}).month, false)}・有欠繳的房間排在最上面
+        </div>
+
+        <table class="pay-cal-table">
+          <thead>
+            <tr>
+              <th scope="col">房間</th>
+              ${months.map(function (month) {
+                return `
+                  <th scope="col">
+                    ${monthLabel(month.month, false)}
+                    <small>已繳 ${Number(month.paid_count || 0)}/${Number(month.billed_count || 0)}</small>
+                  </th>
+                `;
+              }).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rooms.map(function (room) {
+              const owes = room.worst_status === 'overdue' || room.worst_status === 'unpaid';
+              return `
+                <tr class="${owes ? 'owes' : ''}">
+                  <td class="pay-cal-row-name">
+                    <div class="pay-cal-row-room">
+                      ${safeText(room.room_name)}${owes ? '<span class="pay-cal-row-tag">欠繳</span>' : ''}
+                    </div>
+                    <div class="pay-cal-room-meta">${
+                      escapeHtml(rawText(room.tenant_name).trim() || rawText(room.property_name).trim() || ' ')
+                    }</div>
+                  </td>
+                  ${(room.cells || []).map(function (cell) {
+                    const status = PAYMENT_CALENDAR_LABELS[cell.status] ? cell.status : 'vacant';
+                    const owesCell = status === 'overdue' || status === 'unpaid';
+                    return `
+                      <td>
+                        <div class="pay-cal-cell ${status}">
+                          <div class="pay-cal-cell-status">${PAYMENT_CALENDAR_LABELS[status]}</div>
+                          ${owesCell ? `<div class="pay-cal-cell-amount">${money(cell.unpaid_amount).replace('NT$ ', '$')}</div>` : ''}
+                        </div>
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderPaymentCalendarSection() {
+      const state = PAYMENT_CALENDAR;
+      let body = '';
+
+      if (state.data) {
+        body =
+          state.view === 'quarter'
+            ? renderPaymentCalendarQuarter(state.data)
+            : renderPaymentCalendarMonth(state.data);
+        body += renderPaymentCalendarLegend();
+      } else if (state.error) {
+        body = `
+          <div class="pay-cal-empty">
+            繳費月曆暫時無法載入。
+            <div><button type="button" onclick="loadPaymentCalendar()">再試一次</button></div>
+          </div>
+        `;
+      } else {
+        body = '<div class="pay-cal-empty">繳費月曆載入中...</div>';
+      }
+
+      return `
+        <section id="paymentCalendar" class="card pay-cal">
+          <div class="pay-cal-head">
+            <div class="section-title">繳費月曆</div>
+            <div class="pay-cal-tabs" role="tablist" aria-label="月曆範圍">
+              <button type="button" role="tab" aria-selected="${state.view === 'month'}" onclick="setPaymentCalendarView('month')">本月</button>
+              <button type="button" role="tab" aria-selected="${state.view === 'quarter'}" onclick="setPaymentCalendarView('quarter')">近三個月</button>
+            </div>
+          </div>
+          ${body}
+        </section>
+      `;
+    }
+
+    function refreshPaymentCalendarSection() {
+      const section = document.getElementById('paymentCalendar');
+      if (section) {
+        section.outerHTML = renderPaymentCalendarSection();
+      }
+    }
+
+    function setPaymentCalendarView(view) {
+      PAYMENT_CALENDAR.view = view === 'quarter' ? 'quarter' : 'month';
+      refreshPaymentCalendarSection();
+    }
+
+    // 欠款清單先顯示；月曆另外讀取房間與租約，不拖慢欠款清單。
+    async function loadPaymentCalendar() {
+      PAYMENT_CALENDAR.error = false;
+      if (!PAYMENT_CALENDAR.data) {
+        refreshPaymentCalendarSection();
+      }
+
+      try {
+        const response = await jsonpRequest('landlord_payment_calendar', {}, 45000);
+        PAYMENT_CALENDAR.data = response && response.data ? response.data : null;
+        PAYMENT_CALENDAR.error = !PAYMENT_CALENDAR.data;
+      } catch (error) {
+        PAYMENT_CALENDAR.error = !PAYMENT_CALENDAR.data;
+      }
+
+      refreshPaymentCalendarSection();
+    }
+
     async function loadTestBillArchiveCandidates() {
       try {
         const response = await jsonpRequest(
@@ -4287,6 +4865,7 @@
         // Keep the primary arrears fast path limited to properties and bills;
         // room status is fetched separately only for this one-time cleanup UI.
         loadTestBillArchiveCandidates();
+        loadPaymentCalendar();
 
       } catch (error) {
         renderError(

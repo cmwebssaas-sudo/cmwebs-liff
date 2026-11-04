@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-11-04 帳款頁繳費月曆
+
+| Check | Evidence | Boundary |
+| --- | --- | --- |
+| 每房每月狀態規則 | `tests/payment-calendar.test.mjs` 4/4：已繳、逾期天數、未到期未繳、作廢帳單、已結束租約、待簽租約、提前搬出、停用房間仍有帳單、排序、每月戶數與金額、不回傳 LINE ID | 合成資料；未用正式 Sheets |
+| 讀取範圍 | calendar 模式只讀 properties、rooms、contracts、bills、tenants；`landlord_arrears` 仍只讀 properties、bills | 原 phase248 斷言不變 |
+| 路由登記 | GET、桌面 bridge、runtime snapshot、replica sync 唯讀清單、`landlord-auth.js`、`landlord-api.js` 都列為唯讀 | 尚未部署 Apps Script |
+| 畫面 | 本機合成資料預覽 375px、320px 寬：本月與近三個月兩種檢視，無橫向捲動 | 未在 LINE 實機確認 |
+| 全部測試 | unit 1146 pass、4 skipped、只有既有需 DATABASE_URL 的第 107 項失敗；Worker 62/62；validate PASS | 部署後需在 LINE 開帳款頁確認數字與欠款清單一致 |
+
 ## 2026-10-18 C6 request-local month parser
 
 | Check | Evidence | Boundary |

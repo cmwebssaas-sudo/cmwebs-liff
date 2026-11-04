@@ -107,7 +107,7 @@ const V2_READ_REPLICA_ACTIONS_ = (function() {
     landlord_contract_signing_reviews_fetch_status landlord_contract_signing_reviews_init
     landlord_email_session_status landlord_entry_status landlord_home landlord_home_bootstrap
     landlord_invitation_init landlord_line_logs landlord_messages_init landlord_notifications_init
-    landlord_onboarding_init landlord_paid_bills_init landlord_payment_reports_init landlord_properties_init
+    landlord_onboarding_init landlord_paid_bills_init landlord_payment_calendar landlord_payment_reports_init landlord_properties_init
     landlord_repair_tickets_init landlord_revenue_dashboard_init landlord_room_center_init
     landlord_settings_init landlord_subscription_init landlord_team_init landlord_tenant_checkins_init
     landlord_tenant_create_init landlord_tenant_initial_meter_init landlord_tenants

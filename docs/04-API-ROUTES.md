@@ -1,5 +1,17 @@
 # CMWebs V2 API Routes
 
+## 2026-11-04 帳款頁繳費月曆（本機候選，未部署）
+
+新增唯讀 `landlord_payment_calendar`（JSONP／桌面 bridge，房東 Workspace 讀取權限，
+dispatcher 為 `apps-script/程式碼.js`）。不接受參數，伺服器以台北日期取本月與前兩個月。
+回傳 `months[]`（每月房間數、已開帳單數、已繳／未繳／逾期／未開單／空房戶數與金額）
+及 `rooms[]`（房間、物件名稱、房客姓名、三個月 `cells[]` 狀態與未繳金額，依逾期天數、
+未繳、未開單、已繳、空房排序）。已繳／未繳沿用 `landlord_arrears` 的 canonical 規則，
+作廢帳單不計；停用房間若在範圍內仍有帳單也列出。空房以租約起訖（含退租搬出日）判斷，
+待簽或作廢租約不算入住。只讀 properties、rooms、contracts、bills、tenants，不回傳
+LINE ID、電話或銀行資料，不寫入任何資料；帳款頁在欠款清單顯示後另外讀取，
+`landlord_arrears` 的讀取範圍不變。
+
 ## 2026-10-09 郵局入帳人工確認（本機候選）
 
 新增 POST-only `landlord_bank_receipts_init`（read）及
@@ -324,6 +336,7 @@ landlord_onboarding_complete
 landlord_onboarding_init
 landlord_onboarding_save
 landlord_paid_bills_init
+landlord_payment_calendar
 landlord_payment_report_settle
 landlord_payment_report_update
 landlord_payment_reports_init
