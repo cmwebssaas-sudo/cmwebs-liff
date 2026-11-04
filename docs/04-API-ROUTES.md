@@ -1,5 +1,12 @@
 # CMWebs V2 API Routes
 
+## 2026-11-05 作廢文件不再列出（本機候選，未部署）
+
+`landlord_contract_documents_init` 只列出 `V2_contract_documents.status` 為
+`stored`（或空白）的文件；`landlord_contract_document_download` 對其他狀態回
+`DOCUMENT_NOT_FOUND`。作廢只改狀態欄，文件列與 Drive 檔案都保留，可改回
+`stored` 復原。沒有新增 route 或 Schema。
+
 ## 2026-11-04 帳款頁繳費月曆（本機候選，未部署）
 
 新增唯讀 `landlord_payment_calendar`（JSONP／桌面 bridge，房東 Workspace 讀取權限，

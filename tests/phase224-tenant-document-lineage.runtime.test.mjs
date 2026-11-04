@@ -83,6 +83,11 @@ const documentSheet = new FakeSheet(DOCUMENT_HEADERS, [
     mime_type: 'image/jpeg', byte_size: 100, created_at: '2026-09-04T00:00:00Z', status: 'stored'
   }),
   rowFor(DOCUMENT_HEADERS, {
+    document_id: 'D-VOIDED', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T202',
+    contract_id: 'PAPER-202', document_type: 'legacy_contract', file_name: 'wrong.jpg',
+    mime_type: 'image/jpeg', byte_size: 100, created_at: '2026-09-05T00:00:00Z', status: 'voided'
+  }),
+  rowFor(DOCUMENT_HEADERS, {
     document_id: 'D-OTHER', workspace_id: 'W1', landlord_id: 'L1', tenant_id: '',
     contract_id: 'OTHER', document_type: 'identity_back', file_name: 'other.jpg',
     mime_type: 'image/jpeg', byte_size: 100, created_at: '2026-09-03T00:00:00Z', status: 'stored'
@@ -110,6 +115,11 @@ assert.deepEqual(
   documents.map(document => document.document_id).sort(),
   ['D-ORPHAN', 'D-PAPER'],
   'tenant detail must include documents linked to the tenant current contract lineage'
+);
+assert.equal(
+  documents.some(document => document.document_id === 'D-VOIDED'),
+  false,
+  'voided documents stay in the sheet but are not listed'
 );
 assert.equal(
   documents.some(document => document.document_id === 'D-OTHER'),
