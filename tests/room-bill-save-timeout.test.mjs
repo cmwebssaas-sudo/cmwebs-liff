@@ -63,8 +63,7 @@ test('a new room is matched by property and name', () => {
 });
 
 test('room save waits longer, and only the page read is ever retried', () => {
-  assert.match(properties, /const ROOM_SAVE_TIMEOUT_MS = 90000;/);
-  assert.match(properties, /timeoutMs: ROOM_SAVE_TIMEOUT_ACTIONS\[action\] \? ROOM_SAVE_TIMEOUT_MS : undefined/);
+  assert.match(properties, /timeoutMs: action === 'landlord_room_save' \? 90000 : undefined/);
   assert.match(properties, /action === 'landlord_properties_init' &&\s*Number\(\s*retryCount \|\| 0\s*\) < 1/);
   assert.match(properties, /error\.code === 'API_TIMEOUT'\) \{\s*await recoverRoomSaveTimeout\(values, button\);/);
 });
