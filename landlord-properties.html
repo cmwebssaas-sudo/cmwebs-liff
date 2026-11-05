@@ -1359,10 +1359,6 @@
         );
     }
 
-    // 房間存檔在大型試算表上常超過 30 秒，等久一點，資料其實多半已存進去。
-    const ROOM_SAVE_TIMEOUT_MS = 90000;
-    const ROOM_SAVE_TIMEOUT_ACTIONS = { landlord_room_save: true };
-
     function jsonpRequest(
       action,
       params,
@@ -1372,7 +1368,8 @@
         return window.CMWebsLandlordApi.request({
           apiUrl: API_URL, action: action, params: params || {},
           lineUserId: LINE_USER_ID, testMode: TEST_MODE,
-          timeoutMs: ROOM_SAVE_TIMEOUT_ACTIONS[action] ? ROOM_SAVE_TIMEOUT_MS : undefined,
+          // 房間存檔在大型試算表上常超過 30 秒，等久一點，資料其實多半已存進去。
+          timeoutMs: action === 'landlord_room_save' ? 90000 : undefined,
           callbackPrefix: '__cmwebs_properties_', rejectOnFailure: true
         });
       }
