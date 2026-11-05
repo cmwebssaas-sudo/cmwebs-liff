@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-a5e1853a601de30e2aad01314a3f61b8a8b79928d19c8be1d39c1c11b755b721",
+  "comparison_version": "read-a9d0049019fac7724f62d48e9c3dd19e1f1e2b52faf8092eb9f298cf85333eef",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -127,7 +127,7 @@
     "index.html": "fc7319a13ed7f99af37bfcec49a4322a9e2438e0b0352cb4eca9818a489257fe",
     "landlord-activity.html": "65f7fb73fc197ab631c3e9f4f414b959bd3c9cb8523fe3070edea44487b49285",
     "landlord-announcements.html": "2fabf7b4daa69afadbbc4550544455ec2c1537a7491d66279dbaf580235e5aa0",
-    "landlord-api.js": "c17285e9458059f45c71afcec8a317456be44a093e92003b250b5982436af4b3",
+    "landlord-api.js": "1f2a3934664e80dc8f5832d9b63365981032f936bb347ee6c9500892d6b22956",
     "landlord-arrears.html": "586ddf9856139cac2c1f0a667d995a17f144a515aa6cce838e834ad3ef4e96f2",
     "landlord-auth.js": "1c448cf4f645c2337bb9f5fe30dea9c2da3556d7db5373210ca62a292f79782e",
     "landlord-bill-notifications.html": "46303c347c5437bd763589ababee543d8a6f734f2203e1592d08bdbad7355ec9",
@@ -162,7 +162,7 @@
     "landlord-tenant-checkin.html": "a931359d979f5db0062c000cd39dc2647540d1c0ef677700cb23a6d3ad2a243f",
     "landlord-tenant-checkout.html": "493bec20e1c4276c5bb61becb54a4e5feee77b837d358d1742b93db86a2ac23c",
     "landlord-tenant-create.html": "437ab28c0640b3666eda074e10b369333e9b365b6ae849e9c425a7e9b175b359",
-    "landlord-tenant-detail.html": "3eb12022ac33aaf4b1ec739237c96e8c9c857db204b387bae185778d36e97efa",
+    "landlord-tenant-detail.html": "c010ae9a4b28668384d1f4d09da331510585de311b4396773bbf2793dbe4314b",
     "landlord-tenants.html": "4d9cb3e845c6ba68c3d657eef5850e6234122300d5fb444d39931432eccb4a8f",
     "landlord-workspaces.html": "f146e4f862022f62fece8bec8ef55aa6c15d2aa041e69132fccb317ebfa0879f",
     "landlord.html": "10d9f0d98c405b074578502fc3c56fba108fa4b1df80f90d3aa9b7cff5b78bf8",

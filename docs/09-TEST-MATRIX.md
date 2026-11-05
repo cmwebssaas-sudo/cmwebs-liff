@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-11-05 房客名單接讀取服務、房客詳細頁先出基本資料
+
+- [x] `frontend-release.js`：`CMWEBS_READ_PATH.tenants = 'on'`（房客名單頁原本就只要摘要，走 Worker）
+- [x] `tests/read-routing.test.mjs`：`readPathAvailable` 只在開關開啟、摘要檢視、無最近存檔、有登入憑證時為真，且本身不送請求
+- [x] `tests/paper-initial-meter-frontend.runtime.test.mjs`：讀取服務可用時先用摘要畫出房客基本資料，租約區顯示讀取中；文件在摘要核對身分後開始讀；租約歷史到了只更新兩個租約區，不清掉已載入的文件；電表等租約歷史；合約申請到了只更新三處
+- [x] 同一測試：完整讀取失敗時保留基本資料，租約區顯示讀取失敗；摘要裡找不到這位房客就改等完整資料再讀文件；讀取服務不可用時只送一次完整讀取（與修改前相同）
+- [ ] 部署後用 LINE 實測房客名單與房客詳細頁速度（`HUMAN_REQUIRED`）
+
+租約歷史仍不在讀取服務（未同步相關欄位），所以詳細頁的租約區仍等 Apps Script。
+
 ## 2026-11-05 房客詳細頁先顯示上次資料
 
 - [x] `tests/paper-initial-meter-frontend.runtime.test.mjs`：再次開房客詳細頁時先畫出上次讀到的完整房客清單（任一房客都可用），新資料回來後取代；快取裡沒有這位房客就不畫

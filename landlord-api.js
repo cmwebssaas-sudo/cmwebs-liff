@@ -709,6 +709,12 @@
         return result;
       });
     },
+    // True when this read would go to the read service right now (switch on,
+    // no recent write, credential present). Lets a page skip a duplicate read.
+    readPathAvailable: function (config) {
+      const target = replicaRequest(config || {}, getAuthParams());
+      return Boolean(target && target.mode === 'on');
+    },
     snapshot: snapshot,
     prefetch: prefetch,
     clearSnapshots: clearSnapshots,

@@ -64,3 +64,11 @@ list with the Apps Script version and note how long it takes to appear.
 - Note: time-based triggers run the editor HEAD code, not a numbered
   version. Keep HEAD equal to main (push with clasp from main only).
 - Frontend: rooms switched to `'on'` with release `20261026-rooms-on-v1`.
+
+## Status (2026-11-05)
+
+- Tenants: `CMWEBS_READ_PATH.tenants` switched to `'on'` with release
+  `20261105-tenants-read-path-v1`. The tenant list reads its summary from the
+  Worker. The tenant detail page shows its profile from the same summary when
+  the read path is usable, and still takes lease history (the default full
+  view) from Apps Script. Rollback: set `tenants` back to `'off'`.

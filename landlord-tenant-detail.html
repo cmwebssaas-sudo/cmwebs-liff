@@ -9,15 +9,15 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261105-tenant-detail-cache-v1"></script>
-  <script src="liff-config.js?v=20261105-tenant-detail-cache-v1"></script>
-  <script src="liff-request-auth.js?v=20261105-tenant-detail-cache-v1"></script>
-  <script src="landlord-auth.js?v=20261105-tenant-detail-cache-v1"></script>
-  <script src="landlord-api.js?v=20261105-tenant-detail-cache-v1"></script>
+  <script src="frontend-release.js?v=20261105-tenants-read-path-v1"></script>
+  <script src="liff-config.js?v=20261105-tenants-read-path-v1"></script>
+  <script src="liff-request-auth.js?v=20261105-tenants-read-path-v1"></script>
+  <script src="landlord-auth.js?v=20261105-tenants-read-path-v1"></script>
+  <script src="landlord-api.js?v=20261105-tenants-read-path-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-tenant-detail-cache-v1" />
-  <script src="landlord-glass-nav.js?v=20261105-tenant-detail-cache-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261105-tenant-detail-cache-v1" defer></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-tenants-read-path-v1" />
+  <script src="landlord-glass-nav.js?v=20261105-tenants-read-path-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261105-tenants-read-path-v1" defer></script>
 
   <style>
     :root {
@@ -1392,7 +1392,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-tenant-detail-cache-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-tenants-read-path-v1" />
 </head>
 
 <body>
@@ -1606,6 +1606,12 @@
     // Cache key only; the full list (with lease history) differs from the
     // tenant list page's summary snapshot, so it must not share its entry.
     const TENANT_DETAIL_SNAPSHOT_KEY = {view: 'tenant_detail'};
+    // 'loading' while the profile came from the summary view and the lease
+    // history has not arrived; 'failed' when that full read failed.
+    let TENANT_HISTORY_STATE = 'ready';
+    let TENANT_CONTRACTS_FROM_DOCUMENTS = false;
+    // All Workspace contract requests; null while they are still loading.
+    let TENANT_REQUESTS = [];
     let LANDLORD_REVIEW_SESSION_TOKEN = '';
     let LANDLORD_REVIEW_SESSION_EXPIRES_AT = 0;
     let TENANT_INITIAL_METER_DATA = null;
@@ -3305,6 +3311,8 @@
             read_only: true
           });
         });
+        TENANT_CONTRACTS_FROM_DOCUMENTS = true;
+        TENANT_HISTORY_STATE = 'ready';
         const summary = document.getElementById('tenantContractSummary');
         const history = document.getElementById('tenantContractHistory');
         if (summary) summary.innerHTML = tenantContractSummaryHtml(CURRENT_TENANT, CURRENT_TENANT_CONTRACTS);
@@ -4120,10 +4128,7 @@
       `;
     }
 
-    function renderPage(
-      tenantData,
-      requests
-    ) {
+    function findTenantDetailItem(tenantData) {
       const tenants =
         Array.isArray(
           tenantData.tenants
@@ -4154,6 +4159,16 @@
           '找不到指定房客資料，請從房客名單重新進入'
         );
       }
+
+      return item;
+    }
+
+    function renderPage(
+      tenantData,
+      requests
+    ) {
+      const item = findTenantDetailItem(tenantData);
+      const requestsPending = requests === null;
 
       TENANT_ID = rawText(item.tenant_id).trim();
       requests = (Array.isArray(requests) ? requests : []).filter(function (request) {
@@ -4195,20 +4210,7 @@
           item.tenant_email
         ).trim();
 
-      const activeRequests =
-        requests.filter(
-          function (request) {
-            const status =
-              normalizedStatus(
-                request.status
-              );
-
-            return (
-              status === 'pending' ||
-              status === 'approved'
-            );
-          }
-        );
+      const activeRequests = activeTenantRequests(requests);
 
       const app =
         document.getElementById('app');
@@ -4260,15 +4262,7 @@
                 )}
               </span>
 
-              ${
-                activeRequests.length > 0
-                  ? `
-                    <span class="badge purple">
-                      合約待處理 ${activeRequests.length}
-                    </span>
-                  `
-                  : ''
-              }
+              <span id="tenantRequestBadge">${tenantRequestBadgeHtml(activeRequests)}</span>
             </div>
           </div>
 
@@ -4282,12 +4276,8 @@
 
             <div class="summary-box">
               <div class="summary-label">合約申請</div>
-              <div class="summary-value">
-                ${
-                  activeRequests.length > 0
-                    ? activeRequests.length + ' 筆待處理'
-                    : '目前無待處理'
-                }
+              <div class="summary-value" id="tenantRequestSummary">
+                ${tenantRequestSummaryText(activeRequests, requestsPending)}
               </div>
             </div>
           </div>
@@ -4298,7 +4288,7 @@
           </nav>
         </section>
 
-        <div id="tenantContractSummary">${tenantContractSummaryHtml(item, CURRENT_TENANT_CONTRACTS)}</div>
+        <div id="tenantContractSummary">${leaseSummaryHtml(item, CURRENT_TENANT_CONTRACTS)}</div>
 
         <section class="card section-card">
           <div class="section-title-row">
@@ -4418,38 +4408,10 @@
           </div>
         </section>
 
-        <div id="tenantContractHistory">${renderContractHistory(CURRENT_TENANT_CONTRACTS)}</div>
+        <div id="tenantContractHistory">${leaseHistoryHtml(CURRENT_TENANT_CONTRACTS)}</div>
         ${tenantInitialMeterPanelHtml()}
 
-        <section class="card section-card">
-          <div class="section-title-row">
-            <div class="section-title">合約申請紀錄</div>
-            <div class="section-hint">
-              共 ${requests.length} 筆
-            </div>
-          </div>
-
-          ${
-            requests.length > 0
-              ? requests
-                  .map(renderRequestCard)
-                  .join('')
-              : `
-                <div class="empty-state">
-                  此房客目前沒有續約或解約申請紀錄。
-                </div>
-              `
-          }
-
-          <button
-            class="primary-button"
-            style="width:100%;margin-top:13px;"
-            type="button"
-            onclick="goContractRequests()"
-          >
-            查看合約申請紀錄
-          </button>
-        </section>
+        <div id="tenantRequestSection">${tenantRequestSectionHtml(requests, requestsPending)}</div>
 
         ${tenantDocumentPanelHtml()}
 
@@ -4537,6 +4499,108 @@
       `;
 
       bindTenantDocumentDropZones();
+    }
+
+    function activeTenantRequests(requests) {
+      return requests.filter(function (request) {
+        const status = normalizedStatus(request.status);
+        return status === 'pending' || status === 'approved';
+      });
+    }
+
+    function tenantRequestBadgeHtml(activeRequests) {
+      return activeRequests.length > 0
+        ? `<span class="badge purple">合約待處理 ${activeRequests.length}</span>`
+        : '';
+    }
+
+    function tenantRequestSummaryText(activeRequests, pending) {
+      if (pending) return '讀取中…';
+      return activeRequests.length > 0
+        ? activeRequests.length + ' 筆待處理'
+        : '目前無待處理';
+    }
+
+    function tenantRequestSectionHtml(requests, pending) {
+      return `
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">合約申請紀錄</div>
+            <div class="section-hint">
+              ${pending ? '讀取中…' : `共 ${requests.length} 筆`}
+            </div>
+          </div>
+
+          ${
+            pending
+              ? '<div class="empty-state">合約申請紀錄讀取中…</div>'
+              : requests.length > 0
+                ? requests
+                    .map(renderRequestCard)
+                    .join('')
+                : `
+                  <div class="empty-state">
+                    此房客目前沒有續約或解約申請紀錄。
+                  </div>
+                `
+          }
+
+          <button
+            class="primary-button"
+            style="width:100%;margin-top:13px;"
+            type="button"
+            onclick="goContractRequests()"
+          >
+            查看合約申請紀錄
+          </button>
+        </section>
+      `;
+    }
+
+    // Requests arrive after a summary-first profile; update only their parts.
+    function refreshTenantRequests() {
+      const pending = TENANT_REQUESTS === null;
+      CURRENT_REQUESTS = (pending ? [] : TENANT_REQUESTS).filter(function (request) {
+        return rawText(request.tenant_id).trim() === TENANT_ID;
+      });
+      const active = activeTenantRequests(CURRENT_REQUESTS);
+      const badge = document.getElementById('tenantRequestBadge');
+      const summary = document.getElementById('tenantRequestSummary');
+      const section = document.getElementById('tenantRequestSection');
+      if (badge) badge.innerHTML = tenantRequestBadgeHtml(active);
+      if (summary) summary.textContent = tenantRequestSummaryText(active, pending);
+      if (section) section.innerHTML = tenantRequestSectionHtml(CURRENT_REQUESTS, pending);
+    }
+
+    // Lease history arrives after a summary-first profile; update only the
+    // two lease sections so documents and the meter form stay as they are.
+    function showTenantContracts(contracts) {
+      CURRENT_TENANT_CONTRACTS = Array.isArray(contracts) ? contracts : [];
+      if (TENANT_HISTORY_STATE === 'loading') TENANT_HISTORY_STATE = 'ready';
+      const summary = document.getElementById('tenantContractSummary');
+      const history = document.getElementById('tenantContractHistory');
+      if (summary) summary.innerHTML = leaseSummaryHtml(CURRENT_TENANT, CURRENT_TENANT_CONTRACTS);
+      if (history) history.innerHTML = leaseHistoryHtml(CURRENT_TENANT_CONTRACTS);
+    }
+
+    function tenantContractPendingHtml(id, title) {
+      const failed = TENANT_HISTORY_STATE === 'failed';
+      return `<section class="card section-card" id="${id}">
+          <div class="section-title">${title}</div>
+          <p class="tenant-document-context">${failed ? '租約資料讀取失敗，請按重新整理再試。' : '租約資料讀取中…'}</p>
+        </section>`;
+    }
+
+    function leaseSummaryHtml(tenant, contracts) {
+      return TENANT_HISTORY_STATE === 'ready'
+        ? tenantContractSummaryHtml(tenant, contracts)
+        : tenantContractPendingHtml('tenant-contract-summary', '目前租約資料');
+    }
+
+    function leaseHistoryHtml(contracts) {
+      return TENANT_HISTORY_STATE === 'ready'
+        ? renderContractHistory(contracts)
+        : tenantContractPendingHtml('contract-history', '房客合約');
     }
 
     function tenantContractMoney(value) {
@@ -4708,6 +4772,17 @@
       );
     }
 
+    function sortedContractRequests(result) {
+      const contractData = unwrapData(result);
+      return Array.isArray(contractData.requests)
+        ? contractData.requests.slice().sort(function (a, b) {
+            const aTime = new Date(a.updated_at || a.created_at || 0).getTime();
+            const bTime = new Date(b.updated_at || b.created_at || 0).getTime();
+            return bTime - aTime;
+          })
+        : [];
+    }
+
     async function loadPage() {
       setRefreshLoading(true);
 
@@ -4723,103 +4798,141 @@
           return;
         }
 
+        const api = window.CMWebsLandlordApi;
+        let freshProfile = false;
+        let cachedHistory = null;
+        TENANT_HISTORY_STATE = 'loading';
+        TENANT_CONTRACTS_FROM_DOCUMENTS = false;
+        TENANT_REQUESTS = null;
+
         const tenantRequest =
           fetchStatusJson(
             'landlord_tenants',
             {}
           );
 
-        // Paint the last full tenant list (any tenant) while the slow read
-        // runs. Documents and meter reads still wait for the fresh response.
-        if (
-          window.CMWebsLandlordApi &&
-          window.CMWebsLandlordApi.snapshot
-        ) {
-          window.CMWebsLandlordApi.snapshot(
-            'landlord_tenants',
-            TENANT_DETAIL_SNAPSHOT_KEY,
-            tenantRequest,
-            function (cached) {
-              const cachedData = unwrapData(cached);
-              renderPage(cachedData, []);
-              updateDesktopChrome(cachedData);
-            }
-          );
-        }
+        // Lease history is not in the read service, which answers only the
+        // summary view; when it is usable the profile shows from it first and
+        // the full Apps Script list fills in the lease sections afterwards.
+        const summaryRequest =
+          api &&
+          typeof api.readPathAvailable === 'function' &&
+          api.readPathAvailable({
+            action: 'landlord_tenants',
+            params: {read_view: 'summary'},
+            testMode: TEST_MODE
+          })
+            ? fetchStatusJson('landlord_tenants', {read_view: 'summary'})
+            : null;
 
-        const results =
-          await Promise.allSettled([
-            tenantRequest,
-            fetchStatusJson(
-              'landlord_contract_requests_init',
-              {}
-            )
-          ]);
-
-        if (
-          results[0].status !==
-          'fulfilled'
-        ) {
-          throw results[0].reason;
-        }
-
-        const tenantData =
-          unwrapData(
-            results[0].value
-          );
-
-        updateDesktopChrome(tenantData);
-
-        let requests = [];
-
-        if (
-          results[1].status ===
-          'fulfilled'
-        ) {
-          try {
-            const contractData =
-              unwrapData(
-                results[1].value
-              );
-
-            requests =
-              Array.isArray(
-                contractData.requests
-              )
-                ? contractData.requests
-                    .slice()
-                    .sort(
-                      function (a, b) {
-                        const aTime =
-                          new Date(
-                            a.updated_at ||
-                            a.created_at ||
-                            0
-                          ).getTime();
-
-                        const bTime =
-                          new Date(
-                            b.updated_at ||
-                            b.created_at ||
-                            0
-                          ).getTime();
-
-                        return bTime - aTime;
-                      }
-                    )
-                : [];
-          } catch (error) {
+        const requestLoad =
+          fetchStatusJson(
+            'landlord_contract_requests_init',
+            {}
+          ).then(sortedContractRequests, function (error) {
             console.warn(
               '合約申請資料讀取失敗：',
               error
             );
+            return [];
+          });
+
+        // Paint the last full tenant list (any tenant) while the slow read
+        // runs. Documents and meter reads still wait for a fresh response.
+        if (api && api.snapshot) {
+          api.snapshot(
+            'landlord_tenants',
+            TENANT_DETAIL_SNAPSHOT_KEY,
+            tenantRequest,
+            function (cached) {
+              if (freshProfile) {
+                throw new Error('fresh profile already shown');
+              }
+              const cachedData = unwrapData(cached);
+              TENANT_HISTORY_STATE = 'ready';
+              renderPage(cachedData, TENANT_REQUESTS);
+              updateDesktopChrome(cachedData);
+              cachedHistory = CURRENT_TENANT_CONTRACTS;
+            }
+          );
+        }
+
+        let documentLoad = null;
+
+        if (summaryRequest) {
+          try {
+            const summaryData = unwrapData(await summaryRequest);
+            TENANT_HISTORY_STATE = 'loading';
+            renderPage(summaryData, TENANT_REQUESTS);
+            updateDesktopChrome(summaryData);
+            freshProfile = true;
+            if (cachedHistory) {
+              showTenantContracts(cachedHistory);
+            }
+          } catch (error) {
+            // A tenant the replica has not received yet, or any read-service
+            // failure, falls back to the full Apps Script response below.
+            freshProfile = false;
           }
         }
 
-        renderPage(
-          tenantData,
-          requests
-        );
+        if (freshProfile) {
+          requestLoad.then(function (requests) {
+            TENANT_REQUESTS = requests;
+            refreshTenantRequests();
+          });
+          documentLoad = loadTenantDocuments().catch(renderTenantDocumentError);
+
+          try {
+            const tenantData = unwrapData(await tenantRequest);
+            CURRENT_TENANT = findTenantDetailItem(tenantData);
+            const history = Array.isArray(CURRENT_TENANT.contract_history)
+              ? CURRENT_TENANT.contract_history
+              : [];
+            // Legacy tenants without history keep the document contracts.
+            showTenantContracts(
+              history.length || !TENANT_CONTRACTS_FROM_DOCUMENTS
+                ? history
+                : CURRENT_TENANT_CONTRACTS
+            );
+            updateDesktopChrome(tenantData);
+          } catch (error) {
+            if (/房客識別資料不唯一|找不到指定房客資料/.test(rawText(error && error.message))) {
+              throw error;
+            }
+            if (!TENANT_CONTRACTS_FROM_DOCUMENTS && !cachedHistory) {
+              TENANT_HISTORY_STATE = 'failed';
+              showTenantContracts([]);
+            }
+          }
+        } else {
+          const results =
+            await Promise.allSettled([
+              tenantRequest,
+              requestLoad
+            ]);
+
+          if (
+            results[0].status !==
+            'fulfilled'
+          ) {
+            throw results[0].reason;
+          }
+
+          const tenantData =
+            unwrapData(
+              results[0].value
+            );
+
+          updateDesktopChrome(tenantData);
+          TENANT_HISTORY_STATE = 'ready';
+          TENANT_REQUESTS = results[1].value;
+
+          renderPage(
+            tenantData,
+            TENANT_REQUESTS
+          );
+        }
 
         // A slow private-document list must not hold the meter form hostage.
         const hadMeterContracts = CURRENT_TENANT_CONTRACTS.length > 0;
@@ -4827,12 +4940,17 @@
           const content = document.getElementById('tenantInitialMeterContent');
           if (content) content.textContent = '初始電表載入失敗：' + rawText(error.message || '請重試');
         });
-        try {
-          await loadTenantDocuments();
-        } catch (error) {
-          renderTenantDocumentError(error);
+        if (documentLoad) {
+          await documentLoad;
+        } else {
+          try {
+            await loadTenantDocuments();
+          } catch (error) {
+            renderTenantDocumentError(error);
+          }
         }
         await initialMeterLoad;
+        await requestLoad;
         // Legacy tenants can obtain their lease list from the document response.
         if (!hadMeterContracts && CURRENT_TENANT_CONTRACTS.length) {
           await loadTenantInitialMeterContracts();
