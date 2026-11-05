@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261105-payment-calendar-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-1d19ccb345ea591122c0c91ae6e70c46d7777910a7db746e60f4dd2af03a2279";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-2f3ef3597805ee8bb3b7d2ba8673f1974205682dd018e862a63eda2868bd6b6e";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';
