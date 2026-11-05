@@ -764,3 +764,43 @@ test('read-only missing-meter state has no write control and backend errors cann
   await assert.rejects(r.run("requestTenantInitialMeterAction('landlord_tenant_initial_meter_save',{})"), /Permission denied/);
   assert.equal(r.calls.length, 0);
 });
+
+// A repeat visit paints the last full tenant list at once, but private
+// documents and meter reads still wait for the fresh, verified response.
+test('tenant detail paints the cached full list first and keeps private reads behind the fresh one', async () => {
+  for (const cachedName of ['Cached tenant', null]) {
+    const {r,finishDocuments} = detailLoadFixture();
+    let finishTenant;
+    const documentReads = [], snapshots = [];
+    r.context.__freshTenant = new Promise(resolve => { finishTenant = resolve; });
+    r.context.__documentReads = documentReads;
+    r.run(`
+      fetchStatusJson = function(action) {
+        return action === 'landlord_tenants' ? __freshTenant : Promise.resolve({success:true,data:{requests:[]}});
+      };
+      const __originalDocuments = jsonpRequest;
+      jsonpRequest = function(action, input) { __documentReads.push(action); return __originalDocuments(action, input); };
+    `);
+    const cached = {success:true,data:{tenants:[{
+      tenant_id: cachedName ? 'T-fixture' : 'T-other', tenant_name: cachedName || 'Other tenant',
+      current_contract_id:'C-current', contract_history:[{contract_id:'C-current',tenant_id:'T-fixture',is_current:true}]
+    }]}};
+    r.context.window.CMWebsLandlordApi = {snapshot(action, key, fresh, onCached) {
+      snapshots.push({action, key: JSON.stringify(key)});
+      try { onCached(cached, Date.now()); } catch (error) {}
+      return fresh;
+    }};
+    const loading = r.run('loadPage()');
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    assert.deepEqual(snapshots, [{action:'landlord_tenants', key:'{"view":"tenant_detail"}'}]);
+    if (cachedName) assert.match(r.nodes.get('app').innerHTML, /Cached tenant/);
+    else assert.doesNotMatch(r.nodes.get('app').innerHTML || '', /Other tenant/);
+    assert.equal(documentReads.length, 0, 'documents must wait for the fresh tenant response');
+    finishTenant(r.context.__tenantResponse);
+    finishDocuments({success:true,data:{contracts:[],documents:[]}});
+    await loading;
+    assert.match(r.nodes.get('app').innerHTML, /Fixture tenant/);
+    assert.doesNotMatch(r.nodes.get('app').innerHTML, /Cached tenant/);
+    assert.deepEqual(documentReads, ['landlord_contract_documents_init']);
+  }
+});
