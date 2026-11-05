@@ -816,7 +816,9 @@ SpreadsheetApp.flush();
       pushResult =
         pushLineTextMessage_(
           tenantLineUserId,
-          noticeText
+          noticeText,
+          '',
+          bill.workspace_id
         );
     }
 

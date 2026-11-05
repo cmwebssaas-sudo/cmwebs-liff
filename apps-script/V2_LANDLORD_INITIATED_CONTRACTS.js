@@ -415,7 +415,7 @@ function landlordInitiatedContractCreateRenewalInviteUnlocked_(access, schema, c
     const tenantLineUserId = landlordInitiatedContractText_(contract.tenant_line_user_id);
     if (!tenantLineUserId) return landlordInitiatedContractError_('TENANT_LINE_UID_MISSING', '房客尚未綁定 LINE，無法發送合約簽署邀請');
     if (typeof pushLineTextMessage_ !== 'function') return landlordInitiatedContractError_('LINE_PUSH_MODULE_REQUIRED', '找不到 LINE 發送模組');
-    const push = pushLineTextMessage_(tenantLineUserId, landlordInitiatedContractRenewalSigningMessage_(contract, invite, confirmationCode));
+    const push = pushLineTextMessage_(tenantLineUserId, landlordInitiatedContractRenewalSigningMessage_(contract, invite, confirmationCode), '', contract.workspace_id);
     if (!push || push.success !== true) return landlordInitiatedContractError_((push && push.code) || 'LINE_PUSH_FAILED', (push && push.message) || '合約簽署邀請發送失敗');
     updates.tenant_signing_invite_sent_at = nowIso;
     updates.tenant_signing_notification_status = 'sent';
@@ -1156,7 +1156,7 @@ function landlordInitiatedContractSendRenewalInquiryUnlocked_(access, schema, co
   const tenantLineUserId = landlordInitiatedContractText_(contract.tenant_line_user_id);
   if (!tenantLineUserId) return landlordInitiatedContractError_('TENANT_LINE_UID_MISSING', '房客尚未綁定 LINE，無法發送續約詢問');
   if (typeof pushLineTextMessage_ !== 'function') return landlordInitiatedContractError_('LINE_PUSH_MODULE_REQUIRED', '找不到 LINE 發送模組');
-  const push = pushLineTextMessage_(tenantLineUserId, landlordInitiatedContractRenewalInquiryMessage_(contract));
+  const push = pushLineTextMessage_(tenantLineUserId, landlordInitiatedContractRenewalInquiryMessage_(contract), '', contract.workspace_id);
   if (!push || push.success !== true) return landlordInitiatedContractError_((push && push.code) || 'LINE_PUSH_FAILED', (push && push.message) || '續約詢問發送失敗');
   landlordInitiatedContractUpdate_(schema.data.contracts, contract, transition.updates);
   Object.assign(contract, transition.updates);

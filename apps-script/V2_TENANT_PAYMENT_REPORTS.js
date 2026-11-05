@@ -966,7 +966,9 @@ function submitTenantPaymentReportByLineUid_(
       pushResult =
         pushLineTextMessage_(
           landlordLineUserId,
-          noticeText
+          noticeText,
+          '',
+          canonical.workspace_id
         );
     }
 

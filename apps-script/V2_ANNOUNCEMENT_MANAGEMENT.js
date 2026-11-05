@@ -800,41 +800,13 @@ function sendLandlordAnnouncementByLineUid_(
             message:
               message,
 
-            request: {
-              url:
-                'https://api.line.me/v2/bot/message/push',
-
-              method:
-                'post',
-
-              contentType:
-                'application/json',
-
-              headers: {
-                Authorization:
-                  'Bearer ' +
-                  token
-              },
-
-              payload:
-                JSON.stringify({
-                  to:
-                    recipient
-                      .tenant_line_user_id,
-
-                  messages: [
-                    {
-                      type:
-                        'text',
-                      text:
-                        message
-                    }
-                  ]
-                }),
-
-              muteHttpExceptions:
-                true
-            }
+            request:
+              lineBuildPushRequest_(
+                mainRow.workspace_id,
+                token,
+                recipient.tenant_line_user_id,
+                message
+              )
           });
         }
       }
@@ -1541,41 +1513,13 @@ function retryLandlordAnnouncementByLineUid_(
           message:
             message,
 
-          request: {
-            url:
-              'https://api.line.me/v2/bot/message/push',
-
-            method:
-              'post',
-
-            contentType:
-              'application/json',
-
-            headers: {
-              Authorization:
-                'Bearer ' +
-                token
-            },
-
-            payload:
-              JSON.stringify({
-                to:
-                  current
-                    .tenant_line_user_id,
-
-                messages: [
-                  {
-                    type:
-                      'text',
-                    text:
-                      message
-                  }
-                ]
-              }),
-
-            muteHttpExceptions:
-              true
-          }
+          request:
+            lineBuildPushRequest_(
+              announcement.workspace_id,
+              token,
+              current.tenant_line_user_id,
+              message
+            )
         });
       }
     );

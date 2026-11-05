@@ -438,7 +438,8 @@ function updateLandlordPaymentReportByLineUid_(
 
       var pushResult = lmPushText_(
         lmText_(report.tenant_line_user_id),
-        noticeText
+        noticeText,
+        report.workspace_id
       );
 
       lmLogLine_({
@@ -1016,7 +1017,8 @@ function updateLandlordTenantMessageByLineUid_(
 
         pushResult = lmPushText_(
           lmText_(record.tenant_line_user_id),
-          replyText
+          replyText,
+          record.workspace_id
         );
 
         lmLogLine_({
@@ -1518,7 +1520,7 @@ function lmBuildLandlordReplyText_(data) {
 }
 
 
-function lmPushText_(lineUserId, text) {
+function lmPushText_(lineUserId, text, workspaceId) {
   lineUserId = lmText_(lineUserId);
 
   if (!lineUserId) {
@@ -1537,7 +1539,7 @@ function lmPushText_(lineUserId, text) {
     };
   }
 
-  return pushLineTextMessage_(lineUserId, text);
+  return pushLineTextMessage_(lineUserId, text, '', workspaceId);
 }
 
 

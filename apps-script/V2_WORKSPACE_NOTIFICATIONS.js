@@ -1373,7 +1373,7 @@ function workspaceNotificationBankDeliver_(notification, recipient, preferenceEn
   workspaceNotificationUpdateByKey_(sheet, 'delivery_id', deliveryId, delivery);
   let result;
   try {
-    result = pushLineTextMessage_(delivery.line_user_id, workspaceNotificationLineText_(notification, delivery), retryKey);
+    result = pushLineTextMessage_(delivery.line_user_id, workspaceNotificationLineText_(notification, delivery), retryKey, notification.workspace_id);
   } catch (_) {
     result = {success: false, code: 'LINE_TRANSPORT_FAILED'};
   }
@@ -1503,7 +1503,9 @@ function workspaceNotificationDeliver_(
         workspaceNotificationLineText_(
           notification,
           recipient
-        )
+        ),
+        '',
+        notification.workspace_id
       );
 
     const success =

@@ -5026,3 +5026,10 @@ Tests: `tests/landlord-logout.test.mjs` covers LINE and Email logout, a slow and
 a rejected revoke, the busy button and repeat clicks, the nine desktop pages,
 and the entry page's logout, LINE app, signed-out and failure paths. A real LINE
 sign-out was not run; the preview used stubs.
+
+## 2026-11-03 V3 統一 LINE 發送入口 3A
+
+- [x] `tests/line-send-entry.test.mjs`：只有 `V2_API.js` 持有推播端點、每個發送點都帶 Workspace、既有請求與錯誤碼不變
+- [x] 全部 Workspace 仍走既有 Token（`lineSendRoute_` 回傳 `legacy`）
+- [x] 23 個 Workspace 參數都通過變數範圍檢查
+- [ ] 部署後實際帳單、公告與入住通知驗收（`HUMAN_REQUIRED`）

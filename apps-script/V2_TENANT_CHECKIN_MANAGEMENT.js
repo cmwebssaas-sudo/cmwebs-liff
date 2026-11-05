@@ -1425,36 +1425,19 @@ function sendLandlordTenantCheckinWelcomeByLineUid_(
         item
       );
 
-    const response =
-      UrlFetchApp.fetch(
-        'https://api.line.me/v2/bot/message/push',
-        {
-          method:
-            'post',
-          contentType:
-            'application/json',
-          headers: {
-            Authorization:
-              'Bearer ' +
-              token
-          },
-          payload:
-            JSON.stringify({
-              to:
-                binding.line_user_id,
-              messages: [
-                {
-                  type:
-                    'text',
-                  text:
-                    message
-                }
-              ]
-            }),
-          muteHttpExceptions:
-            true
-        }
-      );
+    const pushRequest =
+        lineBuildPushRequest_(
+          checkin.workspace_id,
+          token,
+          binding.line_user_id,
+          message
+        );
+
+      const response =
+        UrlFetchApp.fetch(
+          pushRequest.url,
+          pushRequest
+        );
 
     const statusCode =
       response.getResponseCode();
