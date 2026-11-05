@@ -9,6 +9,12 @@ function lineRequestNeedsIdentity_(action) {
     ['tenant_contract_request_cancel', 'tenant_contract_renewal_intent'].indexOf(name) >= 0;
 }
 
+// Tenant reads use the verified principal too. test=1 keeps its configured
+// test-tenant identity from resolveTenantRequestLineUserId_.
+function lineRequestTenantReadNeedsIdentity_(action, parameter) {
+  return /^tenant_/.test(String(action || '')) && String((parameter || {}).test || '') !== '1';
+}
+
 function lineRequestClaimsValid_(claims, channelId) {
   return !!claims && claims.iss === 'https://access.line.me' && claims.aud === channelId &&
     typeof claims.sub === 'string' && !!claims.sub.trim() &&
