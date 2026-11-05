@@ -12,7 +12,7 @@ function runtime({mode='on',fetcher,store=new Map(),clock={now:1000},flags=true,
     Date:class extends Date {static now(){return clock.now;}},
     setTimeout:(fn,ms)=>setTimeout(fn,ms===3000?ms*timeoutScale:ms),clearTimeout,
     localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},
-    CMWEBS_RELEASE_VERSION:'20261105-calendar-tenant-link-v1',
+    CMWEBS_RELEASE_VERSION:'20261105-read-guard-v1',
     CMWEBS_READ_COMPARISON_VERSION:'read-contract-synthetic-v1',
     CMWEBS_READ_API_URL:'https://synthetic-worker.invalid',
     CMWebsLandlordAuth:{getRequestAuthParams:()=>auth,handleAuthFailure:()=>false,
@@ -219,4 +219,17 @@ test('flag-only asset releases preserve the verified comparison identity, missin
   assert.deepEqual(r.calls.reports.map(row=>row.release),['read-contract-synthetic-v1','read-contract-synthetic-v1']);
   const missing=runtime({mode:'shadow'});delete missing.context.CMWEBS_READ_COMPARISON_VERSION;
   await missing.api.request(config);assert.equal(missing.calls.worker.length,0);
+});
+test('page reads on the canonical read list never start the write guard',async()=>{
+  // These reads run when the arrears and tenant detail pages open.
+  for (const action of ['landlord_contract_documents_init','landlord_contract_signing_review_auth_status','landlord_bill_test_archive_candidates']) {
+    const r=runtime();await r.api.request({action});
+    assert.equal(r.store.has('cmwebs_landlord_read_write_guard_v1'),false,action);
+    await r.api.request(config);assert.equal(r.calls.worker.length,1,action);
+  }
+  const list=file=>new Set(readFileSync(new URL('../'+file,import.meta.url),'utf8')
+    .match(/READ_ACTIONS = new Set\(\(\n([\s\S]*?)\n  \)\.split/)[1].match(/landlord_[a-z_]+/g));
+  assert.deepEqual([...list('landlord-api.js')].sort(),[...list('landlord-auth.js')].sort());
+  const sync=readFileSync(new URL('../apps-script/V2_READ_REPLICA_SYNC.js',import.meta.url),'utf8');
+  for (const action of list('landlord-api.js')) assert.match(sync,new RegExp('\\b'+action+'\\b'),action);
 });

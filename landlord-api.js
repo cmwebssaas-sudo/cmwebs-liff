@@ -19,6 +19,26 @@
     landlord_tenants: true,
     landlord_workspace_context: true
   };
+  // Same list as landlord-auth.js and the replica sync policy. Only actions
+  // outside it count as writes; a read counted as a write would clear every
+  // page snapshot and turn the Worker read path off for seven minutes.
+  const SYNC_READ_ACTIONS = new Set((
+    'landlord_announcements_init landlord_arrears landlord_bank_receipts_init '+
+    'landlord_bill_manual_settlement_status landlord_bill_notifications_init '+
+    'landlord_bill_test_archive_candidates landlord_billing_init '+
+    'landlord_contract_checkout_init landlord_contract_checkout_settlement_init landlord_contract_checkout_settlement_preview '+
+    'landlord_contract_document_download landlord_contract_documents_init '+
+    'landlord_contract_initiated_init landlord_contract_initiated_status landlord_contract_requests_init '+
+    'landlord_contract_signing_review_auth_status landlord_contract_signing_review_update_status '+
+    'landlord_contract_signing_reviews_fetch_status landlord_contract_signing_reviews_init '+
+    'landlord_email_session_status landlord_entry_status landlord_home landlord_home_bootstrap '+
+    'landlord_invitation_init landlord_line_logs landlord_messages_init landlord_notifications_init '+
+    'landlord_onboarding_init landlord_paid_bills_init landlord_payment_calendar landlord_payment_reports_init landlord_properties_init '+
+    'landlord_repair_tickets_init landlord_revenue_dashboard_init landlord_room_center_init '+
+    'landlord_settings_init landlord_subscription_init landlord_team_init landlord_tenant_checkins_init '+
+    'landlord_tenant_create_init landlord_tenant_initial_meter_init landlord_tenants '+
+    'landlord_workspace_activity_init landlord_workspace_context'
+  ).split(' '));
   const inFlightReads = new Map();
 
   function numberOr(value, fallback) {
@@ -685,7 +705,7 @@
     request: function (config) {
       const action = String(config && config.action || '');
       return request(config).then(function (result) {
-        if (READ_ONLY_ACTIONS[action] !== true) recordSuccessfulWrite(result);
+        if (READ_ONLY_ACTIONS[action] !== true && !SYNC_READ_ACTIONS.has(action)) recordSuccessfulWrite(result);
         return result;
       });
     },
