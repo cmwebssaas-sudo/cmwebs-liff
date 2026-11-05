@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,readFileSync,writeFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import {chmodSync,readFileSync,writeFileSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {createAuthorityPreparationControl} from '../scripts/read-authority-preparation-control.mjs';
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),binding='c'.repeat(64),executionHash='d'.repeat(64);
 function setup(spent=25){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-canonical-runtime-'));chmodSync(dir,0o700);const path=join(dir,'budget.json');let now=clock;
+ const dir=tempDir('cmwebs-canonical-runtime-');chmodSync(dir,0o700);const path=join(dir,'budget.json');let now=clock;
  const raw=JSON.stringify({limit:160,spent,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(path,raw,{mode:0o600});
  const pauses=[],options={path,epoch:'SYNTHETIC_CANONICAL_'+randomUUID(),approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:spent,expiresAt:clock+21600000,now:()=>now,pause:async ms=>{pauses.push(ms);now+=ms;}};
  const control=createAuthorityPreparationControl(options);

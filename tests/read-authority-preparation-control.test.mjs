@@ -3,7 +3,8 @@ import cp from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import {setTimeout as delay} from 'node:timers/promises';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,writeFileSync,readFileSync,lstatSync,unlinkSync,existsSync,openSync,closeSync,constants} from 'node:fs';
+import {chmodSync,writeFileSync,readFileSync,lstatSync,unlinkSync,existsSync,openSync,closeSync,constants} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
@@ -18,7 +19,7 @@ const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('202
 const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72',credentialPurposes=['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'];
 test.after(()=>{for(const epoch of epochs)for(const suffix of ['preparation','publication']){const p=join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(epoch))+'.'+suffix+'.json');try{const s=lstatSync(p),v=JSON.parse(readFileSync(p)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-preparation-')))unlinkSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 function setup(patch={},spent=25){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-preparation-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PREPARATION_'+randomUUID(),approvalHash='a'.repeat(64),proposalHash='b'.repeat(64);let now=clock;
+ const dir=tempDir('cmwebs-preparation-');chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PREPARATION_'+randomUUID(),approvalHash='a'.repeat(64),proposalHash='b'.repeat(64);let now=clock;
  const legacy={limit:160,spent,kind:'preparation-management-reads',proposal_sha256:proposalHash,approval_sha256:approvalHash,prior_limit:40};const raw=JSON.stringify(legacy);writeFileSync(path,raw,{mode:0o600});writeFileSync(path+'.lock','',{mode:0o600});
  const pauses=[],options={path,epoch,approvalHash,proposalHash,legacySha256:hash(raw),importedReads:spent,expiresAt:clock+21600000,now:()=>now,pause:async ms=>{pauses.push(ms);now+=ms;},...patch};epochs.add(epoch);assert.equal(typeof mod.createAuthorityPreparationControl,'function');const control=mod.createAuthorityPreparationControl(options);
  return {control,options,pauses,setNow:v=>{now=v;},get:()=>JSON.parse(readFileSync(path))};

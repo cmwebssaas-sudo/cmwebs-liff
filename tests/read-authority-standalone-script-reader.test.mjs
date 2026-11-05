@@ -2,7 +2,8 @@ import {syncBuiltinESMExports} from 'node:module';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,readFileSync,lstatSync,unlinkSync,writeFileSync} from 'node:fs';
+import {chmodSync,readFileSync,lstatSync,unlinkSync,writeFileSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
@@ -16,7 +17,7 @@ const epochs=new Set();
 const registry=epoch=>join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(epoch))+'.script-reader.json');
 test.after(()=>{for(const epoch of epochs)for(const p of [registry(epoch),registry(epoch)+'.stop'])try{const s=lstatSync(p),v=JSON.parse(readFileSync(p)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-script-reader-')))unlinkSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}});
 function setup(patch={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-script-reader-'));chmodSync(dir,0o700);const epoch='SYNTHETIC_SCRIPT_READER_'+randomUUID(),calls=[],charges=[],cleanup=[];let now=clock,hasReader=false;
+ const dir=tempDir('cmwebs-script-reader-');chmodSync(dir,0o700);const epoch='SYNTHETIC_SCRIPT_READER_'+randomUUID(),calls=[],charges=[],cleanup=[];let now=clock,hasReader=false;
  const options={path:join(dir,'receipt.json'),epoch,scriptId,originalScriptId,callerEmail,callerHash,publisherHash,callerPermissionId,expiresAt:clock+21600000,
   backupReceipt:{source:'fixed-trial-thin-empty-backup',epoch,scriptId,publisherHash,sourceHash},
   control:{externalRead:async(io,charge)=>{charges.push(charge);return await io();},cleanup:async(action,io)=>{cleanup.push(action);return await io();}},now:()=>now,

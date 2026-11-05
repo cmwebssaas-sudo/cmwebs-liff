@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID,createHash} from 'node:crypto';
-import {mkdtempSync,chmodSync,writeFileSync,readFileSync,lstatSync} from 'node:fs';
+import {chmodSync,writeFileSync,readFileSync,lstatSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
-import {tmpdir} from 'node:os';
 import {createAuthorityPreparationControl} from '../scripts/read-authority-preparation-control.mjs';
 import {createAuthorityNativeCapture} from '../scripts/read-authority-native-capture.mjs';
 const api=await import('../scripts/read-authority-native-producer.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
@@ -65,7 +65,7 @@ test('non-string or oversized raw output stays unknown rather than emitting a pr
 });
 
 test('producer and private capture use the actual synthetic flock ledger before the only AX read',async()=>{
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-producer-ledger-'));chmodSync(dir,0o700);
+ const dir=tempDir('cmwebs-producer-ledger-');chmodSync(dir,0o700);
  const budget=join(dir,'budget.json'),epoch='SYNTHETIC_PRODUCER_'+randomUUID(),hash=v=>createHash('sha256').update(v).digest('hex');let now=clock,reads=0;
  const raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(budget,raw,{mode:0o600});
  const options={path:budget,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>now,pause:async ms=>{now+=ms;}};

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,readFileSync,writeFileSync,chmodSync,unlinkSync,lstatSync} from 'node:fs';
+import {readFileSync,writeFileSync,chmodSync,unlinkSync,lstatSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {tmpdir,homedir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
@@ -18,7 +19,7 @@ const epochs=new Set();
 test.after(()=>{for(const epoch of epochs){const name=createHash('sha256').update(JSON.stringify(epoch)).digest('hex')+'.json';const path=join(homedir(),'.codex','private','cmwebs-authority-trials',name);try{const p=lstatSync(path),r=JSON.parse(readFileSync(path)).value;if(p.isFile()&&!p.isSymbolicLink()&&r.journalPath.startsWith(join(tmpdir(),'cmwebs-trial-driver-'))){unlinkSync(path);try{const marker=path+'.stop.json',s=lstatSync(marker),m=JSON.parse(readFileSync(marker)).value;if(s.isFile()&&!s.isSymbolicLink()&&m.binding===r.binding)unlinkSync(marker);}catch(e){if(e.code!=='ENOENT')throw e;}}}catch(e){if(e.code!=='ENOENT')throw e;}}});
 const ledgerAt=path=>JSON.parse(readFileSync(path,'utf8')).value;
 function setup(overrides={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-trial-driver-'));chmodSync(dir,0o700);
+ const dir=tempDir('cmwebs-trial-driver-');chmodSync(dir,0o700);
  let calls=0,now=clock,total=0;const path=join(dir,'ledger.json');
  const ownExpected={...expected,trialEpoch:'SYNTHETIC_EPOCH_'+randomUUID()};
  const options={path,expected:ownExpected,preparation:{reads:0,sha256:hash},expiresAt:clock+3600000,now:()=>now,
@@ -231,7 +232,7 @@ test('nine external reads leave no minute budget for authority inner reads',asyn
  const s=setup({transport:async()=>({done:true,response:{result:{success:false,code:'TRIAL_UNAVAILABLE'}}})}),d=await start(s);await d.reserveExternalReads(9);await assert.rejects(d.run({},'authority'),/TRIAL_STOPPED/);assert.equal(ledgerAt(s.path).readsUsed,9);
 });
 test('same epoch cannot restart budget at another path',async()=>{
- const s=setup(),d=await start(s);await d.run({},'compatibility');const other=mkdtempSync(join(tmpdir(),'cmwebs-trial-other-'));chmodSync(other,0o700);await assert.rejects(trial.createAuthorityTrialDriver({...s.options,path:join(other,'ledger.json')}),/TRIAL_STOPPED/);assert.equal(ledgerAt(s.path).readsUsed,1);
+ const s=setup(),d=await start(s);await d.run({},'compatibility');const other=tempDir('cmwebs-trial-other-');chmodSync(other,0o700);await assert.rejects(trial.createAuthorityTrialDriver({...s.options,path:join(other,'ledger.json')}),/TRIAL_STOPPED/);assert.equal(ledgerAt(s.path).readsUsed,1);
 });
 for(const key of ['syntheticSheetId','callerHash','publisherHash','oauthClientHash','newCloudProject','sheetContractHash'])test('release rejects wrong bound '+key,()=>{
  assert.throws(()=>trial.verifyAuthorityTrialReadback(expected,{...observed(),[key]:'OTHER_SYNTHETIC_IDENTITY'}),/TRIAL_STOPPED/);

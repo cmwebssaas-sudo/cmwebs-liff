@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import {atomicFixtureControl} from './fixtures/read-authority/atomic-control.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,readFileSync,lstatSync,unlinkSync} from 'node:fs';
+import {chmodSync,readFileSync,lstatSync,unlinkSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import os,{tmpdir} from 'node:os';
 import {syncBuiltinESMExports} from 'node:module';
@@ -10,7 +11,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import http,{createServer} from 'node:http';
 const canonicalOAuth=await import('../scripts/read-authority-trial-oauth.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-trial-oauth.mjs'))return {};throw e;});
 // Constructor-only synthetic registry seam; actual HOME/CODEX_HOME stay unchanged.
-const fixtureHome=mkdtempSync(join(tmpdir(),'cmwebs-oauth-home-'));chmodSync(fixtureHome,0o700);
+const fixtureHome=tempDir('cmwebs-oauth-home-');chmodSync(fixtureHome,0o700);
 const oauth={...canonicalOAuth,createAuthorityTrialOAuth:input=>{
  const original=os.homedir;try{os.homedir=()=>fixtureHome;syncBuiltinESMExports();return canonicalOAuth.createAuthorityTrialOAuth(input);}
  finally{os.homedir=original;syncBuiltinESMExports();}
@@ -23,7 +24,7 @@ const epochs=new Set();
 test.after(()=>{for(const epoch of epochs){const p=join(fixtureHome,'.codex','private','cmwebs-authority-trials',digest(JSON.stringify(epoch))+'.oauth.json');try{const stat=lstatSync(p),v=JSON.parse(readFileSync(p)).value;if(stat.isFile()&&!stat.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-oauth-')))unlinkSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 const token=()=>({access_token:'SYNTHETIC_ACCESS_TOKEN',expires_in:3600,token_type:'Bearer',scope:scopes.join(' ')});
 function setup(patch={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-oauth-'));chmodSync(dir,0o700);let spent=0,now=clock,cleanups=0;const calls=[],order=[];
+ const dir=tempDir('cmwebs-oauth-');chmodSync(dir,0o700);let spent=0,now=clock,cleanups=0;const calls=[],order=[];
  const control={waitForExternalReadSlot:async n=>{assert.equal(n,1);order.push('wait');},reserveExternalReads:async n=>{assert.equal(n,1);spent++;order.push('debit');},cleanup:async(name,io)=>{assert.equal(name,'revoke-token');cleanups++;return await io();}};
  const options={path:join(dir,'receipt.json'),epoch:'SYNTHETIC_OAUTH_'+randomUUID(),clientId,oauthClientHash:digest(clientId),cloudProjectHash,callerHash,publisherHash,expiresAt:clock+7200000,
   clientReadback:{source:'google-native-ui',oauthClientHash:digest(clientId),cloudProjectHash,redirectUri:redirect,isolatedTrialProject:true},
@@ -59,7 +60,7 @@ test('same valid state denial or malformed success consumes flow permanently wit
 });
 test('expired callback denies before exchange and cannot reopen the epoch at another path',async()=>{
  const s=setup();await s.submit();s.setNow(clock+600001);await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.calls.length,0);
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-oauth-'));chmodSync(dir,0o700);assert.throws(()=>oauth.createAuthorityTrialOAuth({...s.options,path:join(dir,'other.json')}),/TRIAL_STOPPED/);
+ const dir=tempDir('cmwebs-oauth-');chmodSync(dir,0o700);assert.throws(()=>oauth.createAuthorityTrialOAuth({...s.options,path:join(dir,'other.json')}),/TRIAL_STOPPED/);
 });
 test('failed consent admission cannot submit or later exchange a callback',async()=>{
  const s=setup({control:{waitForExternalReadSlot:async()=>{},reserveExternalReads:async()=>{throw Error('PRIVATE_QUOTA');},cleanup:async()=>{throw Error('UNEXPECTED_CLEANUP');}}});await assert.rejects(s.submit(),/^Error: TRIAL_STOPPED$/);await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);await assert.rejects(s.submit(),/TRIAL_STOPPED/);assert.equal(s.calls.length,0);assert(!readFileSync(s.options.path,'utf8').includes('PRIVATE_QUOTA'));

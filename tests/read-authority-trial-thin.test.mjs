@@ -3,7 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {syncBuiltinESMExports} from 'node:module';
-import {mkdtempSync,chmodSync,readFileSync,lstatSync,unlinkSync,writeFileSync} from 'node:fs';
+import {chmodSync,readFileSync,lstatSync,unlinkSync,writeFileSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
@@ -14,7 +15,7 @@ const clock=Date.parse('2026-10-14T00:00:00Z'),scriptId='SYNTHETIC_THIN_SCRIPT_I
 const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(s=>'https://www.googleapis.com/auth/'+s);
 test.after(()=>{for(const e of epochs){const base=join(homedir(),'.codex','private','cmwebs-authority-trials',checksum(e));for(const x of [base+'.thin.json',base+'.thin.json.stop',base+'.thin.json.publish-intent',base+'.preparation.json'])try{const s=lstatSync(x),v=JSON.parse(readFileSync(x)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-thin-')))unlinkSync(x);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 function setup(patch={},factory=mod.createAuthorityTrialThin){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-thin-'));chmodSync(dir,0o700);const epoch='SYNTHETIC_THIN_'+randomUUID(),calls=[],cleanups=[],originalFiles=[{name:'Code',type:'SERVER_JS',source:'\n'},{name:'appsscript',type:'JSON',source:'{"timeZone":"Asia/Taipei","runtimeVersion":"V8"}'}];let now=clock,spent=0,current,config,closed=false;
+ const dir=tempDir('cmwebs-thin-');chmodSync(dir,0o700);const epoch='SYNTHETIC_THIN_'+randomUUID(),calls=[],cleanups=[],originalFiles=[{name:'Code',type:'SERVER_JS',source:'\n'},{name:'appsscript',type:'JSON',source:'{"timeZone":"Asia/Taipei","runtimeVersion":"V8"}'}];let now=clock,spent=0,current,config,closed=false;
  const control={waitForExternalReadSlot:async()=>{},reserveExternalReads:async()=>{spent++;},cleanup:async(name,io)=>{cleanups.push(name);spent++;return io();}};
  const options={path:join(dir,'receipt.json'),epoch,scriptId,libraryId,libraryVersion:7,publisherHash,originalFiles,originalSourceHash:checksum([...originalFiles].sort((a,b)=>a.name.localeCompare(b.name))),expiresAt:clock+21600000,control,
   backupReceipt:{source:'fixed-trial-thin-empty-backup',epoch,scriptId,publisherHash,sourceHash:checksum([...originalFiles].sort((a,b)=>a.name.localeCompare(b.name)))},now:()=>now,

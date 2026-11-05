@@ -2,7 +2,8 @@ import {atomicFixtureControl} from './fixtures/read-authority/atomic-control.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {mkdtempSync,chmodSync,readFileSync,lstatSync,unlinkSync} from 'node:fs';
+import {chmodSync,readFileSync,lstatSync,unlinkSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {syncBuiltinESMExports} from 'node:module';
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
@@ -18,7 +19,7 @@ const bundle=buildAuthorityTrialArtifacts({libraryId:scriptId,version:1}),librar
 const baselineVersions=()=>Array.from({length:6},(_,i)=>({scriptId,versionNumber:i+1})),baselineDeployments=()=>[{deploymentId:'SYNTHETIC_SERVING_DEPLOYMENT',deploymentConfig:{scriptId,versionNumber:1,manifestFileName:'appsscript'}}];
 test.after(()=>{for(const epoch of epochs){const p=join(homedir(),'.codex','private','cmwebs-authority-trials',checksum(epoch)+'.publication.json');for(const x of [p,p+'.stop'])try{const s=lstatSync(x),v=JSON.parse(readFileSync(x)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-publication-')))unlinkSync(x);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 function setup(patch={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-publication-'));chmodSync(dir,0o700);const epoch='SYNTHETIC_PUBLICATION_'+randomUUID(),calls=[],restores=[],files=original(),sourceHash=pin(files),versions=baselineVersions(),deployments=baselineDeployments();let now=clock,spent=0,current=files,version=null;
+ const dir=tempDir('cmwebs-publication-');chmodSync(dir,0o700);const epoch='SYNTHETIC_PUBLICATION_'+randomUUID(),calls=[],restores=[],files=original(),sourceHash=pin(files),versions=baselineVersions(),deployments=baselineDeployments();let now=clock,spent=0,current=files,version=null;
  const control={waitForExternalReadSlot:async()=>{},reserveExternalReads:async()=>{spent++;},restoreOriginalEditor:async(action,io)=>{restores.push(action);spent++;return io();}};
  const options={path:join(dir,'receipt.json'),epoch,scriptId,publisherHash,originalFiles:files,originalSourceHash:sourceHash,baselineVersions:versions,baselineDeployments:deployments,expiresAt:clock+21600000,
   backupReceipt:{source:'fixed-trial-original-editor-backup',epoch,scriptId,publisherHash,sourceHash,versionsHash:checksum(versions),deploymentsHash:checksum(deployments)},control,now:()=>now,
@@ -146,7 +147,7 @@ test('an owned cleanup GET excludes overlapping publication or restore until its
 
 
 test('an admitted original GET locks its journal across holders on the same canonical ledger',async()=>{
- const {createAuthorityPreparationControl}=await import('../scripts/read-authority-preparation-control.mjs'),dir=mkdtempSync(join(tmpdir(),'cmwebs-publication-ledger-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PUBLICATION_'+randomUUID(),raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});fs.writeFileSync(path,raw,{mode:0o600});epochs.add(epoch);
+ const {createAuthorityPreparationControl}=await import('../scripts/read-authority-preparation-control.mjs'),dir=tempDir('cmwebs-publication-ledger-');chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PUBLICATION_'+randomUUID(),raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});fs.writeFileSync(path,raw,{mode:0o600});epochs.add(epoch);
  let ledgerTime=clock;const control=createAuthorityPreparationControl({path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>ledgerTime,pause:async ms=>{ledgerTime+=ms;}});let enter,release;const entered=new Promise(r=>{enter=r;}),gate=new Promise(r=>{release=r;});
  await control.withPreparation(async cap=>{
   const s=setup({epoch,control:cap,backupReceipt:{source:'fixed-trial-original-editor-backup',epoch,scriptId,publisherHash,sourceHash:pin(original()),versionsHash:checksum(baselineVersions()),deploymentsHash:checksum(baselineDeployments())},fetcher:async(url,init)=>{s.calls.push({url,init});enter();await gate;return new Response(JSON.stringify({scriptId,files:original()}));}}),other=mod.createAuthorityTrialPublication(s.options),before=readFileSync(s.options.path),pending=s.adapter.readOriginal('read-original-editor',cap);void pending.catch(()=>{});await Promise.race([entered,pending.then(()=>{throw Error('READ_SETTLED_BEFORE_GATE');})]);

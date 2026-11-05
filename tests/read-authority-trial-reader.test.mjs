@@ -4,7 +4,8 @@ import {createAuthorityTrialMetadataAdapters} from '../scripts/read-authority-tr
 import {atomicFixtureControl} from './fixtures/read-authority/atomic-control.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,readFileSync,lstatSync,unlinkSync,writeFileSync} from 'node:fs';
+import {chmodSync,readFileSync,lstatSync,unlinkSync,writeFileSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
@@ -16,7 +17,7 @@ const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.r
 const owner=()=>({id:ownerId,type:'user',role:'owner',emailAddress:publisherEmail}),reader=()=>({id:permissionId,type:'user',role:'reader',emailAddress:callerEmail}),epochs=new Set();
 test.after(()=>{for(const epoch of epochs){const p=join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(epoch))+'.reader.json');for(const file of [p,p+'.stop'])try{const s=lstatSync(file),v=JSON.parse(readFileSync(file)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-reader-')))unlinkSync(file);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 function setup(patch={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-reader-'));chmodSync(dir,0o700);const epoch='SYNTHETIC_READER_'+randomUUID(),calls=[],metadataCalls=[],cleanup=[];let spent=0,now=clock,hasReader=false;
+ const dir=tempDir('cmwebs-reader-');chmodSync(dir,0o700);const epoch='SYNTHETIC_READER_'+randomUUID(),calls=[],metadataCalls=[],cleanup=[];let spent=0,now=clock,hasReader=false;
  const control={waitForExternalReadSlot:async()=>{},reserveExternalReads:async()=>{spent++;},cleanup:async(action,io)=>{cleanup.push(action);spent++;return io();}};
  const options={path:join(dir,'receipt.json'),epoch,originalSheetId,syntheticSheetId,callerEmail,callerHash,publisherHash,fixtureHash,expiresAt:clock+21600000,control,
   creationReceipt:{source:'fixed-trial-import-readback',epoch,syntheticSheetId,publisherHash,fixtureHash},now:()=>now,

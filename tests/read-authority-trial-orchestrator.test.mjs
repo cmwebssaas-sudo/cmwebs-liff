@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,readFileSync,writeFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import {chmodSync,readFileSync,writeFileSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import {createAuthorityPreparationControl} from '../scripts/read-authority-preparation-control.mjs';
@@ -14,7 +14,7 @@ const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('202
 const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72';
 const defer=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
 function setup(policy=decisionHash){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-orchestrator-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_ORCHESTRATOR_'+randomUUID();let time=clock,total=0,last;
+ const dir=tempDir('cmwebs-orchestrator-');chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_ORCHESTRATOR_'+randomUUID();let time=clock,total=0,last;
  const raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(path,raw,{mode:0o600});
  const controlOptions={decisionHash:policy,path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;}},control=createAuthorityPreparationControl(controlOptions),receipt=buildAuthorityTrialRollback({path:join(dir,'runtime')});
  const expected={deploymentId:'SYNTHETIC_DEPLOYMENT_ID',thinScriptId:'SYNTHETIC_THIN_SCRIPT',libraryId:'SYNTHETIC_LIBRARY_SCRIPT',libraryVersion:7,librarySourceHash:'a'.repeat(64),thinSourceHash:'a'.repeat(64),libraryManifestHash:'a'.repeat(64),thinManifestHash:'a'.repeat(64),originalEditorHash:'a'.repeat(64),originalDeploymentsHash:'a'.repeat(64),originalCloudProject:'SYNTHETIC_DEFAULT',trialEpoch:epoch,syntheticSheetId:'SYNTHETIC_UNBOUND_SHEET',callerHash:'b'.repeat(64),publisherHash:'c'.repeat(64),oauthClientHash:'d'.repeat(64),newCloudProject:'SYNTHETIC_NEW_PROJECT',sheetContractHash:'e'.repeat(64)};

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,readFileSync,writeFileSync} from 'node:fs';
+import {chmodSync,readFileSync,writeFileSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import os,{tmpdir} from 'node:os';
 import {syncBuiltinESMExports} from 'node:module';
 import {join} from 'node:path';
@@ -8,13 +9,13 @@ import {createHash,randomUUID} from 'node:crypto';
 import {createAuthorityPreparationControl} from '../scripts/read-authority-preparation-control.mjs';
 import {createAuthorityTrialOAuth as canonicalOAuth} from '../scripts/read-authority-trial-oauth.mjs';
 // Constructor-only OAuth registry seam; the real ledger is isolated by the owned runner.
-const fixtureHome=mkdtempSync(join(tmpdir(),'cmwebs-phase-oauth-home-'));chmodSync(fixtureHome,0o700);
+const fixtureHome=tempDir('cmwebs-phase-oauth-home-');chmodSync(fixtureHome,0o700);
 const createAuthorityTrialOAuth=input=>{const original=os.homedir;try{os.homedir=()=>fixtureHome;syncBuiltinESMExports();return canonicalOAuth(input);}finally{os.homedir=original;syncBuiltinESMExports();}};
 import {AUTHORITY_TRIAL_SCOPES} from '../scripts/read-authority-trial-driver.mjs';
 const phase=await import('../scripts/read-authority-phase-control.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-phase-control.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),binding='d'.repeat(64),defer=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
 function setup(patch={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-phase-control-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PHASE_CONTROL_'+randomUUID();let time=clock;
+ const dir=tempDir('cmwebs-phase-control-');chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PHASE_CONTROL_'+randomUUID();let time=clock;
  const raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(path,raw,{mode:0o600});
  const options={path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;},...patch};
  const control=createAuthorityPreparationControl(options),bridge=phase.createAuthorityPhaseControl?.(control)??{...control,withCleanup:(b,fn)=>control.withRuntime(b,fn)};
