@@ -894,3 +894,75 @@ test('without the read service the page sends only the full tenant read', async 
   assert.deepEqual(f.calls.filter(call => call.startsWith('landlord_tenants')), ['landlord_tenants:{}']);
   assert.match(f.r.nodes.get('app').innerHTML, /id="tenant-contract-summary"[\s\S]*?12,800/);
 });
+
+// The LINE identity exchange for the meter is independent of tenant data, so
+// it starts with the page reads; the meter request reuses its result once.
+function meterPrewarmFixture(statusResult) {
+  const r = detailFixture();
+  let finishTenant;
+  r.context.__fullTenant = new Promise(resolve => { finishTenant = resolve; });
+  r.context.__tenantResponse = {success:true,data:{tenants:[{tenant_id:'T-fixture',tenant_name:'Fixture tenant',current_contract_id:'C-current',
+    contract_history:[{contract_id:'C-current',tenant_id:'T-fixture',is_current:true}]}]}};
+  r.context.__meter = meterData();
+  r.context.__status = statusResult;
+  r.context.liff.getIDToken = () => 'fixture-id-token';
+  r.run(`
+    LANDLORD_AUTH = {getMode:()=> 'line',getRequestAuthParams:()=>({})};
+    ensureLandlordAuthReady = async function() { return true; };
+    fetchStatusJson = function(action) { return action === 'landlord_tenants' ? __fullTenant : Promise.resolve({success:true,data:{requests:[]}}); };
+    jsonpRequest = async function(action) {
+      return action === 'landlord_contract_signing_review_auth_status' ? __status : {success:true,data:{contracts:[],documents:[]}};
+    };
+  `);
+  r.context.fetch = async (_url, options) => {
+    r.calls.push(options);
+    const action = JSON.parse(options.body).action;
+    return {ok:true,json:async()=>action === 'landlord_tenant_initial_meter_init' ? {success:true,data:r.context.__meter} : {success:true,data:{}}};
+  };
+  const actions = () => r.calls.map(call => JSON.parse(call.body).action);
+  return {r, finishTenant, actions};
+}
+
+test('LINE meter identity exchange starts with the page reads and the meter request reuses it', async () => {
+  const f = meterPrewarmFixture({success:true,data:{session_token:'fixture-session',session_expires_at:new Date(Date.now()+600000).toISOString()}});
+  const loading = f.r.run('loadPage()');
+  for (let i = 0; i < 20; i += 1) await Promise.resolve();
+  assert.deepEqual(f.actions(), ['landlord_contract_signing_review_auth_init'], 'exchange starts before the tenant data arrives');
+  f.finishTenant(f.r.context.__tenantResponse);
+  await loading;
+  assert.deepEqual(f.actions(), ['landlord_contract_signing_review_auth_init', 'landlord_tenant_initial_meter_init']);
+  assert.equal(JSON.parse(f.r.calls[1].body).session_token, 'fixture-session');
+  assert.ok(f.r.nodes.get('tenantInitialMeterReading'));
+});
+
+test('a failed early meter exchange shows LINE recovery once without a second exchange', async () => {
+  const f = meterPrewarmFixture({success:false,code:'LINE_TOKEN_VERIFY_FAILED',message:'房東審核身分驗證失敗'});
+  const loading = f.r.run('loadPage()');
+  for (let i = 0; i < 20; i += 1) await Promise.resolve();
+  f.finishTenant(f.r.context.__tenantResponse);
+  await loading;
+  assert.deepEqual(f.actions(), ['landlord_contract_signing_review_auth_init']);
+  assert.ok(f.r.nodes.get('tenantInitialMeterRelogin'));
+});
+
+test('Email sessions do not start a LINE meter exchange', async () => {
+  for (const setup of ["LANDLORD_AUTH = {getMode:()=> 'email',getRequestAuthParams:()=>({landlord_session_token:'fixture'})};",
+    "LANDLORD_AUTH = {getMode:()=> 'email',getRequestAuthParams:()=>({})};"]) {
+    const f = meterPrewarmFixture({success:true,data:{session_token:'fixture-session'}});
+    f.r.run(setup);
+    f.r.run('prewarmTenantInitialMeterAuth()');
+    assert.equal(f.r.calls.length, 0);
+    assert.equal(f.r.run('TENANT_INITIAL_METER_PREWARM'), null);
+  }
+});
+
+test('legacy tenant without a room on its record gets an explanation instead of a load failure', () => {
+  const r = detailFixture();
+  r.nodes.get('app').innerHTML = r.run('tenantInitialMeterPanelHtml()');
+  r.run("renderTenantInitialMeterError(tenantInitialMeterAuthError('INITIAL_METER_SCOPE_CONFLICT','房客、租約與房間關聯不一致'))");
+  const text = r.nodes.get('tenantInitialMeterContent').textContent;
+  assert.match(text, /舊系統轉入/);
+  assert.doesNotMatch(text, /載入失敗/);
+  r.run("renderTenantInitialMeterError(tenantInitialMeterAuthError('INITIAL_METER_SCOPE_CONFLICT','入住電表關聯不一致，未寫入資料'))");
+  assert.match(r.nodes.get('tenantInitialMeterContent').textContent, /初始電表載入失敗/, 'other conflicts keep the server message');
+});

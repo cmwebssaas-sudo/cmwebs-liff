@@ -9,15 +9,15 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261105-tenants-read-path-v1"></script>
-  <script src="liff-config.js?v=20261105-tenants-read-path-v1"></script>
-  <script src="liff-request-auth.js?v=20261105-tenants-read-path-v1"></script>
-  <script src="landlord-auth.js?v=20261105-tenants-read-path-v1"></script>
-  <script src="landlord-api.js?v=20261105-tenants-read-path-v1"></script>
+  <script src="frontend-release.js?v=20261106-meter-auth-prewarm-v1"></script>
+  <script src="liff-config.js?v=20261106-meter-auth-prewarm-v1"></script>
+  <script src="liff-request-auth.js?v=20261106-meter-auth-prewarm-v1"></script>
+  <script src="landlord-auth.js?v=20261106-meter-auth-prewarm-v1"></script>
+  <script src="landlord-api.js?v=20261106-meter-auth-prewarm-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-tenants-read-path-v1" />
-  <script src="landlord-glass-nav.js?v=20261105-tenants-read-path-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261105-tenants-read-path-v1" defer></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261106-meter-auth-prewarm-v1" />
+  <script src="landlord-glass-nav.js?v=20261106-meter-auth-prewarm-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261106-meter-auth-prewarm-v1" defer></script>
 
   <style>
     :root {
@@ -1392,7 +1392,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-tenants-read-path-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261106-meter-auth-prewarm-v1" />
 </head>
 
 <body>
@@ -1618,6 +1618,9 @@
     let TENANT_INITIAL_METER_LOAD = 0;
     let TENANT_INITIAL_METER_SAVING = false;
     let TENANT_INITIAL_METER_AUTH = null;
+    // Identity exchange started with the page reads; its result (or error) is
+    // consumed once by the first meter request.
+    let TENANT_INITIAL_METER_PREWARM = null;
     let TENANT_INITIAL_METER_RELOGIN = false;
     let CURRENT_TENANT_DOCUMENT_OBJECT_URL = '';
     let CURRENT_TENANT_DOCUMENT_BLOB = null;
@@ -2733,6 +2736,12 @@
     function renderTenantInitialMeterError(error) {
       const content = document.getElementById('tenantInitialMeterAuthNotice') || document.getElementById('tenantInitialMeterContent');
       if (!content) return;
+      if (error && error.code === 'INITIAL_METER_SCOPE_CONFLICT' && rawText(error.message) === '房客、租約與房間關聯不一致') {
+        // Tenants imported from the old system have no room on their tenant
+        // record, so the server cannot tie a meter record to this lease.
+        content.textContent = '這份租約沒有可顯示的入住電表：房客資料裡沒有記錄房間，或和租約的房間不同（舊系統轉入的房客常見）。要補填需先補齊房客資料。';
+        return;
+      }
       if (!isTenantInitialMeterAuthError(error)) {
         content.textContent = '初始電表載入失敗：' + rawText(error.message || '請重試');
         return;
@@ -2814,6 +2823,19 @@
       finally { TENANT_INITIAL_METER_AUTH = null; }
     }
 
+    // The meter's LINE identity exchange takes about 15 seconds and does not
+    // depend on tenant data, so start it together with the page reads.
+    function prewarmTenantInitialMeterAuth() {
+      try {
+        const auth = LANDLORD_AUTH || initLandlordAuthClient();
+        if (TEST_MODE || auth.getRequestAuthParams().landlord_session_token || auth.getMode() === 'email') return;
+        TENANT_INITIAL_METER_PREWARM = initializeTenantInitialMeterReviewSession();
+        TENANT_INITIAL_METER_PREWARM.catch(function () {});
+      } catch (error) {
+        TENANT_INITIAL_METER_PREWARM = null;
+      }
+    }
+
     async function requestTenantInitialMeterAction(action, input) {
       const auth = LANDLORD_AUTH || initLandlordAuthClient();
       let result;
@@ -2821,6 +2843,12 @@
         result = await auth.request(action, {input_json: JSON.stringify(input)}, {timeoutMs: 120000});
       } else {
         if (auth.getMode() === 'email') throw new Error('Email 登入已失效，請從房東入口重新登入。');
+        if (TENANT_INITIAL_METER_PREWARM) {
+          const prewarm = TENANT_INITIAL_METER_PREWARM;
+          TENANT_INITIAL_METER_PREWARM = null;
+          // Surface a failed early exchange once instead of repeating it.
+          await prewarm;
+        }
         await initializeTenantInitialMeterReviewSession();
         const response = await fetch(API_URL, {
           method: 'POST', headers: {'Content-Type': 'text/plain;charset=UTF-8'},
@@ -4797,6 +4825,8 @@
         if (!ready) {
           return;
         }
+
+        prewarmTenantInitialMeterAuth();
 
         const api = window.CMWebsLandlordApi;
         let freshProfile = false;
