@@ -7422,7 +7422,9 @@ function workspaceDashboardExecute_(
               ? 'arrears'
               : action === 'landlord_home'
                 ? 'home'
-                : 'full'
+                : action === 'landlord_payment_calendar'
+                  ? 'calendar'
+                  : 'full'
         }
       );
 
@@ -7626,6 +7628,22 @@ function workspaceDashboardLoadData_(
         );
       }
     );
+
+  // The payment calendar needs room, lease, bill and tenant names only.
+  if (mode === 'calendar') {
+    return {
+      properties:
+        propertyRows,
+      property_id_map:
+        propertyIdMap,
+      rooms: rooms,
+      contracts: contracts,
+      tenants: tenants,
+      users: [],
+      bills: bills,
+      tenant_view_rows: []
+    };
+  }
 
   const userSheet =
     ss.getSheetByName(

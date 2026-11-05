@@ -11,6 +11,7 @@
  * - getWorkspaceLandlordHomeNativeByLineUid_
  * - getWorkspaceLandlordArrearsNativeByLineUid_
  * - getWorkspaceLandlordTenantsNativeByLineUid_
+ * - getWorkspaceLandlordPaymentCalendarNativeByLineUid_
  *
  * 依賴：
  * - V2_WORKSPACES.gs
@@ -397,6 +398,370 @@ function getWorkspaceLandlordArrearsNativeByLineUid_(
 }
 
 
+/**
+ * 繳費月曆：本月與前兩個月，每間房一列。
+ * 已繳／未繳沿用欠款頁的 canonical 規則，兩邊的數字才會一致。
+ * 只回傳房間、房客姓名與帳單金額，不回傳 LINE ID、電話或銀行資料。
+ */
+function getWorkspaceLandlordPaymentCalendarNativeByLineUid_(
+  lineUserId
+) {
+  return workspaceDashboardExecute_(
+    lineUserId,
+    'landlord_payment_calendar',
+    function (
+      ss,
+      access,
+      data
+    ) {
+      return workspaceDashboardAttachContext_(
+        {
+          success: true,
+          code: 'OK',
+          message: '查詢成功',
+          data: workspacePaymentCalendarBuild_(
+            data,
+            workspaceDashboardToday_()
+          )
+        },
+        access
+      );
+    }
+  );
+}
+
+
+const WORKSPACE_PAYMENT_CALENDAR_MONTH_COUNT_ = 3;
+
+// 越前面越需要房東處理；三個月的排序以每間房最差的狀態為準。
+const WORKSPACE_PAYMENT_CALENDAR_RANK_ = {
+  overdue: 0,
+  unpaid: 1,
+  no_bill: 2,
+  paid: 3,
+  vacant: 4
+};
+
+
+function workspacePaymentCalendarBuild_(
+  data,
+  today
+) {
+  const text = workspaceDashboardText_;
+  const currentMonth = workspaceDashboardNormalizeMonth_(today);
+  const months = [];
+
+  for (
+    let offset = WORKSPACE_PAYMENT_CALENDAR_MONTH_COUNT_ - 1;
+    offset >= 0;
+    offset -= 1
+  ) {
+    months.push(workspacePaymentCalendarShiftMonth_(currentMonth, -offset));
+  }
+
+  const propertyNames = {};
+  (data.properties || []).forEach(function (property) {
+    const propertyId = text(property.property_id);
+    if (propertyId) {
+      propertyNames[propertyId] = text(property.property_name);
+    }
+  });
+
+  const tenantNames = {};
+  (data.tenants || []).forEach(function (tenant) {
+    const tenantId = text(tenant.tenant_id).toUpperCase();
+    if (tenantId) {
+      tenantNames[tenantId] = text(tenant.tenant_name || tenant.name);
+    }
+  });
+
+  const rowsByKey = {};
+  const rows = [];
+
+  function rowFor(key, source) {
+    if (!rowsByKey[key]) {
+      const propertyId = text(source.property_id);
+      rowsByKey[key] = {
+        room_id: text(source.room_id),
+        room_name: text(source.room_name) || text(source.room_id) || '未指定房間',
+        property_id: propertyId,
+        property_name: propertyNames[propertyId] || '',
+        tenant_name: '',
+        occupied_now: false,
+        bills_by_month: {},
+        leases_by_month: {}
+      };
+      rows.push(rowsByKey[key]);
+    }
+    return rowsByKey[key];
+  }
+
+  (data.rooms || []).forEach(function (room) {
+    const roomId = text(room.room_id);
+    if (!roomId || !workspaceDashboardRoomIsOperational_(room)) {
+      return;
+    }
+    const row = rowFor(roomId, room);
+    const roomStatus = text(room.room_status || room.status).toLowerCase();
+    const currentTenantId = text(room.current_tenant_id).toUpperCase();
+    row.occupied_now = Boolean(
+      currentTenantId ||
+      text(room.current_contract_id) ||
+      ['occupied', 'rented', 'leased', '已入住'].indexOf(roomStatus) >= 0
+    );
+    if (currentTenantId && tenantNames[currentTenantId]) {
+      row.tenant_name = tenantNames[currentTenantId];
+    }
+  });
+
+  // 停用房間若在這三個月仍有帳單，也要列出來，未繳帳單才不會漏看。
+  (data.bills || []).forEach(function (bill) {
+    if (v2CanonicalBillIsVoided_(bill)) {
+      return;
+    }
+    const month = workspaceDashboardNormalizeMonth_(bill.bill_month);
+    if (months.indexOf(month) < 0) {
+      return;
+    }
+    const key = text(bill.room_id) || 'bill:' + text(bill.bill_id);
+    const row = rowFor(key, bill);
+    (row.bills_by_month[month] = row.bills_by_month[month] || []).push(bill);
+  });
+
+  (data.contracts || []).forEach(function (contract) {
+    const row = rowsByKey[text(contract.room_id)];
+    if (!row || !workspacePaymentCalendarContractCounts_(contract)) {
+      return;
+    }
+    const start = workspaceDashboardDate_(
+      contract.start_date ||
+      contract.contract_start_date ||
+      contract.lease_start_date
+    );
+    let end = workspaceDashboardDate_(
+      contract.end_date ||
+      contract.contract_end_date ||
+      contract.lease_end_date
+    );
+    const moveOut = workspaceDashboardDate_(contract.checkout_move_out_date);
+    if (moveOut && (!end || moveOut.getTime() < end.getTime())) {
+      end = moveOut;
+    }
+    if (!start && !end && !workspaceDashboardContractIsCurrent_(contract)) {
+      return;
+    }
+    months.forEach(function (month) {
+      const bounds = workspacePaymentCalendarMonthBounds_(month);
+      if (!start && !end && month !== currentMonth) {
+        return;
+      }
+      if (
+        (start && start.getTime() > bounds.last.getTime()) ||
+        (end && end.getTime() < bounds.first.getTime())
+      ) {
+        return;
+      }
+      row.leases_by_month[month] = contract;
+    });
+  });
+
+  rows.forEach(function (row) {
+    row.cells = months.map(function (month) {
+      return workspacePaymentCalendarCell_(
+        row,
+        month,
+        month === currentMonth,
+        today
+      );
+    });
+
+    for (let index = months.length - 1; index >= 0 && !row.tenant_name; index -= 1) {
+      const bills = row.bills_by_month[months[index]] || [];
+      const lease = row.leases_by_month[months[index]];
+      row.tenant_name =
+        bills.length > 0
+          ? text(bills[bills.length - 1].tenant_name)
+          : lease
+            ? text(lease.tenant_name) ||
+              tenantNames[text(lease.tenant_id).toUpperCase()] ||
+              ''
+            : '';
+    }
+
+    row.worst_status = row.cells.reduce(function (worst, cell) {
+      return WORKSPACE_PAYMENT_CALENDAR_RANK_[cell.status] <
+        WORKSPACE_PAYMENT_CALENDAR_RANK_[worst]
+        ? cell.status
+        : worst;
+    }, 'vacant');
+    row.max_days_overdue = row.cells.reduce(function (max, cell) {
+      return Math.max(max, cell.days_overdue);
+    }, 0);
+    row.unpaid_amount = row.cells.reduce(function (total, cell) {
+      return total + cell.unpaid_amount;
+    }, 0);
+
+    delete row.bills_by_month;
+    delete row.leases_by_month;
+    delete row.occupied_now;
+  });
+
+  rows.sort(function (a, b) {
+    return (
+      WORKSPACE_PAYMENT_CALENDAR_RANK_[a.worst_status] -
+        WORKSPACE_PAYMENT_CALENDAR_RANK_[b.worst_status] ||
+      b.max_days_overdue - a.max_days_overdue ||
+      workspaceDashboardCompareText_(a.property_name, b.property_name) ||
+      workspaceDashboardCompareText_(a.room_name, b.room_name)
+    );
+  });
+
+  return {
+    as_of: workspaceDashboardFormatDate_(today),
+    current_month: currentMonth,
+    months: months.map(function (month, index) {
+      const counts = {
+        paid: 0,
+        unpaid: 0,
+        overdue: 0,
+        no_bill: 0,
+        vacant: 0
+      };
+      let paidAmount = 0;
+      let unpaidAmount = 0;
+
+      rows.forEach(function (row) {
+        const cell = row.cells[index];
+        counts[cell.status] += 1;
+        paidAmount += cell.total_amount - cell.unpaid_amount;
+        unpaidAmount += cell.unpaid_amount;
+      });
+
+      return {
+        month: month,
+        room_count: rows.length,
+        billed_count: counts.paid + counts.unpaid + counts.overdue,
+        paid_count: counts.paid,
+        unpaid_count: counts.unpaid,
+        overdue_count: counts.overdue,
+        no_bill_count: counts.no_bill,
+        vacant_count: counts.vacant,
+        paid_amount: paidAmount,
+        unpaid_amount: unpaidAmount
+      };
+    }),
+    rooms: rows
+  };
+}
+
+
+function workspacePaymentCalendarCell_(
+  row,
+  month,
+  isCurrentMonth,
+  today
+) {
+  const bills = row.bills_by_month[month] || [];
+  const cell = {
+    month: month,
+    status: '',
+    bill_count: bills.length,
+    total_amount: 0,
+    unpaid_amount: 0,
+    days_overdue: 0,
+    due_date: ''
+  };
+
+  if (bills.length === 0) {
+    cell.status =
+      row.leases_by_month[month] || (isCurrentMonth && row.occupied_now)
+        ? 'no_bill'
+        : 'vacant';
+    return cell;
+  }
+
+  let earliestUnpaidDue = '';
+  bills.forEach(function (bill) {
+    const amount = workspaceDashboardNumber_(bill.total_amount);
+    const dueDate = workspaceDashboardFormatDate_(bill.due_date);
+    cell.total_amount += amount;
+    if (!v2CanonicalBillIsOutstanding_(bill)) {
+      return;
+    }
+    cell.unpaid_amount += amount;
+    cell.days_overdue = Math.max(
+      cell.days_overdue,
+      workspaceDashboardDaysOverdue_(bill.due_date, today)
+    );
+    if (dueDate && (!earliestUnpaidDue || dueDate < earliestUnpaidDue)) {
+      earliestUnpaidDue = dueDate;
+    }
+  });
+
+  const hasUnpaid = bills.some(v2CanonicalBillIsOutstanding_);
+  cell.status = !hasUnpaid
+    ? 'paid'
+    : cell.days_overdue > 0
+      ? 'overdue'
+      : 'unpaid';
+  cell.due_date =
+    earliestUnpaidDue ||
+    workspaceDashboardFormatDate_(bills[bills.length - 1].due_date);
+  return cell;
+}
+
+
+function workspacePaymentCalendarContractCounts_(
+  contract
+) {
+  const status = workspaceDashboardText_(
+    contract.contract_status ||
+    contract.status
+  ).toLowerCase();
+
+  // 已結束或到期的租約仍代表當時有人住；未生效或作廢的不算。
+  return !(
+    /^pending/.test(status) ||
+    [
+      'draft',
+      'void',
+      'voided',
+      'cancelled',
+      'canceled',
+      'rejected',
+      'deleted',
+      'archived'
+    ].indexOf(status) >= 0
+  );
+}
+
+
+function workspacePaymentCalendarShiftMonth_(
+  month,
+  delta
+) {
+  const year = Number(month.slice(0, 4));
+  const index = Number(month.slice(5, 7)) - 1 + delta;
+  const shiftedYear = year + Math.floor(index / 12);
+  const shiftedMonth = ((index % 12) + 12) % 12 + 1;
+
+  return String(shiftedYear) + '-' + String(shiftedMonth).padStart(2, '0');
+}
+
+
+function workspacePaymentCalendarMonthBounds_(
+  month
+) {
+  const year = Number(month.slice(0, 4));
+  const monthIndex = Number(month.slice(5, 7)) - 1;
+
+  return {
+    first: new Date(year, monthIndex, 1),
+    last: new Date(year, monthIndex + 1, 0)
+  };
+}
+
+
 function getWorkspaceLandlordTenantsNativeByLineUid_(
   lineUserId,
   readView
@@ -552,7 +917,9 @@ function workspaceDashboardExecute_(
               ? 'arrears'
               : action === 'landlord_home'
                 ? 'home'
-                : 'full'
+                : action === 'landlord_payment_calendar'
+                  ? 'calendar'
+                  : 'full'
         }
       );
 
@@ -757,6 +1124,22 @@ function workspaceDashboardLoadData_(
         );
       }
     );
+
+  // The payment calendar needs room, lease, bill and tenant names only.
+  if (mode === 'calendar') {
+    return {
+      properties:
+        propertyRows,
+      property_id_map:
+        propertyIdMap,
+      rooms: rooms,
+      contracts: contracts,
+      tenants: tenants,
+      users: [],
+      bills: bills,
+      tenant_view_rows: []
+    };
+  }
 
   const userSheet =
     ss.getSheetByName(
@@ -2873,6 +3256,24 @@ function testWorkspaceLandlordHomeNative() {
 function testWorkspaceLandlordArrearsNative() {
   const result =
     getWorkspaceLandlordArrearsNativeByLineUid_(
+      getRequiredScriptProperty_('TEST_LANDLORD_LINE_UID')
+    );
+
+  Logger.log(
+    JSON.stringify(
+      result,
+      null,
+      2
+    )
+  );
+
+  return result;
+}
+
+
+function testWorkspaceLandlordPaymentCalendarNative() {
+  const result =
+    getWorkspaceLandlordPaymentCalendarNativeByLineUid_(
       getRequiredScriptProperty_('TEST_LANDLORD_LINE_UID')
     );
 

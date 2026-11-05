@@ -10,6 +10,7 @@
     landlord_contract_requests_init: true,
     landlord_home_bootstrap: true,
     landlord_notifications_init: true,
+    landlord_payment_calendar: true,
     landlord_payment_reports_init: true,
     landlord_properties_init: true,
     landlord_room_center_init: true,
