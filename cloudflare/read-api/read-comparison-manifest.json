@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-a9d0049019fac7724f62d48e9c3dd19e1f1e2b52faf8092eb9f298cf85333eef",
+  "comparison_version": "read-e403ade5cb84f30a1bb5aacea570ab36fb6372a0b49ae009b841f98f7c6a600e",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -162,7 +162,7 @@
     "landlord-tenant-checkin.html": "a931359d979f5db0062c000cd39dc2647540d1c0ef677700cb23a6d3ad2a243f",
     "landlord-tenant-checkout.html": "493bec20e1c4276c5bb61becb54a4e5feee77b837d358d1742b93db86a2ac23c",
     "landlord-tenant-create.html": "437ab28c0640b3666eda074e10b369333e9b365b6ae849e9c425a7e9b175b359",
-    "landlord-tenant-detail.html": "c010ae9a4b28668384d1f4d09da331510585de311b4396773bbf2793dbe4314b",
+    "landlord-tenant-detail.html": "ab10e65876f8ce8a782199f9852eb3b1267a477b3f2e7300d4bf254f11b4bdbb",
     "landlord-tenants.html": "4d9cb3e845c6ba68c3d657eef5850e6234122300d5fb444d39931432eccb4a8f",
     "landlord-workspaces.html": "f146e4f862022f62fece8bec8ef55aa6c15d2aa041e69132fccb317ebfa0879f",
     "landlord.html": "10d9f0d98c405b074578502fc3c56fba108fa4b1df80f90d3aa9b7cff5b78bf8",

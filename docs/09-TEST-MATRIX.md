@@ -1,5 +1,14 @@
 # V2 回歸測試矩陣
 
+## 2026-11-06 初始電表身分驗證提早開始、舊房客電表說明
+
+- [x] `tests/paper-initial-meter-frontend.runtime.test.mjs`：LINE 模式下電表的身分交換和房客資料同時開始，電表請求沿用結果，不重做交換
+- [x] 同一測試：提早的交換失敗時只顯示一次重新登入，不送第二次交換；Email 登入不做 LINE 交換
+- [x] 同一測試：`INITIAL_METER_SCOPE_CONFLICT`／「房客、租約與房間關聯不一致」改顯示舊系統房客的說明，其他衝突仍顯示伺服器訊息
+- [ ] 部署後用 LINE 實測電表出現時間（`HUMAN_REQUIRED`）
+
+背景：2026-11-06 唯讀核對正式資料，`V2_tenants` 的 T000001–T000019（舊系統轉入）缺 `workspace_id`、`landlord_id`、`room_id`，伺服器的電表範圍檢查因此拒絕；租約 C000001–C000019 的欄位完整。補資料需另行核准。
+
 ## 2026-11-05 房客名單接讀取服務、房客詳細頁先出基本資料
 
 - [x] `frontend-release.js`：`CMWEBS_READ_PATH.tenants = 'on'`（房客名單頁原本就只要摘要，走 Worker）
