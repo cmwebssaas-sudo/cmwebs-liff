@@ -1,5 +1,13 @@
 # V2 回歸測試矩陣
 
+## 2026-11-05 讀取不再被當成存檔
+
+| Check | Evidence | Boundary |
+| --- | --- | --- |
+| 帳款頁、房客詳細頁的讀取不啟動寫入保護 | `tests/read-routing.test.mjs`：`landlord_contract_documents_init`、`landlord_contract_signing_review_auth_status`、`landlord_bill_test_archive_candidates` 成功後不寫保護時間，下一次房間讀取仍走 Worker | 修正前同一測試失敗 |
+| 讀取清單一致 | `landlord-api.js` 與 `landlord-auth.js` 清單相同，且都在 replica sync 讀取清單內 | 只比對名稱 |
+| 正式環境量測（修正前） | 桌面 Chrome、房東登入：房客詳細 15 秒出主資料、26 秒出文件；帳款頁打開後保護 7 分鐘，房間頁從 Worker 退回 Apps Script（8.6 秒） | 單次量測，非統計 |
+
 ## 2026-11-05 繳費月曆開房客、房間與帳單存檔逾時
 
 | Check | Evidence | Boundary |
