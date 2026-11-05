@@ -49,6 +49,7 @@ const location = {
   replace(value) { replaced = value; }
 };
 const context = {
+  CMWebsLiffConfig: { liffId: () => 'fixture-liff' },
   URL, URLSearchParams, location,
   document: {
     documentElement: { style: { setProperty() {} } },

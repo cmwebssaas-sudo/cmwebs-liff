@@ -64,7 +64,7 @@ it into a smart rental-management system.
 | Area | Status |
 | --- | --- |
 | Membership, room limits, bank-transfer subscription and platform admin | Released on 2026-10-11 |
-| BYO LINE OA and Channel Registry | Specified in `docs/V3-BYO-LINE-OA-SPEC.md`; registry source added, not deployed |
+| BYO LINE OA and Channel Registry | Specified in `docs/V3-BYO-LINE-OA-SPEC.md`; registry, send path and landlord login source added, not deployed |
 | Central multi-tenant data environment and monitoring | Partial; primary data remains in Google Sheets |
 | Online payment providers | Not started; bank transfer only |
 | Third-party electronic signature | Not started |

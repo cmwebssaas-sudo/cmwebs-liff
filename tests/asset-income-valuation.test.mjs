@@ -77,7 +77,7 @@ test('preview property selection rerenders scoped synthetic years without a prod
   const html = previewHtml();
   const startup = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(match => match[1]).find(body => body.includes('async function initLineUserId'));
   let data;
-  const context = vm.createContext({ URL, URLSearchParams, location: { href: 'http://127.0.0.1/', search: '' }, innerHeight: 800,
+  const context = vm.createContext({ CMWebsLiffConfig: { liffId: () => 'fixture-liff' }, URL, URLSearchParams, location: { href: 'http://127.0.0.1/', search: '' }, innerHeight: 800,
     document: { documentElement: { style: { setProperty() {} } }, getElementById() { return { insertAdjacentHTML() {} }; } }, addEventListener() {}, console });
   context.window = context;
   assert.ok(startup.includes('function loadPreviewReport'), 'preview has no usable property reload');
@@ -231,7 +231,7 @@ test('desktop email report reuses shared session without LINE init or redirect',
   const script = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(match => match[1]).find(body => body.includes('async function initLineUserId'));
   let lineCalls = 0;
   let requestConfig;
-  const context = vm.createContext({ URL, URLSearchParams, location: { href: 'https://example.test/landlord-revenue-dashboard.html', search: '' },
+  const context = vm.createContext({ CMWebsLiffConfig: { liffId: () => 'fixture-liff' }, URL, URLSearchParams, location: { href: 'https://example.test/landlord-revenue-dashboard.html', search: '' },
     document: { documentElement: { style: { setProperty() {} } } },
     liff: { async init() { lineCalls++; }, isLoggedIn() { return false; } },
     CMWebsLandlordAuth: { init() { return this; }, getMode() { return 'email'; }, getRequestAuthParams() { return { landlord_session_token: 'synthetic-session' }; } },
@@ -307,7 +307,7 @@ test('desktop existing LINE login remains usable without an email token', async 
   const page = readFileSync(new URL('../landlord-revenue-dashboard.html', import.meta.url), 'utf8');
   const script = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(match => match[1]).find(body => body.includes('async function initLineUserId'));
   let lineCalls = 0;
-  const context = vm.createContext({URL,URLSearchParams,location:{href:'https://example.test/landlord-revenue-dashboard.html',search:''},document:{documentElement:{style:{setProperty(){}}}},
+  const context = vm.createContext({CMWebsLiffConfig:{liffId:()=>'fixture-liff'},URL,URLSearchParams,location:{href:'https://example.test/landlord-revenue-dashboard.html',search:''},document:{documentElement:{style:{setProperty(){}}}},
     CMWebsLandlordAuth:{init(){return this;},getMode(){return 'email';},getRequestAuthParams(){return {}; }},
     liff:{async init(){lineCalls++;},isLoggedIn(){return true;},async getProfile(){return {userId:'synthetic-line-id'};}},
     innerHeight:800,addEventListener(){},setTimeout,clearTimeout,console });

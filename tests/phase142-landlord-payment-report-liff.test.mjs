@@ -24,7 +24,7 @@ assert.match(
 );
 assert.match(
   reviewSource,
-  /const LIFF_ID = '2010314940-EjX1qbb8';/,
+  /const LIFF_ID = CMWebsLiffConfig\.liffId\('landlord'\);/,
   'the notification destination must use the landlord LIFF app'
 );
 assert.match(
@@ -34,7 +34,7 @@ assert.match(
 );
 assert.match(
   tenantSource,
-  /const LIFF_ID\s*=\s*\n\s*'2010314940-iJB1D6sN';/,
+  /const LIFF_ID\s*=\s*\n\s*CMWebsLiffConfig\.liffId\('tenant'\);/,
   'the tenant payment-report page must retain the tenant LIFF app'
 );
 

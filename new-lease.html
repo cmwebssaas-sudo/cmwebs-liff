@@ -6,6 +6,7 @@
   <title>CMWebs 智能租管</title>
 
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="liff-config.js?v=20261101-landlord-logout-v1"></script>
 
   <style>
     body {
@@ -78,7 +79,7 @@
      * 基本設定
      ************************************************************/
 
-    const LIFF_ID = "2010314940-hsmAUnNw";
+    const LIFF_ID = CMWebsLiffConfig.liffId('new_lease');
 
     // 房客身份判斷 Make Webhook
     const CHECK_WEBHOOK_URL = "https://hook.us2.make.com/bke3eglwyf2xnhbqougyaiv37w0fdkd4";
@@ -390,7 +391,7 @@
          * B. 房客合約簽署入口
          *
          * 連結：
-         * https://liff.line.me/2010314940-hsmAUnNw?mode=tenant_checkin&contract_id=xxxx&role=tenant
+         * https://liff.line.me/<LIFF ID>?mode=tenant_checkin&contract_id=xxxx&role=tenant
          ********************************************************/
 
         if (isTenantCheckin) {

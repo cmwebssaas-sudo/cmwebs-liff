@@ -23,6 +23,7 @@ const auth = {
   handleAuthFailure() { return false; }
 };
 const context = {
+  CMWebsLiffConfig: { liffId: () => 'fixture-liff' },
   URL, URLSearchParams,
   location: {
     href: 'https://example.test/cmwebs-liff/landlord-contract-documents.html',

@@ -66,6 +66,22 @@ test('one channel cannot belong to two Workspaces', async () => {
   });
 });
 
+test('finds a channel by its LINE Login channel without secrets', async () => {
+  await fixture(async (db, send) => {
+    await send(channel());
+    const found = await send({ action:'find_login_channel', line_login_channel_id:'1000000001' });
+    assert.equal(found.status,200);
+    assert.doesNotMatch(found.text,/synthetic|encrypted_secrets/);
+    assert.equal(JSON.parse(found.text).data.workspace_id,'W_A');
+    assert.equal(JSON.parse(found.text).data.status,'draft');
+    assert.equal((await send({ action:'find_login_channel', line_login_channel_id:'1000000009' })).status,404);
+    for (const payload of [{ action:'find_login_channel', line_login_channel_id:'bad' },
+      { action:'find_login_channel', line_login_channel_id:'1000000001', workspace_id:'W_A' }]) {
+      assert.equal(code(await send(payload)),'INVALID_LINE_CHANNEL');
+    }
+  });
+});
+
 test('rejects bad signatures, replays, malformed channels and missing configuration', async () => {
   await fixture(async (db, send) => {
     assert.equal((await send(channel(),{ signature:'0'.repeat(64) })).status,401);

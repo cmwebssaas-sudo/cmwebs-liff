@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>CMWebs 辦理房客退房</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="liff-config.js?v=20261101-landlord-logout-v1"></script>
 <script src="frontend-release.js?v=20261101-landlord-logout-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20261101-landlord-logout-v1" />
   <script src="landlord-glass-nav.js?v=20261101-landlord-logout-v1" defer></script>
@@ -142,7 +143,7 @@
   </div>
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
-    const LIFF_ID = '2010314940-EjX1qbb8';
+    const LIFF_ID = CMWebsLiffConfig.liffId('landlord');
     const URL_PARAMS = new URLSearchParams(location.search);
     const CONTRACT_ID = String(URL_PARAMS.get('contract_id') || '').trim();
     const TENANT_ID = String(URL_PARAMS.get('tenant_id') || '').trim();

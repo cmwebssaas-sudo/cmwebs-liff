@@ -8,7 +8,7 @@ function fixture(){
  const buttons=['a','b'].map(id=>({disabled:false,textContent:'確認銷帳',closest:()=>cards[id]}));
  const cards={a:{dataset:{receiptId:'a'},setAttribute(){},querySelectorAll:()=>[buttons[0]]},b:{dataset:{receiptId:'b'},setAttribute(){},querySelectorAll:()=>[buttons[1]]}};
  const ctx={URL,URLSearchParams,console,setTimeout:fn=>{fn();return 1;},clearTimeout(){},innerHeight:844,addEventListener(){},location:{href:'https://example.test/review.html',search:''},document:{documentElement:{style:{setProperty(){}}},getElementById:()=>({}),querySelectorAll:()=>buttons}};
- ctx.window=ctx;vm.createContext(ctx);vm.runInContext(script.replace(/\n    loadPage\(\);\s*$/,''),ctx);
+ ctx.window=ctx;ctx.CMWebsLiffConfig={liffId:()=>'fixture-liff'};vm.createContext(ctx);vm.runInContext(script.replace(/\n    loadPage\(\);\s*$/,''),ctx);
  vm.runInContext("BANK_RECEIPT_DATA={receipts:[{receipt_id:'a',status:'pending',match_bill_id:'bill-a'},{receipt_id:'b',status:'pending',match_bill_id:'bill-b'}]}",ctx);
  const messages=[];ctx.showToast=m=>messages.push(m);ctx.renderPage=()=>{};
  return {ctx,buttons,messages,state:()=>vm.runInContext('({busy:BANK_RECEIPT_BUSY,uncertain:BANK_RECEIPT_UNCERTAIN,data:BANK_RECEIPT_DATA})',ctx)};

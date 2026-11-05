@@ -94,8 +94,14 @@ export async function lineChannels(request, env) {
     else if (input.action === 'get') {
       if (Object.keys(input).sort().join() !== 'action,workspace_id' || !validWorkspace(input.workspace_id)) stop('INVALID_LINE_CHANNEL');
       await commit(db,nonce);
+    } else if (input.action === 'find_login_channel') {
+      // Apps Script maps an ID token's channel to its Workspace before login.
+      if (Object.keys(input).sort().join() !== 'action,line_login_channel_id' || !/^\d{10}$/.test(input.line_login_channel_id)) stop('INVALID_LINE_CHANNEL');
+      await commit(db,nonce);
     } else stop('INVALID_LINE_CHANNEL');
-    const row = await db.prepare('SELECT * FROM line_channels WHERE workspace_id=?').bind(input.workspace_id).first();
+    const row = input.action === 'find_login_channel'
+      ? await db.prepare('SELECT * FROM line_channels WHERE line_login_channel_id=?').bind(input.line_login_channel_id).first()
+      : await db.prepare('SELECT * FROM line_channels WHERE workspace_id=?').bind(input.workspace_id).first();
     if (!row) stop('LINE_CHANNEL_NOT_FOUND',404);
     return reply({ success:true, code:'OK', message:'LINE channel ready', data:publicRecord(row) });
   } catch (error) {

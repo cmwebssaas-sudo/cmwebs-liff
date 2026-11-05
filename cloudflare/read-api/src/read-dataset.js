@@ -165,6 +165,21 @@ export function createReadDatasetLoader(database,options={}) {
       if(rows.length>1) failure('AUTH_REQUIRED');
       return rows[0]||null;
     },
+    async findLoginChannel(channelId) {
+      return db.prepare('SELECT workspace_id,status FROM line_channels WHERE line_login_channel_id=?').bind(channelId).first();
+    },
+    // A Workspace on its own active channel accepts only that channel's tokens.
+    async workspaceOnOwnChannel(workspaceId,legacyChannelId) {
+      try {
+        const row=await db.prepare("SELECT 1 AS own FROM line_channels WHERE upper(workspace_id)=? AND status='active' AND line_login_channel_id<>?")
+          .bind(text(workspaceId).toUpperCase(),text(legacyChannelId)).first();
+        return row?.own===1;
+      } catch(error) {
+        // Before the registry migration no Workspace has its own channel.
+        if(/no such table: line_channels/.test(String(error?.message))) return false;
+        throw error;
+      }
+    },
     async resolveAccess(identity) {
       const users=await byValues('V2_users',identity.kind==='line'?'line_user_id':'user_id',
         [identity.kind==='line'?identity.line_user_id:identity.user_id]);
@@ -175,7 +190,8 @@ export function createReadDatasetLoader(database,options={}) {
       const preliminary={V2_users:users,V2_workspace_members:members,V2_workspaces:workspaces};
       const runtime=createReplicaRuntime(preliminary,options);
       const helper=createReadCalculator(runtime);
-      const context=helper.workspaceResolveContextByLineUid_(runtime.runtimeSpreadsheet_(),text(actor.line_user_id));
+      const context=helper.workspaceResolveContextByLineUid_(runtime.runtimeSpreadsheet_(),text(actor.line_user_id),
+        identity.channel_workspace_id?{workspace_id:identity.channel_workspace_id}:undefined);
       const workspace=context.activeWorkspace;
       if(!workspace) failure('WORKSPACE_REQUIRED');
       const workspaceId=text(workspace.workspace_id).toUpperCase();

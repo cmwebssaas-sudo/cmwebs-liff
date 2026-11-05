@@ -7,6 +7,7 @@
     <title>CMWebs 系統綁定</title>
     <!-- 引入 LINE LIFF 官方 SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="liff-config.js?v=20261101-landlord-logout-v1"></script>
     <style>
         /* 讓畫面完美貼齊邊緣，隱藏捲軸 */
         body { margin: 0; padding: 0; overflow: hidden; background-color: #f4f4f4; }
@@ -42,7 +43,7 @@
 
     <script>
         // 設定您的專屬 ID 與目標網址
-        const myLiffId = "2010314940-at3zGKFb"; 
+        const myLiffId = CMWebsLiffConfig.liffId('index'); 
         const tallyBaseUrl = "https://tally.so/r/rjvdPX";
 
         async function main() {

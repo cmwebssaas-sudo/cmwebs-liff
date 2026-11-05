@@ -101,12 +101,16 @@ LINE、LIFF、Webhook 或 Rich Menu。每個實作階段都要另外授權。
 
 ### 4.3 登入
 
-- 前端依網址中的 Workspace 代碼取得公開設定，再初始化對應 LIFF。
-- 頁面不再寫死 LIFF ID，全部改讀集中設定。
+- 房東 LIFF 的 Endpoint URL 帶上自己的 LIFF ID（參數 `cmwebs_liff`）。頁面用它
+  初始化 LIFF，不必多一次查詢；同一分頁換頁時沿用。這個值只決定開哪個 LIFF，
+  不授權任何資料。
+- 頁面不再寫死 LIFF ID，全部改讀 `liff-config.js`。
 - Apps Script 與 Worker 依 Workspace 取得 `line_login_channel_id`，並以它
   驗證 ID Token 的 `aud`。
 - ID Token 頻道與請求的 Workspace 不一致時，一律拒絕。
 - 同一人向兩位房東租屋時，視為兩個獨立身分，不合併資料。
+- 4A 只開放房東功能。房客綁定、房客頁面、通知中的房客連結與簽約流程要依頻道
+  分開後才開放（4B）；在此之前，房客功能拒絕房東自有頻道的 token。
 
 ### 4.4 Webhook
 
@@ -174,7 +178,7 @@ LINE、LIFF、Webhook 或 Rich Menu。每個實作階段都要另外授權。
 | 1 | 備份復原演練與操作手冊 | 不改使用者行為 |
 | 2 | Channel Registry，既有 Workspace 轉入（資料表、加密與內部路由已實作，尚未部署） | 不改使用者行為 |
 | 3 | 統一 LINE 發送入口：3A 全部接入，既有 Workspace 行為不變（程式已完成，尚未部署）；3B Worker 發送，只開放允許清單內的 Workspace（程式已完成，尚未部署）；3C 測試 OA 實測 | 影響正式通知 |
-| 4 | 多頻道登入與集中 LIFF 設定 | 影響正式登入 |
+| 4 | 多頻道登入與集中 LIFF 設定：4A 房東登入與集中 LIFF 設定（程式已完成，尚未部署）；4B 房客綁定、房客頁面與通知連結依頻道分開 | 影響正式登入 |
 | 5 | Worker Webhook | 影響正式訊息接收 |
 | 6 | 設定精靈與圖文選單發布 | 只開放測試 OA |
 | 7 | 測試 OA 全流程 | 不影響既有 Workspace |

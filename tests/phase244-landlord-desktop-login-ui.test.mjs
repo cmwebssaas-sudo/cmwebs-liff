@@ -116,6 +116,7 @@ function createEntryRuntime(search = '') {
   };
 
   const context = {
+  CMWebsLiffConfig: { liffId: () => 'fixture-liff' },
     URL,
     URLSearchParams,
     JSON,

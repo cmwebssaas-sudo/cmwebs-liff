@@ -4,6 +4,15 @@ function deny(code='AUTH_REQUIRED'){throw Object.assign(new Error(code),{code});
 // Denial diagnostics carry check names and LINE's error text only, never
 // tokens, LINE user IDs or other identity values.
 function logDenial(detail){try{console.log('READ_DENIED '+JSON.stringify(detail));}catch{}}
+// Routing hint only: LINE verifies the token against the chosen client_id.
+export function idTokenAudience(token) {
+  try {
+    const part=String(token).split('.')[1]||'';
+    if(!/^[A-Za-z0-9_-]{1,8192}$/.test(part)) return '';
+    const aud=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(part.length/4)*4,'='))).aud;
+    return typeof aud==='string'&&/^\d{10}$/.test(aud)?aud:'';
+  } catch {return '';}
+}
 export function readCredential(request) {
   const match=(request.headers.get('authorization')||'').match(/^(LIFF|Session) ([^\s]{1,8192})$/i);
   if(!match) deny();
@@ -20,8 +29,20 @@ export function createIdentityAuthenticator(options={}) {
     const credential=readCredential(request),token=credential.token;
     let now=clock();
     if(credential.kind==='liff') {
-      const channel=env.LINE_LOGIN_CHANNEL_ID;
-      if(typeof channel!=='string'||!channel.trim()) deny('AUTH_UNAVAILABLE');
+      const legacy=env.LINE_LOGIN_CHANNEL_ID;
+      if(typeof legacy!=='string'||!legacy.trim()) deny('AUTH_UNAVAILABLE');
+      // A landlord's own LINE Login channel counts only while its registry
+      // row is active; the token then belongs to that Workspace alone.
+      const hinted=idTokenAudience(token);
+      let channel=legacy,channelWorkspace='';
+      if(hinted&&hinted!==legacy) {
+        const findLoginChannel=requestOptions.findLoginChannel||options.findLoginChannel;
+        if(typeof findLoginChannel!=='function') deny();
+        let row;
+        try{row=await findLoginChannel(hinted);}catch{deny('AUTH_UNAVAILABLE');}
+        if(!row||row.status!=='active'||!String(row.workspace_id||'').trim()) deny();
+        channel=hinted;channelWorkspace=String(row.workspace_id).trim().toUpperCase();
+      }
       const digest=hex(await crypto.subtle.digest('SHA-256',encoder.encode(token)));
       const key=channel+':'+digest;
       let entry=cache.get(key);
@@ -51,7 +72,7 @@ export function createIdentityAuthenticator(options={}) {
         if(!claims||claims.iss!=='https://access.line.me'||claims.aud!==channel||
           !Number.isSafeInteger(claims.exp)||!Number.isFinite(claims.exp*1000)||claims.exp*1000<=now||
           typeof claims.sub!=='string'||!claims.sub||claims.sub.trim()!==claims.sub||claims.sub.length>128) deny();
-        entry={identity:{kind:'line',line_user_id:claims.sub},expires:Math.min(now+300000,claims.exp*1000)};
+        entry={identity:channelWorkspace?{kind:'line',line_user_id:claims.sub,channel_workspace_id:channelWorkspace}:{kind:'line',line_user_id:claims.sub},expires:Math.min(now+300000,claims.exp*1000)};
         if(cache.size>=256) cache.delete(cache.keys().next().value);
         cache.set(key,entry);
       }

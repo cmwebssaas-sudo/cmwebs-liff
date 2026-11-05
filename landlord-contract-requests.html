@@ -9,6 +9,7 @@
   <title>CMWebs 合約申請管理</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="frontend-release.js?v=20261101-landlord-logout-v1"></script>
+  <script src="liff-config.js?v=20261101-landlord-logout-v1"></script>
   <script src="liff-request-auth.js?v=20261101-landlord-logout-v1"></script>
   <script src="landlord-auth.js?v=20261101-landlord-logout-v1"></script>
   <script src="landlord-api.js?v=20261101-landlord-logout-v1"></script>
@@ -1354,7 +1355,7 @@
       'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
 
     const LIFF_ID =
-      '2010314940-EjX1qbb8';
+      CMWebsLiffConfig.liffId('landlord');
 
     const LANDLORD_ENTRY_URL =
       new URL(
