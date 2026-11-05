@@ -9,15 +9,15 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261105-read-guard-v1"></script>
-  <script src="liff-config.js?v=20261105-read-guard-v1"></script>
-  <script src="liff-request-auth.js?v=20261105-read-guard-v1"></script>
-  <script src="landlord-auth.js?v=20261105-read-guard-v1"></script>
-  <script src="landlord-api.js?v=20261105-read-guard-v1"></script>
+  <script src="frontend-release.js?v=20261105-tenant-detail-cache-v1"></script>
+  <script src="liff-config.js?v=20261105-tenant-detail-cache-v1"></script>
+  <script src="liff-request-auth.js?v=20261105-tenant-detail-cache-v1"></script>
+  <script src="landlord-auth.js?v=20261105-tenant-detail-cache-v1"></script>
+  <script src="landlord-api.js?v=20261105-tenant-detail-cache-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-read-guard-v1" />
-  <script src="landlord-glass-nav.js?v=20261105-read-guard-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261105-read-guard-v1" defer></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-tenant-detail-cache-v1" />
+  <script src="landlord-glass-nav.js?v=20261105-tenant-detail-cache-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261105-tenant-detail-cache-v1" defer></script>
 
   <style>
     :root {
@@ -1392,7 +1392,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-read-guard-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-tenant-detail-cache-v1" />
 </head>
 
 <body>
@@ -1603,6 +1603,9 @@
     let CURRENT_REQUESTS = [];
     let CURRENT_TENANT_DOCUMENTS = [];
     let CURRENT_TENANT_CONTRACTS = [];
+    // Cache key only; the full list (with lease history) differs from the
+    // tenant list page's summary snapshot, so it must not share its entry.
+    const TENANT_DETAIL_SNAPSHOT_KEY = {view: 'tenant_detail'};
     let LANDLORD_REVIEW_SESSION_TOKEN = '';
     let LANDLORD_REVIEW_SESSION_EXPIRES_AT = 0;
     let TENANT_INITIAL_METER_DATA = null;
@@ -4720,12 +4723,33 @@
           return;
         }
 
+        const tenantRequest =
+          fetchStatusJson(
+            'landlord_tenants',
+            {}
+          );
+
+        // Paint the last full tenant list (any tenant) while the slow read
+        // runs. Documents and meter reads still wait for the fresh response.
+        if (
+          window.CMWebsLandlordApi &&
+          window.CMWebsLandlordApi.snapshot
+        ) {
+          window.CMWebsLandlordApi.snapshot(
+            'landlord_tenants',
+            TENANT_DETAIL_SNAPSHOT_KEY,
+            tenantRequest,
+            function (cached) {
+              const cachedData = unwrapData(cached);
+              renderPage(cachedData, []);
+              updateDesktopChrome(cachedData);
+            }
+          );
+        }
+
         const results =
           await Promise.allSettled([
-            fetchStatusJson(
-              'landlord_tenants',
-              {}
-            ),
+            tenantRequest,
             fetchStatusJson(
               'landlord_contract_requests_init',
               {}
