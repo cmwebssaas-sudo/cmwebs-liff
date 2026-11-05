@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-2f3ef3597805ee8bb3b7d2ba8673f1974205682dd018e862a63eda2868bd6b6e",
+  "comparison_version": "read-7a8ff3df90e8d6b30520cad0bf6dd3ab7cf05419c2304852940fe0a4d5696c55",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -150,7 +150,7 @@
     "landlord-paid-bills.html": "f10ff25fdb0eec6f756c417f17434fdeefb2f816015d27ee48183373a71c2cb7",
     "landlord-payment-report-review.html": "1209ff19cf4edf229aad8d4233fac64cde785ab01711776cd92ca791d5aa029b",
     "landlord-payment-reports.html": "56fd5fa3bc366d6e252ffc79c9d042489630f40f9a70ae0dae9ac48b792a8fbe",
-    "landlord-properties.html": "ec89e117e23a279fe9b99e0ee60b566ce511ab6b5ed90f4ff719e7d9a30d1e60",
+    "landlord-properties.html": "9e0b6f67bde664b271adae6bc207cc6f07d1ef46486e079148b053e045d9f689",
     "landlord-register.html": "7b9c8d4441288c0f7da4416578e7a4b8a3ee6dd663df7dcf3964eaf4958b3121",
     "landlord-registry.html": "9bc78e7b5131a09dd98df4bc23948071b38d7df572d697d902f1dc32d94368f4",
     "landlord-responsive.css": "9f9d73c700fe71ca753f143f7072557c4b6dbd2da06bf0d6d2b65ee0b34ea5da",

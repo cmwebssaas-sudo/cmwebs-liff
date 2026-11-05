@@ -583,6 +583,11 @@
       display: flex;
     }
 
+    /* 鍵盤打開時導覽列被蓋住，不必再替它留空間，編輯視窗才不會被壓扁。 */
+    html.keyboard-open .modal-backdrop {
+      padding-bottom: 14px;
+    }
+
     .modal-sheet {
       width: 100%;
       max-width: 560px;
@@ -1027,6 +1032,41 @@
         '--app-height',
         Math.round(height) + 'px'
       );
+
+      document.documentElement.classList.toggle(
+        'keyboard-open',
+        Boolean(
+          window.visualViewport &&
+          window.innerHeight - window.visualViewport.height > 120
+        )
+      );
+
+      keepFocusedFieldVisible();
+    }
+
+    // 鍵盤打開後，把正在輸入的欄位捲到編輯視窗中間，避免被鍵盤或視窗邊緣蓋住。
+    // 只捲動編輯視窗本身，不捲動固定的頁面外框。
+    function keepFocusedFieldVisible() {
+      const sheet = document.getElementById('editorSheet');
+      const field = document.activeElement;
+
+      if (
+        !sheet ||
+        !field ||
+        !sheet.contains(field) ||
+        !/^(INPUT|TEXTAREA|SELECT)$/.test(field.tagName)
+      ) {
+        return;
+      }
+
+      const fieldRect = field.getBoundingClientRect();
+      const sheetRect = sheet.getBoundingClientRect();
+      const target =
+        sheet.scrollTop +
+        (fieldRect.top - sheetRect.top) -
+        (sheet.clientHeight - fieldRect.height) / 2;
+
+      sheet.scrollTop = Math.max(0, Math.round(target));
     }
 
     function rawText(value) {
@@ -3174,6 +3214,11 @@
       'resize',
       setAppHeight
     );
+
+    document.addEventListener('focusin', function () {
+      // 等鍵盤動畫結束、視窗高度更新後再捲動。
+      setTimeout(keepFocusedFieldVisible, 350);
+    });
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener(
