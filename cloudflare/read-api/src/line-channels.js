@@ -102,3 +102,48 @@ export async function lineChannels(request, env) {
     return failure(error.status ? error.code : 'LINE_CHANNEL_UNAVAILABLE',error.status || 503);
   }
 }
+
+function lineResult(status) {
+  if (status >= 200 && status < 300) return 'OK';
+  if (status === 409) return 'LINE_ALREADY_ACCEPTED';
+  if (status === 401) return 'LINE_TOKEN_INVALID';
+  if (status === 429) return 'LINE_RATE_OR_QUOTA_LIMITED';
+  return status >= 500 ? 'LINE_PUSH_FAILED' : 'LINE_PUSH_REJECTED';
+}
+function validSend(input) {
+  const keys = Object.keys(input).sort().join();
+  if (!['text,to,workspace_id','retry_key,text,to,workspace_id'].includes(keys) || !validWorkspace(input.workspace_id) ||
+      typeof input.to !== 'string' || !/^U[0-9a-f]{32}$/.test(input.to) ||
+      typeof input.text !== 'string' || !input.text || input.text.length > 5000 ||
+      (input.retry_key !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.retry_key))) stop('INVALID_LINE_SEND');
+}
+// Apps Script checks the recipient binding before signing. The HTTP status
+// mirrors LINE so callers keep handling one set of results.
+export async function lineSend(request, env, fetcher = fetch) {
+  if (request.method !== 'POST') return failure('METHOD_NOT_ALLOWED',405);
+  if (!env.DB || !env.LINE_REGISTRY_SIGNING_SECRET || !env.LINE_CHANNEL_SECRET_KEY) return failure('LINE_CHANNEL_NOT_CONFIGURED',503);
+  try {
+    await secretKey(env.LINE_CHANNEL_SECRET_KEY);
+    const body = await boundedBody(request);
+    const nonce = await verifySignature(request,body,env.LINE_REGISTRY_SIGNING_SECRET);
+    let input; try { input = JSON.parse(body); } catch { stop('INVALID_LINE_SEND'); }
+    if (!input || typeof input !== 'object' || Array.isArray(input)) stop('INVALID_LINE_SEND');
+    validSend(input);
+    const db = env.DB.withSession ? env.DB.withSession('first-primary') : env.DB;
+    await commit(db,nonce);
+    const row = await db.prepare('SELECT status,encrypted_secrets FROM line_channels WHERE workspace_id=?').bind(input.workspace_id).first();
+    if (!row || row.status !== 'active' || !row.encrypted_secrets) stop('LINE_CHANNEL_NOT_ACTIVE',403);
+    const secrets = await decryptChannelSecrets(row.encrypted_secrets,env.LINE_CHANNEL_SECRET_KEY,input.workspace_id);
+    const headers = { Authorization:'Bearer '+secrets.messaging_access_token, 'content-type':'application/json' };
+    if (input.retry_key) headers['X-Line-Retry-Key'] = input.retry_key;
+    let response;
+    try {
+      response = await fetcher('https://api.line.me/v2/bot/message/push',{ method:'POST', headers, redirect:'manual',
+        body:JSON.stringify({ to:input.to, messages:[{ type:'text', text:input.text }] }) });
+    } catch { stop('LINE_UNREACHABLE',502); }
+    const code = lineResult(response.status);
+    return reply({ success:code === 'OK', code, message:'LINE push finished', data:null },response.status >= 200 && response.status < 300 ? 200 : response.status);
+  } catch (error) {
+    return failure(error.status ? error.code : 'LINE_CHANNEL_UNAVAILABLE',error.status || 503);
+  }
+}

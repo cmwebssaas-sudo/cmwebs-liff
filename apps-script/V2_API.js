@@ -4475,18 +4475,62 @@ function buildTenantLineMessage_(tenant, messageType, messageText) {
  */
 /**
  * V3 LINE send entry. Every LINE push goes through here with its Workspace.
- * All Workspaces still use the existing token; the route exists so a later
- * release can send through each landlord's own channel.
+ * Only Workspaces listed in CMWEBS_LINE_WORKER_WORKSPACES send through the
+ * Worker with their own channel; all others keep the existing token.
  */
+let LINE_WORKER_ROUTE_CONFIG_ = null;
+
+function lineWorkerRouteConfig_() {
+  if (LINE_WORKER_ROUTE_CONFIG_) return LINE_WORKER_ROUTE_CONFIG_;
+  const properties = PropertiesService.getScriptProperties();
+  LINE_WORKER_ROUTE_CONFIG_ = {
+    url: String(properties.getProperty('READ_REPLICA_URL') || '').trim().replace(/\/$/, ''),
+    secret: properties.getProperty('LINE_REGISTRY_SIGNING_SECRET') || '',
+    workspaces: String(properties.getProperty('CMWEBS_LINE_WORKER_WORKSPACES') || '')
+      .split(',')
+      .map(function (value) { return value.trim(); })
+      .filter(Boolean)
+  };
+  return LINE_WORKER_ROUTE_CONFIG_;
+}
+
 function lineSendRoute_(workspaceId) {
+  const id = String(workspaceId || '').trim();
   return {
-    transport: 'legacy',
-    workspace_id: String(workspaceId || '').trim()
+    transport: id && lineWorkerRouteConfig_().workspaces.indexOf(id) >= 0 ? 'worker' : 'legacy',
+    workspace_id: id
+  };
+}
+
+function lineBuildWorkerPushRequest_(workspaceId, toLineUserId, text, retryKey) {
+  const config = lineWorkerRouteConfig_();
+  if (!config.url || !config.secret) throw new Error('LINE_WORKER_ROUTE_NOT_CONFIGURED');
+  const fields = { workspace_id: workspaceId, to: toLineUserId, text: text };
+  if (retryKey) fields.retry_key = retryKey;
+  const body = JSON.stringify(fields);
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const nonce = Utilities.getUuid();
+  return {
+    url: config.url + '/internal/line-send',
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'X-CMWebs-Timestamp': timestamp,
+      'X-CMWebs-Nonce': nonce,
+      'X-CMWebs-Signature': readReplicaHex_(Utilities.computeHmacSha256Signature(
+        timestamp + '\n' + nonce + '\n' + body, config.secret, Utilities.Charset.UTF_8))
+    },
+    payload: body,
+    muteHttpExceptions: true,
+    followRedirects: false
   };
 }
 
 function lineBuildPushRequest_(workspaceId, token, toLineUserId, text, retryKey) {
-  lineSendRoute_(workspaceId);
+  const route = lineSendRoute_(workspaceId);
+  if (route.transport === 'worker') {
+    return lineBuildWorkerPushRequest_(route.workspace_id, toLineUserId, text, retryKey);
+  }
   const headers = { Authorization: 'Bearer ' + token };
   if (retryKey) headers['X-Line-Retry-Key'] = retryKey;
   return {
@@ -4512,7 +4556,7 @@ function pushLineTextMessage_(toLineUserId, text, retryKey, workspaceId) {
     .getScriptProperties()
     .getProperty('LINE_CHANNEL_ACCESS_TOKEN');
 
-  if (!token) {
+  if (!token && lineSendRoute_(workspaceId).transport === 'legacy') {
     return {
       success: false,
       code: 'LINE_TOKEN_NOT_SET',
@@ -4520,7 +4564,16 @@ function pushLineTextMessage_(toLineUserId, text, retryKey, workspaceId) {
     };
   }
 
-  const request = lineBuildPushRequest_(workspaceId, token, toLineUserId, text, retryKey);
+  let request;
+  try {
+    request = lineBuildPushRequest_(workspaceId, token, toLineUserId, text, retryKey);
+  } catch (error) {
+    return {
+      success: false,
+      code: 'LINE_WORKER_ROUTE_NOT_CONFIGURED',
+      message: '此 Workspace 的 LINE 發送尚未設定完成'
+    };
+  }
   const res = UrlFetchApp.fetch(request.url, request);
 
   const statusCode = res.getResponseCode();
