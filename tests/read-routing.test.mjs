@@ -12,7 +12,7 @@ function runtime({mode='on',fetcher,store=new Map(),clock={now:1000},flags=true,
     Date:class extends Date {static now(){return clock.now;}},
     setTimeout:(fn,ms)=>setTimeout(fn,ms===3000?ms*timeoutScale:ms),clearTimeout,
     localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},
-    CMWEBS_RELEASE_VERSION:'20261105-tenant-detail-cache-v1',
+    CMWEBS_RELEASE_VERSION:'20261105-tenants-read-path-v1',
     CMWEBS_READ_COMPARISON_VERSION:'read-contract-synthetic-v1',
     CMWEBS_READ_API_URL:'https://synthetic-worker.invalid',
     CMWebsLandlordAuth:{getRequestAuthParams:()=>auth,handleAuthFailure:()=>false,
@@ -232,4 +232,14 @@ test('page reads on the canonical read list never start the write guard',async()
   assert.deepEqual([...list('landlord-api.js')].sort(),[...list('landlord-auth.js')].sort());
   const sync=readFileSync(new URL('../apps-script/V2_READ_REPLICA_SYNC.js',import.meta.url),'utf8');
   for (const action of list('landlord-api.js')) assert.match(sync,new RegExp('\\b'+action+'\\b'),action);
+});
+test('readPathAvailable mirrors routing: summary on, full view, off switch, write guard and missing credential stay false',async()=>{
+  const r=runtime();
+  assert.equal(r.api.readPathAvailable(config),true);
+  assert.equal(r.api.readPathAvailable({...config,params:{}}),false,'full tenant view stays on Apps Script');
+  assert.equal(runtime({mode:'off'}).api.readPathAvailable(config),false);
+  assert.equal(runtime({auth:{}}).api.readPathAvailable(config),false);
+  await r.api.request({action:'landlord_room_save'});
+  assert.equal(r.api.readPathAvailable(config),false,'a recent write keeps reads on Apps Script');
+  assert.equal(r.calls.worker.length,0,'the check itself sends nothing');
 });

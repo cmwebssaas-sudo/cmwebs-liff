@@ -804,3 +804,93 @@ test('tenant detail paints the cached full list first and keeps private reads be
     assert.deepEqual(documentReads, ['landlord_contract_documents_init']);
   }
 });
+
+// With the read service usable, the profile shows from its summary view in
+// about two seconds; lease history, requests and the meter fill in later
+// without wiping documents that already arrived.
+function summaryFirstFixture({available = true, summaryTenants} = {}) {
+  const {r,finishDocuments} = detailLoadFixture([{contract_id:'C-current',tenant_id:'T-fixture',is_current:true,contract_status:'active',rent_amount:12800,deposit_amount:25600}]);
+  const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return {promise, resolve, reject}; };
+  const full = deferred(), requests = deferred();
+  const calls = [], documentReads = [];
+  Object.assign(r.context, {__full: full.promise, __requestsLoad: requests.promise, __calls: calls, __documentReads: documentReads,
+    __summary: {success:true,data:{tenants: summaryTenants || [{tenant_id:'T-fixture',tenant_name:'Fixture tenant',room_list:'506',current_contract_id:'C-current'}]}}});
+  r.run(`
+    fetchStatusJson = function(action, params) {
+      __calls.push(action + ':' + JSON.stringify(params || {}));
+      if (action === 'landlord_tenants') return params && params.read_view === 'summary' ? Promise.resolve(__summary) : __full;
+      return __requestsLoad;
+    };
+    const __originalDocuments = jsonpRequest;
+    jsonpRequest = function(action, input) { __documentReads.push(action); return __originalDocuments(action, input); };
+  `);
+  r.context.window.CMWebsLandlordApi = {readPathAvailable: () => available};
+  const flush = async () => { for (let i = 0; i < 20; i += 1) await Promise.resolve(); };
+  return {r, finishDocuments, full, requests, calls, documentReads, flush};
+}
+
+test('summary-first profile shows before lease history and keeps documents when history arrives', async () => {
+  const f = summaryFirstFixture();
+  const loading = f.r.run('loadPage()');
+  await f.flush();
+  const app = () => f.r.nodes.get('app').innerHTML;
+  assert.match(app(), /Fixture tenant/);
+  assert.match(app(), /id="tenant-contract-summary"[\s\S]*?租約資料讀取中/);
+  assert.match(app(), /id="tenantRequestSummary">\s*讀取中/);
+  assert.deepEqual(f.documentReads, ['landlord_contract_documents_init'], 'documents start after the verified summary');
+  assert.equal(f.r.nodes.get('tenantInitialMeterReading'), undefined, 'meter waits for the lease history');
+  f.finishDocuments({success:true,data:{contracts:[],documents:[{document_id:'D-1',contract_id:'C-current',tenant_id:'T-fixture',document_type:'legacy_contract',file_name:'c.jpg'}]}});
+  await f.flush();
+  f.requests.resolve({success:true,data:{requests:[{request_id:'REQ-1',tenant_id:'T-fixture',status:'pending',request_type:'renewal'}]}});
+  await f.flush();
+  assert.match(f.r.nodes.get('tenantRequestSummary').textContent, /1 筆待處理/);
+  assert.match(f.r.nodes.get('tenantRequestBadge').innerHTML, /合約待處理 1/);
+  f.full.resolve(f.r.context.__tenantResponse);
+  await loading;
+  assert.match(f.r.nodes.get('tenantContractSummary').innerHTML, /12,800/);
+  assert.match(f.r.nodes.get('tenantContractHistory').innerHTML, /C-current/);
+  assert.equal(f.r.nodes.get('tenantDocumentsList').querySelectorAll('[data-tenant-document-preview-id]').length, 1, 'history update must not wipe documents');
+  assert.ok(f.r.nodes.get('tenantInitialMeterReading'));
+  assert.deepEqual(Array.from(f.r.run('CURRENT_REQUESTS'), item => item.request_id), ['REQ-1']);
+  assert.deepEqual(f.calls.filter(call => call.startsWith('landlord_tenants')), ['landlord_tenants:{}', 'landlord_tenants:{"read_view":"summary"}']);
+});
+
+test('summary-first page keeps the profile when the full history read fails', async () => {
+  const f = summaryFirstFixture();
+  const loading = f.r.run('loadPage()');
+  await f.flush();
+  f.finishDocuments({success:true,data:{contracts:[],documents:[]}});
+  f.requests.resolve({success:true,data:{requests:[]}});
+  f.full.reject(new Error('API 載入逾時'));
+  await loading;
+  assert.match(f.r.nodes.get('app').innerHTML, /Fixture tenant/);
+  assert.doesNotMatch(f.r.nodes.get('app').innerHTML, /房客資料讀取失敗/);
+  assert.match(f.r.nodes.get('tenantContractSummary').innerHTML, /租約資料讀取失敗/);
+});
+
+test('a tenant missing from the summary falls back to the full read before any private request', async () => {
+  const f = summaryFirstFixture({summaryTenants: [{tenant_id:'T-other',tenant_name:'Other tenant'}]});
+  const loading = f.r.run('loadPage()');
+  await f.flush();
+  assert.equal(f.documentReads.length, 0);
+  assert.doesNotMatch(f.r.nodes.get('app').innerHTML || '', /找不到指定房客資料/);
+  f.requests.resolve({success:true,data:{requests:[]}});
+  f.full.resolve(f.r.context.__tenantResponse);
+  await f.flush();
+  f.finishDocuments({success:true,data:{contracts:[],documents:[]}});
+  await loading;
+  assert.match(f.r.nodes.get('app').innerHTML, /id="tenant-contract-summary"[\s\S]*?12,800/);
+  assert.deepEqual(f.documentReads, ['landlord_contract_documents_init']);
+});
+
+test('without the read service the page sends only the full tenant read', async () => {
+  const f = summaryFirstFixture({available: false});
+  const loading = f.r.run('loadPage()');
+  f.requests.resolve({success:true,data:{requests:[]}});
+  f.full.resolve(f.r.context.__tenantResponse);
+  await f.flush();
+  f.finishDocuments({success:true,data:{contracts:[],documents:[]}});
+  await loading;
+  assert.deepEqual(f.calls.filter(call => call.startsWith('landlord_tenants')), ['landlord_tenants:{}']);
+  assert.match(f.r.nodes.get('app').innerHTML, /id="tenant-contract-summary"[\s\S]*?12,800/);
+});
