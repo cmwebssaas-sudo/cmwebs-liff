@@ -616,7 +616,7 @@ function getLandlordContractDocumentDownloadByLineUid_(
       }
     }
 
-    if (!row) {
+    if (!row || ldText_(row.status || 'stored') !== 'stored') {
       return {
         success: false,
         code: 'DOCUMENT_NOT_FOUND',
@@ -829,6 +829,11 @@ function ldGetContractDocuments_(landlord, contractIdFilter, tenantIdFilter) {
         return false;
       }
       if (landlord.workspace_id && ldText_(row.workspace_id) !== ldText_(landlord.workspace_id)) return false;
+
+      // 作廢或已刪除的文件只保留紀錄，不再列出。
+      if (ldText_(row.status || 'stored') !== 'stored') {
+        return false;
+      }
 
       if (contractIdFilter && ldText_(row.contract_id) !== contractIdFilter) {
         return false;
