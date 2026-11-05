@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-0717a5538d30c11e4ea98493375c0508e24743ef8b2da6c10232034765ff562e",
+  "comparison_version": "read-64fb7840cb7538fcacf19b5a1c6a11b09c821935fcd42030424eb23c141ad7b5",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -28,7 +28,7 @@
     "apps-script/V2_LANDLORD_ROOM_CENTER.js": "b65ee54bccb19c4520285537422e62b5ae740f687c533a227d4f2a5df1fd998a",
     "apps-script/V2_LEGACY_BILL_IMPORT.js": "890498d1d1e8ad58f8450c3cbfcd5cb1bc4cce897d4803af421c1116e82ccf7b",
     "apps-script/V2_LEGACY_CONTRACT_SIGNED_SYNC.js": "dd7988455b227ee6fc707593a2bfdc3fa0f4e20bd47f67538c552c1a138c1401",
-    "apps-script/V2_LINE_IDENTITY.js": "bb05742a0c12b08b8c90138d5fcfd3225d57c1b221b91e304d36e546525f28b2",
+    "apps-script/V2_LINE_IDENTITY.js": "34b1ec56551b0ae4705595319af8a715e996c50299003a1213f4d7cf9f2e0181",
     "apps-script/V2_LINE_RICH_MENU_CONTROL.js": "172d98fb996b13c750f4767a4069e295ef32be64ef6c43f31cc0c2556d977158",
     "apps-script/V2_MANUAL_SETTLEMENT.js": "39ba0abc44667e145a6151b32c97ab0add4101fc2433494317b3fd6d453dadaf",
     "apps-script/V2_MONTHLY_BILL_NOTIFICATIONS.js": "5d7543baaa4f4ca01f3d1becc5a0642bbdf8c6f367f620b6f650953b15c85f30",
@@ -74,7 +74,7 @@
     "apps-script/V3_PLATFORM_CORE_ROOM_CAPACITY.js": "786974fcc806b30417f1a43fcda60e1ef613228f5531391bf3e5b525324755d4",
     "apps-script/V3_PLATFORM_CORE_SUBSCRIPTIONS.js": "110e813cbeca165d88b5fa62a8e3da29695877e643c5cbb72a0f82156b7ddb9a",
     "apps-script/appsscript.json": "a297d03a523919915989eecade9fbb536aef1476a7ce517607c9c85139872326",
-    "apps-script/程式碼.js": "9243d65f01ee5a32e39f06d9bbdfd0c9411432a50e50e6715527c4f490b5560e",
+    "apps-script/程式碼.js": "74910f687de06c5381b14d2a3eb13b204c6258f60eabe3a747ec34c843fc89cf",
     "assets/css/cmwebs-asset-valuation.css": "da2e966962b2981abf640e1e2187b07e5ec83451d8a1c6bcf8fac78603d1045c",
     "assets/js/cmwebs-asset-valuation.js": "af46c7a315f14b801a22541224cade55c09253d92168a1dcd843457aaf00f479",
     "assets/js/cmwebs-billing-transport.js": "1f45700735b6360c14410931f878475d5aaccce65fc71e116b27e59a36cc8258",
