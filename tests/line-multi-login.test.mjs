@@ -118,7 +118,7 @@ function gas({ registry = {}, workspaces = 'W_OWN', worker = 200 } = {}) {
       }
       assert.equal(url, 'https://api.line.me/oauth2/v2.1/verify');
       state.verified.push(options.payload.client_id);
-      return { getResponseCode: () => 200, getContentText: () => JSON.stringify(claims(options.payload.client_id)) };
+      return { getResponseCode: () => 200, getContentText: () => JSON.stringify(gasClaims(options.payload.client_id)) };
     } } });
   const api = appsScript('V2_API.js');
   vm.runInContext(appsScript('V2_LINE_IDENTITY.js') + '\n' + api.slice(api.indexOf('let LINE_WORKER_ROUTE_CONFIG_'),
