@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { createHmac, randomUUID } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
-import { decryptChannelSecrets, encryptChannelSecrets } from '../src/line-channels.js';
+import { decryptChannelSecrets, encryptChannelSecrets, lineSend } from '../src/line-channels.js';
 
 const signing = 'synthetic-line-registry-secret';
 const key = Buffer.alloc(32,7).toString('base64');
@@ -94,4 +94,61 @@ test('status follows the allowed path and revoking removes secrets', async () =>
     assert.equal(revoked.status,'revoked'); assert.equal(revoked.has_secrets,false);
     assert.equal(code(await status('active')),'LINE_CHANNEL_INVALID_STATUS');
   });
+});
+
+const to = 'U'+'a'.repeat(32);
+const retry = '12345678-1234-4234-8234-123456789012';
+function sendRequest(payload, options = {}) {
+  const body = JSON.stringify(payload), timestamp = String(Math.floor(Date.now()/1000)), nonce = randomUUID();
+  const signature = options.signature ?? createHmac('sha256',signing).update(timestamp+'\n'+nonce+'\n'+body).digest('hex');
+  return new Request('https://local.test/internal/line-send',{ method:'POST', body,
+    headers:{ 'X-CMWebs-Timestamp':timestamp, 'X-CMWebs-Nonce':nonce, 'X-CMWebs-Signature':signature } });
+}
+function sendEnv(row) {
+  const statement = { bind:() => statement, first:async () => row };
+  return { LINE_REGISTRY_SIGNING_SECRET:signing, LINE_CHANNEL_SECRET_KEY:key,
+    DB:{ prepare:() => statement, batch:async () => [] } };
+}
+const activeRow = async status => ({ status, encrypted_secrets:await encryptChannelSecrets(secrets,key,'W_A') });
+
+test('active channels push with their own token and retry key', async () => {
+  const calls = [];
+  const response = await lineSend(sendRequest({ workspace_id:'W_A', to, text:'合成通知', retry_key:retry }),sendEnv(await activeRow('active')),
+    async (url, init) => { calls.push({ url, init }); return new Response('{}',{ status:200 }); });
+  assert.equal(response.status,200);
+  assert.equal(calls[0].url,'https://api.line.me/v2/bot/message/push');
+  assert.equal(calls[0].init.headers.Authorization,'Bearer synthetic-b');
+  assert.equal(calls[0].init.headers['X-Line-Retry-Key'],retry);
+  assert.deepEqual(JSON.parse(calls[0].init.body),{ to, messages:[{ type:'text', text:'合成通知' }] });
+  assert.doesNotMatch(await response.text(),/synthetic/);
+});
+
+test('inactive or missing channels never reach LINE', async () => {
+  const fetcher = async () => assert.fail('LINE must not be called');
+  for (const row of [await activeRow('suspended'),await activeRow('draft'),{ status:'revoked', encrypted_secrets:null },null]) {
+    const response = await lineSend(sendRequest({ workspace_id:'W_A', to, text:'x' }),sendEnv(row),fetcher);
+    assert.equal(response.status,403);
+    assert.equal((await response.json()).code,'LINE_CHANNEL_NOT_ACTIVE');
+  }
+});
+
+test('LINE status and failure stay visible to the caller without secrets', async () => {
+  const env = sendEnv(await activeRow('active'));
+  for (const [status,expected] of [[429,'LINE_RATE_OR_QUOTA_LIMITED'],[401,'LINE_TOKEN_INVALID'],[400,'LINE_PUSH_REJECTED'],[500,'LINE_PUSH_FAILED'],[409,'LINE_ALREADY_ACCEPTED']]) {
+    const response = await lineSend(sendRequest({ workspace_id:'W_A', to, text:'x' }),env,async () => new Response('secret detail',{ status }));
+    assert.equal(response.status,status);
+    const text = await response.text();
+    assert.equal(JSON.parse(text).code,expected); assert.doesNotMatch(text,/secret detail|synthetic/);
+  }
+  const down = await lineSend(sendRequest({ workspace_id:'W_A', to, text:'x' }),env,async () => { throw new Error('network'); });
+  assert.equal(down.status,502); assert.equal((await down.json()).code,'LINE_UNREACHABLE');
+});
+
+test('unsigned or malformed sends are refused', async () => {
+  const env = sendEnv(await activeRow('active'));
+  const fetcher = async () => assert.fail('LINE must not be called');
+  assert.equal((await lineSend(sendRequest({ workspace_id:'W_A', to, text:'x' },{ signature:'0'.repeat(64) }),env,fetcher)).status,401);
+  for (const payload of [{ workspace_id:'W_A', to:'bad', text:'x' },{ workspace_id:'W_A', to, text:'' },{ workspace_id:'W_A', to, text:'x', retry_key:'bad' },{ workspace_id:'W_A', to, text:'x', extra:1 }]) {
+    assert.equal((await (await lineSend(sendRequest(payload),env,fetcher)).json()).code,'INVALID_LINE_SEND');
+  }
 });

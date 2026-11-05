@@ -93,6 +93,7 @@ LINE、LIFF、Webhook 或 Rich Menu。每個實作階段都要另外授權。
 - Apps Script 所有 LINE 推播改走同一個發送入口，參數帶 `workspace_id`。
 - 發送入口呼叫 Worker，由 Worker 解密 token 後送 LINE。Apps Script 不持有
   房東 token。
+- 測試期間只有 `CMWEBS_LINE_WORKER_WORKSPACES` 內的 Workspace 走 Worker，其餘照舊。全面開放前，要改成只有既有 Workspace 走舊流程，其他未啟用頻道一律拒絕。
 - Worker 只接受已簽章的內部請求，並確認頻道屬於該 Workspace 且狀態為 `active`。收件人綁定由 Apps Script 核對，因為 Worker 的讀取資料最多落後 5 分鐘。
 - 頻道不是 `active` 時拒絕發送，不退回其他頻道。
 - 額度用盡或 token 失效時，事件仍留在通知中心，並提示房東。
@@ -172,7 +173,7 @@ LINE、LIFF、Webhook 或 Rich Menu。每個實作階段都要另外授權。
 | 0 | 規格、路線圖、決策紀錄 | 無 |
 | 1 | 備份復原演練與操作手冊 | 不改使用者行為 |
 | 2 | Channel Registry，既有 Workspace 轉入（資料表、加密與內部路由已實作，尚未部署） | 不改使用者行為 |
-| 3 | 統一 LINE 發送入口：3A 全部接入，既有 Workspace 行為不變（程式已完成，尚未部署）；3B Worker 發送；3C 測試 OA 實測 | 影響正式通知 |
+| 3 | 統一 LINE 發送入口：3A 全部接入，既有 Workspace 行為不變（程式已完成，尚未部署）；3B Worker 發送，只開放允許清單內的 Workspace（程式已完成，尚未部署）；3C 測試 OA 實測 | 影響正式通知 |
 | 4 | 多頻道登入與集中 LIFF 設定 | 影響正式登入 |
 | 5 | Worker Webhook | 影響正式訊息接收 |
 | 6 | 設定精靈與圖文選單發布 | 只開放測試 OA |

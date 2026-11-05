@@ -5033,3 +5033,9 @@ sign-out was not run; the preview used stubs.
 - [x] 全部 Workspace 仍走既有 Token（`lineSendRoute_` 回傳 `legacy`）
 - [x] 23 個 Workspace 參數都通過變數範圍檢查
 - [ ] 部署後實際帳單、公告與入住通知驗收（`HUMAN_REQUIRED`）
+
+## 2026-11-03 V3 Worker LINE 發送 3B
+
+- [x] `cloudflare/read-api/test/line-channels.test.mjs`：啟用頻道用自己的 Token、未啟用不呼叫 LINE、狀態碼對應、未簽章拒絕
+- [x] `tests/line-send-entry.test.mjs`：清單外走既有 Token、清單內走簽章 Worker、未設定不退回舊流程
+- [ ] 測試 OA 實測（`HUMAN_REQUIRED`）

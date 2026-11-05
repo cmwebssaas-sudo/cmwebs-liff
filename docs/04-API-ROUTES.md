@@ -1369,3 +1369,9 @@ the request with `LINE_REGISTRY_SIGNING_SECRET`. Actions: `upsert`, `set_status`
 and `get`. Responses return public fields and `has_secrets`, never secret values.
 The route returns `LINE_CHANNEL_NOT_CONFIGURED` until both Worker secrets exist.
 Not deployed; no Apps Script caller exists yet. See `docs/V3-BYO-LINE-OA-SPEC.md`.
+
+`POST /internal/line-send` on the same Worker sends one LINE push with the
+Workspace's own channel. Apps Script checks the recipient binding first and signs
+the request. The channel must be `active`; otherwise it returns
+`LINE_CHANNEL_NOT_ACTIVE`, and LINE is not called. The HTTP status mirrors LINE.
+Only Workspaces in `CMWEBS_LINE_WORKER_WORKSPACES` use this route. Not deployed.
