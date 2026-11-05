@@ -1,5 +1,14 @@
 # CMWebs V2 API Routes
 
+## 2026-11-05 繳費月曆可直接開房客、存檔逾時改為核對（本機候選，未部署）
+
+`landlord_payment_calendar` 的 `rooms[]` 多回傳 `tenant_id`：先用房間目前的房客，
+沒有時用範圍內最近一張帳單或租約的房客；姓名與 ID 不同人時不合併。帳款頁按有房客的
+房間格子或列，就開 `landlord-tenant-detail.html?tenant_id=`；空房不能按。
+`landlord_room_save` 前端等待改為 90 秒，逾時後重新讀 `landlord_properties_init`
+核對是否已存，不會重送寫入。帳單存檔成功後先顯示「已儲存，正在更新畫面」。沒有新增
+route 或 Schema。
+
 ## 2026-11-05 作廢文件不再列出（本機候選，未部署）
 
 `landlord_contract_documents_init` 只列出 `V2_contract_documents.status` 為

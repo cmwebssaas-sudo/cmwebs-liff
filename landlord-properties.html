@@ -7,14 +7,14 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
   <title>CMWebs 物件與房間</title>
-<script src="frontend-release.js?v=20261105-payment-calendar-v1"></script>
-  <script src="liff-config.js?v=20261105-payment-calendar-v1"></script>
-  <script src="liff-request-auth.js?v=20261105-payment-calendar-v1"></script>
-  <script src="landlord-auth.js?v=20261105-payment-calendar-v1"></script>
-  <script src="landlord-api.js?v=20261105-payment-calendar-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-payment-calendar-v1" />
-  <script src="landlord-glass-nav.js?v=20261105-payment-calendar-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261105-payment-calendar-v1" defer></script>
+<script src="frontend-release.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="liff-config.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="liff-request-auth.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="landlord-auth.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="landlord-api.js?v=20261105-calendar-tenant-link-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-calendar-tenant-link-v1" />
+  <script src="landlord-glass-nav.js?v=20261105-calendar-tenant-link-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261105-calendar-tenant-link-v1" defer></script>
 
   <style>
     :root {
@@ -836,7 +836,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-payment-calendar-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-calendar-tenant-link-v1" />
 </head>
 
 <body>
@@ -1359,6 +1359,10 @@
         );
     }
 
+    // 房間存檔在大型試算表上常超過 30 秒，等久一點，資料其實多半已存進去。
+    const ROOM_SAVE_TIMEOUT_MS = 90000;
+    const ROOM_SAVE_TIMEOUT_ACTIONS = { landlord_room_save: true };
+
     function jsonpRequest(
       action,
       params,
@@ -1368,6 +1372,7 @@
         return window.CMWebsLandlordApi.request({
           apiUrl: API_URL, action: action, params: params || {},
           lineUserId: LINE_USER_ID, testMode: TEST_MODE,
+          timeoutMs: ROOM_SAVE_TIMEOUT_ACTIONS[action] ? ROOM_SAVE_TIMEOUT_MS : undefined,
           callbackPrefix: '__cmwebs_properties_', rejectOnFailure: true
         });
       }
@@ -1429,6 +1434,7 @@
                 cleanup();
 
                 if (
+                  action === 'landlord_properties_init' &&
                   Number(
                     retryCount || 0
                   ) < 1
@@ -2954,6 +2960,11 @@
         await loadPage(false);
 
       } catch (error) {
+        if (error && error.code === 'API_TIMEOUT') {
+          await recoverRoomSaveTimeout(values, button);
+          return;
+        }
+
         showToast(
           error.message ||
           '房間儲存失敗',
@@ -2964,6 +2975,49 @@
         button.textContent =
           '儲存房間';
       }
+    }
+
+    function savedRoomMatches(values) {
+      const same = function (a, b) {
+        return Number(a || 0) === Number(b || 0);
+      };
+      let match = null;
+      (PAGE_DATA.properties || []).some(function (property) {
+        match = (property.rooms || []).find(function (room) {
+          return values.room_id
+            ? room.room_id === values.room_id
+            : property.property_id === values.property_id &&
+              rawRoomText(room.room_name) === rawRoomText(values.room_name);
+        }) || null;
+        return Boolean(match);
+      });
+      return Boolean(match) &&
+        rawRoomText(match.room_name) === rawRoomText(values.room_name) &&
+        same(match.rent_amount, values.rent_amount) &&
+        (values.management_fee === '' || same(match.management_fee, values.management_fee)) &&
+        (values.deposit_amount === '' || same(match.deposit_amount, values.deposit_amount));
+    }
+
+    function rawRoomText(value) {
+      return String(value === undefined || value === null ? '' : value).trim().toLowerCase();
+    }
+
+    // 逾時不代表沒存到：重新讀一次房間，確認後再告訴房東，不要讓他重按。
+    async function recoverRoomSaveTimeout(values, button) {
+      button.textContent = '正在確認是否已儲存...';
+      showToast('伺服器回應較慢，正在確認是否已存進去，請不要重按。', false, 8000);
+
+      await loadPage(false);
+
+      if (savedRoomMatches(values)) {
+        closeEditor();
+        showToast('已確認：房間資料已存進去。');
+        return;
+      }
+
+      showToast('還不能確定是否已存進去。請稍等一分鐘，重新整理頁面確認後再操作。', true, 8000);
+      button.disabled = false;
+      button.textContent = '儲存房間';
     }
 
     function openArchiveEditor(type, id, name) {

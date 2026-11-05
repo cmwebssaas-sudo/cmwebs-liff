@@ -10,14 +10,14 @@
 
   <title>CMWebs 房客欠款</title>
 
-<script src="frontend-release.js?v=20261105-payment-calendar-v1"></script>
-  <script src="liff-config.js?v=20261105-payment-calendar-v1"></script>
-  <script src="liff-request-auth.js?v=20261105-payment-calendar-v1"></script>
-  <script src="landlord-auth.js?v=20261105-payment-calendar-v1"></script>
-  <script src="landlord-api.js?v=20261105-payment-calendar-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-payment-calendar-v1" />
-  <script src="landlord-glass-nav.js?v=20261105-payment-calendar-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261105-payment-calendar-v1" defer></script>
+<script src="frontend-release.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="liff-config.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="liff-request-auth.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="landlord-auth.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="landlord-api.js?v=20261105-calendar-tenant-link-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-calendar-tenant-link-v1" />
+  <script src="landlord-glass-nav.js?v=20261105-calendar-tenant-link-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261105-calendar-tenant-link-v1" defer></script>
 
   <style>
     :root {
@@ -1268,6 +1268,41 @@
       border-radius: 12px;
     }
 
+    button.pay-cal-room {
+      display: block;
+      width: 100%;
+      margin: 0;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    button.pay-cal-room .pay-cal-room-name {
+      padding-right: 12px;
+    }
+
+    .pay-cal-room-go {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1;
+      opacity: 0.55;
+    }
+
+    button.pay-cal-row-link {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
     .pay-cal-room-name {
       overflow: hidden;
       font-size: 15px;
@@ -1453,7 +1488,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-payment-calendar-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-calendar-tenant-link-v1" />
 </head>
 
 <body>
@@ -4612,7 +4647,7 @@
 
       return `
         <div class="pay-cal-caption">
-          ${monthLabel(summary.month, true)}・共 ${total} 間房，已開帳單 ${Number(summary.billed_count || 0)} 間
+          ${monthLabel(summary.month, true)}・共 ${total} 間房，已開帳單 ${Number(summary.billed_count || 0)} 間・按房間可看房客資料
         </div>
 
         <div class="pay-cal-stats">
@@ -4653,8 +4688,16 @@
                   const cell = entry.cell;
                   const status = PAYMENT_CALENDAR_LABELS[cell.status] ? cell.status : 'vacant';
                   const owes = status === 'overdue' || status === 'unpaid';
+                  const tenantId = rawText(room.tenant_id).trim();
+                  // 有房客的格子可以按，直接打開房客資料。
+                  const tag = tenantId ? 'button' : 'div';
                   return `
-                    <div class="pay-cal-room ${status}">
+                    <${tag} class="pay-cal-room ${status}"${
+                      tenantId
+                        ? ` type="button" data-tenant-id="${escapeHtml(tenantId)}" onclick="openTenantDetail(this.dataset.tenantId)" aria-label="${escapeHtml(rawText(room.room_name) + ' 查看房客資料')}"`
+                        : ''
+                    }>
+                      ${tenantId ? '<span class="pay-cal-room-go" aria-hidden="true">›</span>' : ''}
                       <div class="pay-cal-room-name">${safeText(room.room_name)}</div>
                       <div class="pay-cal-room-meta">${
                         escapeHtml(rawText(room.tenant_name).trim() || rawText(room.property_name).trim() || ' ')
@@ -4665,7 +4708,7 @@
                           : PAYMENT_CALENDAR_LABELS[status]
                       }</div>
                       ${owes ? `<div class="pay-cal-room-amount">${money(cell.unpaid_amount)}</div>` : ''}
-                    </div>
+                    </${tag}>
                   `;
                 }).join('')}
               </div>`
@@ -4700,15 +4743,23 @@
           <tbody>
             ${rooms.map(function (room) {
               const owes = room.worst_status === 'overdue' || room.worst_status === 'unpaid';
+              const tenantId = rawText(room.tenant_id).trim();
+              const tag = tenantId ? 'button' : 'div';
               return `
                 <tr class="${owes ? 'owes' : ''}">
                   <td class="pay-cal-row-name">
-                    <div class="pay-cal-row-room">
-                      ${safeText(room.room_name)}${owes ? '<span class="pay-cal-row-tag">欠繳</span>' : ''}
-                    </div>
-                    <div class="pay-cal-room-meta">${
-                      escapeHtml(rawText(room.tenant_name).trim() || rawText(room.property_name).trim() || ' ')
-                    }</div>
+                    <${tag} class="pay-cal-row-link"${
+                      tenantId
+                        ? ` type="button" data-tenant-id="${escapeHtml(tenantId)}" onclick="openTenantDetail(this.dataset.tenantId)" aria-label="${escapeHtml(rawText(room.room_name) + ' 查看房客資料')}"`
+                        : ''
+                    }>
+                      <div class="pay-cal-row-room">
+                        ${safeText(room.room_name)}${owes ? '<span class="pay-cal-row-tag">欠繳</span>' : ''}
+                      </div>
+                      <div class="pay-cal-room-meta">${
+                        escapeHtml(rawText(room.tenant_name).trim() || rawText(room.property_name).trim() || ' ')
+                      }${tenantId ? ' ›' : ''}</div>
+                    </${tag}>
                   </td>
                   ${(room.cells || []).map(function (cell) {
                     const status = PAYMENT_CALENDAR_LABELS[cell.status] ? cell.status : 'vacant';

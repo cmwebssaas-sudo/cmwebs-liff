@@ -100,6 +100,10 @@ test('payment calendar marks each room per month with the arrears rules', () => 
   // A voided bill does not count as paid or unpaid.
   assert.deepEqual(statuses('207'), ['no_bill', 'paid', 'no_bill']);
   assert.equal(byName['207'].tenant_name, '庚');
+  // The tenant ID lets the landlord open the tenant from the calendar.
+  assert.equal(byName['201'].tenant_id, 'T1');
+  assert.equal(byName['207'].tenant_id, 'T7');
+  assert.equal(byName['202'].tenant_id, '');
   assert.deepEqual(statuses('202'), ['vacant', 'vacant', 'vacant']);
 
   const november = data.months[2];
@@ -183,13 +187,19 @@ test('arrears page shows the month counts and puts owing rooms first', () => {
   assert.match(month, /2026 年 11 月・共 7 間房，已開帳單 1 間/);
   assert.match(month, /未繳<\/div>\s*<div class="pay-cal-stat-value">1<small>戶/);
   assert.match(month, /空房<\/div>\s*<div class="pay-cal-stat-value">5<small>間/);
-  const tiles = [...month.matchAll(/pay-cal-room (\w+)">\s*<div class="pay-cal-room-name">(\d+)/g)]
+  const tiles = [...month.matchAll(/pay-cal-room (\w+)"[^>]*>\s*(?:<span class="pay-cal-room-go"[^>]*>›<\/span>\s*)?<div class="pay-cal-room-name">(\d+)/g)]
     .map(match => match[2] + ':' + match[1]);
   assert.deepEqual(tiles.slice(0, 2), ['201:unpaid', '207:no_bill']);
   assert.equal(tiles.at(-1).endsWith(':vacant'), true);
 
+  // Rooms with a tenant open that tenant; rooms without one are not buttons.
+  assert.match(month, /<button class="pay-cal-room unpaid" type="button" data-tenant-id="T1" onclick="openTenantDetail\(this\.dataset\.tenantId\)"/);
+  assert.match(month, /<div class="pay-cal-room vacant">\s*<div class="pay-cal-room-name">202/);
+
   context.PAYMENT_CALENDAR.view = 'quarter';
   const quarter = context.render();
+  assert.match(quarter, /<button class="pay-cal-row-link" type="button" data-tenant-id="T7" onclick="openTenantDetail\(this\.dataset\.tenantId\)"/);
+  assert.match(quarter, /<div class="pay-cal-row-link">\s*<div class="pay-cal-row-room">\s*202/);
   assert.match(quarter, /9 月\s*<small>已繳 1\/2<\/small>/);
   assert.equal((quarter.match(/pay-cal-row-tag">欠繳/g) || []).length, 2);
   const rows = [...quarter.matchAll(/pay-cal-row-room">\s*(\d+)/g)].map(match => match[1]);

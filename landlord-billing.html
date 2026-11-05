@@ -7,16 +7,16 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
   <title>CMWebs 帳單與抄表</title>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-payment-calendar-v1" />
-  <script src="landlord-glass-nav.js?v=20261105-payment-calendar-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261105-payment-calendar-v1" defer></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261105-calendar-tenant-link-v1" />
+  <script src="landlord-glass-nav.js?v=20261105-calendar-tenant-link-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261105-calendar-tenant-link-v1" defer></script>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261105-payment-calendar-v1"></script>
-  <script src="liff-config.js?v=20261105-payment-calendar-v1"></script>
-  <script src="liff-request-auth.js?v=20261105-payment-calendar-v1"></script>
-  <script src="landlord-auth.js?v=20261105-payment-calendar-v1"></script>
-  <script src="landlord-api.js?v=20261105-payment-calendar-v1"></script>
+<script src="frontend-release.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="liff-config.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="liff-request-auth.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="landlord-auth.js?v=20261105-calendar-tenant-link-v1"></script>
+  <script src="landlord-api.js?v=20261105-calendar-tenant-link-v1"></script>
 
   <style>
     :root {
@@ -812,7 +812,7 @@
     }
     .occupancy-review { padding: 12px; margin: 12px 0; background: var(--orange-soft); color: #845500; border-radius: 10px; font-size: 14px; line-height: 1.6; }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-payment-calendar-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261105-calendar-tenant-link-v1" />
 </head>
 
 <body>
@@ -2816,6 +2816,10 @@
         const data =
           result.data || {};
 
+        // 存檔已完成，只剩重新讀取畫面；先讓房東知道，不要以為還在存。
+        button.textContent = '已儲存，正在更新畫面...';
+        showToast(formatBillingGenerationResult(result) + '，正在更新畫面...', Number(data.error_count || 0) > 0, 60000);
+
         const refresh = await loadPage(false, { suppressError: true });
         billingSaveNeedsRefresh = !refresh || refresh.success !== true;
         showToast(formatBillingGenerationResult(result) +
@@ -2824,6 +2828,8 @@
           Number(data.error_count || 0) > 0 || billingSaveNeedsRefresh, 6000);
 
       } catch (requestError) {
+        button.textContent = '正在確認是否已儲存...';
+        showToast('正在重新讀取帳單，確認儲存結果，請不要重按。', false, 60000);
         const refresh = await loadPage(false, { suppressError: true });
         billingSaveNeedsRefresh = !refresh || refresh.success !== true;
         const response = requestError.response;
