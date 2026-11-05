@@ -46,6 +46,7 @@ function fixture({ email = false, testMode = false } = {}) {
   };
   const storage = new Map(email ? [['cmwebs_landlord_session_token', 'synthetic-session']] : []);
   const context = vm.createContext({
+    CMWebsLiffConfig: { liffId: () => 'fixture-liff' },
     URL, URLSearchParams, document, innerWidth: 390, innerHeight: 844,
     location: { href: 'https://example.invalid/landlord-home.html', search: testMode ? '?test=1' : '' },
     sessionStorage: { getItem: key => storage.get(key) || null, setItem: (key, value) => storage.set(key, value) },

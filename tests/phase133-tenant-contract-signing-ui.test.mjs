@@ -59,7 +59,7 @@ assert.match(source, /\.signature-pad canvas\s*\{[\s\S]*?width: 100%/);
 assert.match(source, /\.signing-action\s*\{[\s\S]*?padding-top: 18px;[\s\S]*?background: #ffffff;/);
 assert.doesNotMatch(source, /\.signing-sticky-action/);
 assert.doesNotMatch(source, /\.signing-action\s*\{[\s\S]*?position:\s*(?:fixed|sticky)/);
-assert.match(source, /const LIFF_ID\s*=\s*'2010314940-iJB1D6sN'/);
+assert.match(source, /const LIFF_ID\s*=\s*CMWebsLiffConfig\.liffId\('tenant'\)/);
 assert.match(source, /AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ\/exec/);
 assert.match(
   releaseSource,

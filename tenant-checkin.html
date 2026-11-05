@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CMWebs 房客入住系統載入中...</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="liff-config.js?v=20261101-landlord-logout-v1"></script>
     <style>
         body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f5f7; color: #333; }
         .loader { text-align: center; }
@@ -20,7 +21,7 @@
         async function main() {
             try {
                 // 1. 初始化本次專屬的 入住 LIFF ID
-                await liff.init({ liffId: "2010314940-5A3pViKf" });
+                await liff.init({ liffId: CMWebsLiffConfig.liffId('tenant_checkin') });
 
                 if (liff.isLoggedIn()) {
                     // 2. 取得房客的 LINE UID

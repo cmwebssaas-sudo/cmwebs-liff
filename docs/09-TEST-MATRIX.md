@@ -5039,3 +5039,10 @@ sign-out was not run; the preview used stubs.
 - [x] `cloudflare/read-api/test/line-channels.test.mjs`：啟用頻道用自己的 Token、未啟用不呼叫 LINE、狀態碼對應、未簽章拒絕
 - [x] `tests/line-send-entry.test.mjs`：清單外走既有 Token、清單內走簽章 Worker、未設定不退回舊流程
 - [ ] 測試 OA 實測（`HUMAN_REQUIRED`）
+
+## 2026-11-04 V3 多頻道登入 4A
+
+- [x] `tests/line-multi-login.test.mjs`：既有頻道不查 Registry、房東自有頻道只在 `active` 且在清單內才驗證、只能開自己的 Workspace、清單內 Workspace 拒絕既有頻道、房客功能拒絕自有頻道
+- [x] `tests/line-multi-login.test.mjs`：沒有頁面寫死 LIFF ID，集中設定先載入；網址帶入的 LIFF ID 格式錯誤時回到既有 LIFF
+- [x] `cloudflare/read-api/test/line-channels.test.mjs`：依 LINE Login 頻道查詢，不回傳機密
+- [ ] 測試 OA 實際登入（`HUMAN_REQUIRED`）

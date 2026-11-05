@@ -56,6 +56,7 @@ function pageRuntime(page, search = '?tenant_id=T-fixture') {
   document.body.innerHTML = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
   const calls = [], notices = [], listeners = new Map();
   const context = vm.createContext({
+    CMWebsLiffConfig: { liffId: () => 'fixture-liff' },
     document, URL, URLSearchParams, console, Uint8Array, crypto: webcrypto,
     location: { href: 'https://fixture.invalid/' + page + search, search },
     navigator: {}, setTimeout: (fn, delay) => { if (delay === 500) queueMicrotask(fn); return 1; }, clearTimeout() {},

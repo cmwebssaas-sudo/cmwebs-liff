@@ -1375,3 +1375,23 @@ Workspace's own channel. Apps Script checks the recipient binding first and sign
 the request. The channel must be `active`; otherwise it returns
 `LINE_CHANNEL_NOT_ACTIVE`, and LINE is not called. The HTTP status mirrors LINE.
 Only Workspaces in `CMWEBS_LINE_WORKER_WORKSPACES` use this route. Not deployed.
+
+## 2026-11-04 V3 multi-channel LINE login (stage 4A, undeployed)
+
+No route is added or renamed. `POST /internal/line-channels` gains the action
+`find_login_channel` with `line_login_channel_id`; it returns the same public
+fields as `get`.
+
+An ID token's channel decides access. Tokens from the existing channel work as
+before. A token from a landlord's own channel is accepted only while its
+registry row is `active` and its Workspace is in `CMWEBS_LINE_WORKER_WORKSPACES`;
+it then opens only that Workspace. A Workspace in that list refuses tokens from
+the existing channel. Denials:
+
+- `WORKSPACE_FORBIDDEN`: the token's channel does not match the Workspace.
+- `LINE_CHANNEL_TENANT_NOT_READY`: tenant actions do not accept tokens from a
+  landlord's own channel until tenant binding is split by channel.
+
+Apps Script caches the registry answer for five minutes (one minute when not
+active). The read Worker checks D1 on each request. See
+`docs/V3-BYO-LINE-OA-SPEC.md` section 4.3.

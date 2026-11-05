@@ -361,3 +361,16 @@ See `docs/V3-BYO-LINE-OA-SPEC.md`.
   users, LIFF, login or notifications.
 - On 2026-11-03 the owner removed the isolated restore rehearsal as a gate. Each
   live release still needs deployment approval, a current backup and a rollback.
+
+## 2026-11-04 V3 multi-channel login
+
+Status: stage 4A source only; not deployed.
+
+- The ID token's channel, verified by LINE, decides which Workspace a LINE login
+  can open. Browser values never grant access.
+- A landlord's LIFF endpoint URL carries its own LIFF ID in `cmwebs_liff`, so a
+  page can start LIFF without an extra request. The tab keeps the value.
+- `CMWEBS_LINE_WORKER_WORKSPACES` switches both LINE sends and LINE logins for a
+  Workspace, so one setting moves a Workspace onto its own channel.
+- Tenant actions refuse own-channel tokens until stage 4B scopes tenant binding,
+  tenant links in notifications and the signing sessions by channel.

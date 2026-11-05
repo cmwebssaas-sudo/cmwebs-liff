@@ -11,7 +11,7 @@ function fixture(inClient=false,mode='line') {
  location:{href:'https://example.test/cmwebs-liff/landlord-payment-report-review.html?receipt_id=receipt-a&workspace_id=ws-a&code=private&state=private',replace:u=>calls.push(['replace',u])},
  document:{documentElement:{style:{setProperty(){}}},getElementById:id=>id==='app'?app:button},
  CMWebsLandlordAuth:auth,liff:{init:async()=>{},isLoggedIn:()=>true,isInClient:()=>inClient,getProfile:async()=>{throw Error('The access token expired');},logout:()=>calls.push(['logout']),login:()=>{throw Error('review sibling must not call login');}}};
- ctx.window=ctx;vm.createContext(ctx);vm.runInContext(script.replace(/\n    loadPage\(\);\s*$/,''),ctx);
+ ctx.window=ctx;ctx.URL=URL;vm.createContext(ctx);vm.runInContext(fs.readFileSync('liff-config.js','utf8'),ctx);vm.runInContext(script.replace(/\n    loadPage\(\);\s*$/,''),ctx);
  return {ctx,calls,app,button};
 }
 test('expired profile offers re-login instead of reload and preserves receipt through gateway',async()=>{

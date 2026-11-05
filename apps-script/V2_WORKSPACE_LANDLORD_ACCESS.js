@@ -1234,6 +1234,25 @@ function workspaceLandlordResolveAccess_(
     );
   }
 
+  // A token from a landlord's own LINE channel opens only that Workspace.
+  const channelScope =
+    typeof lineRequestChannelScope_ === 'function'
+      ? lineRequestChannelScope_()
+      : null;
+
+  if (channelScope && channelScope.workspace_id) {
+    if (
+      workspaceText_(options.workspace_id) &&
+      workspaceText_(options.workspace_id).toUpperCase() !==
+        channelScope.workspace_id
+    ) {
+      return lineRequestChannelDenied_(options.workspace_id);
+    }
+    options = Object.assign({}, options, {
+      workspace_id: channelScope.workspace_id
+    });
+  }
+
   const accessCacheKey =
     lineUserId + '|' +
     workspaceText_(options.workspace_id) + '|' +
@@ -1244,7 +1263,11 @@ function workspaceLandlordResolveAccess_(
       : null;
 
   if (cachedAccess) {
-    return cachedAccess;
+    return (
+      channelScope &&
+      cachedAccess.workspace &&
+      lineRequestChannelDenied_(cachedAccess.workspace.workspace_id)
+    ) || cachedAccess;
   }
 
   if (
@@ -1318,6 +1341,16 @@ function workspaceLandlordResolveAccess_(
       'WORKSPACE_REQUIRED',
       '找不到目前管理團隊'
     );
+  }
+
+  const channelDenied =
+    channelScope &&
+    lineRequestChannelDenied_(
+      context.activeWorkspace.workspace_id
+    );
+
+  if (channelDenied) {
+    return channelDenied;
   }
 
   if (

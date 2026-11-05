@@ -422,6 +422,12 @@ function dispatchV2Get_(e) {
     );
   }
 
+  const channelGate = lineRequestChannelGate_(v2Action, e.parameter);
+  if (channelGate) {
+    if (bridge === '1') return htmlBridgeOutput_(channelGate, requestId);
+    return jsonOutput_(channelGate, callback);
+  }
+
   const verifiedLineAction = lineRequestNeedsIdentity_(v2Action);
   if (verifiedLineAction) {
     const identity = resolveVerifiedLineRequestIdentity_(e.parameter);
@@ -3817,7 +3823,10 @@ function dispatchV2Post_(e) {
           .trim() ===
           'tenant_contract_renewal_intent'
       ) {
-        const identity = resolveVerifiedLineRequestIdentity_(request);
+        const verifiedIdentity = resolveVerifiedLineRequestIdentity_(request);
+        const identity = verifiedIdentity.success && verifiedIdentity.data.channel_workspace_id
+          ? lineChannelTenantNotReady_()
+          : verifiedIdentity;
         if (!identity.success) {
           return ContentService.createTextOutput(JSON.stringify(identity))
             .setMimeType(ContentService.MimeType.JSON);

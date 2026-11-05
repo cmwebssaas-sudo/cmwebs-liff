@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CMWebs 每月抄表系統</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="liff-config.js?v=20261101-landlord-logout-v1"></script>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #f4f4f4; }
         #loader { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
@@ -24,7 +25,7 @@
 
     <script>
         // ⚠️ 請在這裡貼上您在「第一步」取得的全新 LIFF ID
-        const myLiffId = "2010314940-tfcy6cEx"; 
+        const myLiffId = CMWebsLiffConfig.liffId('meter'); 
         
         // 已經幫您轉換成 iframe 專用的 embed 網址
         const tallyBaseUrl = "https://tally.so/embed/gDkRzJ";

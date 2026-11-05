@@ -64,6 +64,7 @@ const modal = {
 };
 const shareUrlInput = { value: '' };
 const context = {
+  CMWebsLiffConfig: { liffId: () => 'fixture-liff' },
   URL,
   URLSearchParams,
   document: {

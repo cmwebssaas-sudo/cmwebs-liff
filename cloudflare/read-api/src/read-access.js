@@ -14,7 +14,8 @@ export function resolveReadAccess(dataset,identity,options={}) {
   const uid=text(user.line_user_id);
   if(!uid) deny('READ_IDENTITY_UNSUPPORTED');
   if((dataset.V2_users||[]).filter(row=>text(row.line_user_id)===uid).length!==1) deny();
-  const context=helpers.workspaceResolveContextByLineUid_(runtime.runtimeSpreadsheet_(),uid,{require_onboarding:true});
+  const context=helpers.workspaceResolveContextByLineUid_(runtime.runtimeSpreadsheet_(),uid,
+    identity.channel_workspace_id?{require_onboarding:true,workspace_id:identity.channel_workspace_id}:{require_onboarding:true});
   const workspace=context.activeWorkspace,membership=context.activeMembership;
   if(!workspace||!membership) deny('WORKSPACE_REQUIRED');
   if(text(context.user?.user_id)!==text(user.user_id)||text(membership.user_id)!==text(user.user_id)) deny();
@@ -22,6 +23,7 @@ export function resolveReadAccess(dataset,identity,options={}) {
   if(!helpers.workspaceIsActiveStatus_(membership.member_status||'active')) deny('MEMBERSHIP_INACTIVE');
   if(!helpers.workspaceOnboardingComplete_(workspace.onboarding_status)) deny('ONBOARDING_REQUIRED');
   if(!helpers.V2_WORKSPACE_ROLES_.includes(text(membership.role).toLowerCase())) deny('PERMISSION_DENIED');
+  if(identity.channel_workspace_id&&text(workspace.workspace_id).toUpperCase()!==identity.channel_workspace_id) deny('WORKSPACE_FORBIDDEN');
   if(identity.kind==='email'&&(!identity.session||text(identity.session.workspace_id)!==text(workspace.workspace_id)||text(identity.session.role)!==text(membership.role))) deny('WORKSPACE_FORBIDDEN');
   const principals=helpers.workspaceLandlordResolvePrincipals_(runtime.runtimeSpreadsheet_(),context);
   const principal=principals[0];

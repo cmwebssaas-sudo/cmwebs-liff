@@ -6,6 +6,7 @@
     <title>CMWebs 系統載入中...</title>
     <!-- 載入 LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="liff-config.js?v=20261101-landlord-logout-v1"></script>
     <style>
         body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f5f7; color: #333; }
         .loader { text-align: center; }
@@ -21,7 +22,7 @@
         async function main() {
             try {
                 // 1. 初始化 LIFF (請確認這是您截圖上的 LIFF ID)
-                await liff.init({ liffId: "2010314940-jMdgTriP" });
+                await liff.init({ liffId: CMWebsLiffConfig.liffId('landlord_registry') });
 
                 // 2. 確認是否在 LINE 內開啟或已登入
                 if (liff.isLoggedIn()) {

@@ -71,11 +71,15 @@ export function createReadAccessVerifier(options={}) {
     const runtimeOptions={...options,now:typeof options.now==='function'?options.now():options.now};
     const loader=createReadDatasetLoader(env.DB,runtimeOptions);
     if(!telemetryOnly) await (options.checkReplica?options.checkReplica(env.DB,request):loader.checkReplica());
-    const identity=await authenticate(request,env,{findSession:loader.findSession});
+    const identity=await authenticate(request,env,{findSession:loader.findSession,findLoginChannel:loader.findLoginChannel});
     if(onIdentity) onIdentity();
     // Authority comes from the synced D1 rows (users, memberships, workspaces,
     // Email sessions). Apps Script changes reach D1 within one sync interval.
     const access=await loader.resolveAccess(identity);
+    if(identity.kind==='line'&&!identity.channel_workspace_id&&
+      await loader.workspaceOnOwnChannel(access.workspace.workspace_id,env.LINE_LOGIN_CHANNEL_ID)) {
+      throw Object.assign(new Error('WORKSPACE_FORBIDDEN'),{code:'WORKSPACE_FORBIDDEN'});
+    }
     if(onResolvedAccess) await onResolvedAccess(access,identity.kind);
     return {loader,access,runtimeOptions};
   };

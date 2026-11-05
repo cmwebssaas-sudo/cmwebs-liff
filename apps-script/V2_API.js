@@ -4502,16 +4502,16 @@ function lineSendRoute_(workspaceId) {
   };
 }
 
-function lineBuildWorkerPushRequest_(workspaceId, toLineUserId, text, retryKey) {
+// Signed the same way as the read replica sync; the Worker checks the
+// timestamp, nonce and HMAC before it reads the body.
+function lineWorkerSignedRequest_(path, fields) {
   const config = lineWorkerRouteConfig_();
   if (!config.url || !config.secret) throw new Error('LINE_WORKER_ROUTE_NOT_CONFIGURED');
-  const fields = { workspace_id: workspaceId, to: toLineUserId, text: text };
-  if (retryKey) fields.retry_key = retryKey;
   const body = JSON.stringify(fields);
   const timestamp = String(Math.floor(Date.now() / 1000));
   const nonce = Utilities.getUuid();
   return {
-    url: config.url + '/internal/line-send',
+    url: config.url + path,
     method: 'post',
     contentType: 'application/json',
     headers: {
@@ -4524,6 +4524,12 @@ function lineBuildWorkerPushRequest_(workspaceId, toLineUserId, text, retryKey) 
     muteHttpExceptions: true,
     followRedirects: false
   };
+}
+
+function lineBuildWorkerPushRequest_(workspaceId, toLineUserId, text, retryKey) {
+  const fields = { workspace_id: workspaceId, to: toLineUserId, text: text };
+  if (retryKey) fields.retry_key = retryKey;
+  return lineWorkerSignedRequest_('/internal/line-send', fields);
 }
 
 function lineBuildPushRequest_(workspaceId, token, toLineUserId, text, retryKey) {
