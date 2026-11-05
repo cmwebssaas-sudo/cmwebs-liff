@@ -486,6 +486,7 @@ function workspacePaymentCalendarBuild_(
         room_name: text(source.room_name) || text(source.room_id) || '未指定房間',
         property_id: propertyId,
         property_name: propertyNames[propertyId] || '',
+        tenant_id: '',
         tenant_name: '',
         occupied_now: false,
         bills_by_month: {},
@@ -509,8 +510,9 @@ function workspacePaymentCalendarBuild_(
       text(room.current_contract_id) ||
       ['occupied', 'rented', 'leased', '已入住'].indexOf(roomStatus) >= 0
     );
-    if (currentTenantId && tenantNames[currentTenantId]) {
-      row.tenant_name = tenantNames[currentTenantId];
+    if (currentTenantId) {
+      row.tenant_id = currentTenantId;
+      row.tenant_name = tenantNames[currentTenantId] || '';
     }
   });
 
@@ -575,17 +577,30 @@ function workspacePaymentCalendarBuild_(
       );
     });
 
-    for (let index = months.length - 1; index >= 0 && !row.tenant_name; index -= 1) {
+    // tenant_id lets the landlord open the tenant from the calendar. A name
+    // and ID are only combined when they belong to the same person.
+    for (
+      let index = months.length - 1;
+      index >= 0 && !(row.tenant_id && row.tenant_name);
+      index -= 1
+    ) {
       const bills = row.bills_by_month[months[index]] || [];
-      const lease = row.leases_by_month[months[index]];
-      row.tenant_name =
-        bills.length > 0
-          ? text(bills[bills.length - 1].tenant_name)
-          : lease
-            ? text(lease.tenant_name) ||
-              tenantNames[text(lease.tenant_id).toUpperCase()] ||
-              ''
-            : '';
+      const source = bills.length > 0
+        ? bills[bills.length - 1]
+        : row.leases_by_month[months[index]];
+      if (!source) {
+        continue;
+      }
+      const tenantId = text(source.tenant_id).toUpperCase();
+      const tenantName = text(source.tenant_name) || tenantNames[tenantId] || '';
+      if (
+        (row.tenant_id && tenantId && tenantId !== row.tenant_id) ||
+        (row.tenant_name && tenantName && tenantName !== row.tenant_name)
+      ) {
+        continue;
+      }
+      row.tenant_id = row.tenant_id || tenantId;
+      row.tenant_name = row.tenant_name || tenantName;
     }
 
     row.worst_status = row.cells.reduce(function (worst, cell) {
