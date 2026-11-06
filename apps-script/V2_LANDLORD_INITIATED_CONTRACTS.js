@@ -21,7 +21,6 @@ const V2_LANDLORD_INITIATED_CONTRACT_INVITE_HEADERS_ = [
   'updated_at'
 ];
 const V2_LANDLORD_INITIATED_CONTRACT_INVITE_TTL_MS_ = 24 * 60 * 60 * 1000;
-const V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ = 'https://liff.line.me/2010314940-iJB1D6sN';
 const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_TTL_SECONDS_ = 60;
 const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_RESERVATION_TTL_SECONDS_ = 600;
 const V2_LANDLORD_INITIATED_CONTRACT_LOCK_ATTEMPTS_ = 3;
@@ -750,7 +749,7 @@ function landlordInitiatedContractInviteClaimUnlocked_(inviteId, confirmationCod
   const normalizedCode = landlordInitiatedContractText_(confirmationCode);
   if (!normalizedInviteId || !normalizedLineSub || !/^\d{6}$/.test(normalizedCode)) return landlordInitiatedContractError_('INVITE_CLAIM_INVALID', '邀請認領資料無效');
   const invite = landlordInitiatedContractRows_(schema.data.invites).find(function (row) { return landlordInitiatedContractText_(row.invite_id) === normalizedInviteId; });
-  if (!invite) return landlordInitiatedContractError_('INVITE_NOT_FOUND', '找不到邀請');
+  if (!invite || lineRequestChannelDenied_(invite.workspace_id)) return landlordInitiatedContractError_('INVITE_NOT_FOUND', '找不到邀請');
   if (landlordInitiatedContractText_(invite.status).toLowerCase() === 'claimed') return landlordInitiatedContractError_('INVITE_ALREADY_CLAIMED', '邀請已被認領');
   if (landlordInitiatedContractText_(invite.status).toLowerCase() === 'cancelled') return landlordInitiatedContractError_('INVITE_CANCELLED', '邀請已取消');
   if (landlordInitiatedContractDateValue_(invite.expires_at) <= new Date().getTime()) return landlordInitiatedContractError_('INVITE_EXPIRED', '邀請已過期');
@@ -1191,7 +1190,7 @@ function landlordInitiatedContractRenewalInquiryMessage_(contract) {
 
 function landlordInitiatedContractRenewalSigningMessage_(contract, invite, confirmationCode) {
   const inviteId = landlordInitiatedContractText_(invite && invite.invite_id);
-  const url = inviteId ? V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ + '?invite_id=' + encodeURIComponent(inviteId) : '';
+  const url = inviteId ? landlordInitiatedContractInviteUrl_(contract.workspace_id || invite.workspace_id, inviteId) : '';
   return [
     '【CMWebs 續約簽署邀請】',
     '',
@@ -1698,17 +1697,22 @@ function landlordInitiatedContractPublicContract_(contract, tenant, invite) {
     signing_mode: landlordInitiatedContractText_(contract.signing_mode),
     contract_content: landlordInitiatedContractText_(contract.contract_content),
     invite_id: inviteId,
-    invite_url: inviteId ? V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ + '?invite_id=' + encodeURIComponent(inviteId) : '',
+    invite_url: inviteId ? landlordInitiatedContractInviteUrl_(contract.workspace_id, inviteId) : '',
     invite_status: inviteStatus,
     invite_expires_at: currentInvite.expires_at || (tenant && tenant.expires_at) || ''
   });
+}
+
+function landlordInitiatedContractInviteUrl_(workspaceId, inviteId) {
+  const base = lineTenantLiffUrl_(workspaceId, 'tenant-contract.html');
+  return base ? base + '?invite_id=' + encodeURIComponent(inviteId) : '';
 }
 
 function landlordInitiatedContractPublicInvite_(invite, confirmationCode) {
   const inviteId = landlordInitiatedContractText_(invite.invite_id);
   return {
     invite_id: inviteId,
-    url: V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ + '?invite_id=' + encodeURIComponent(inviteId),
+    url: landlordInitiatedContractInviteUrl_(invite.workspace_id, inviteId),
     confirmation_code: String(confirmationCode || ''),
     expires_at: invite.expires_at || '',
     status: invite.status || 'pending'

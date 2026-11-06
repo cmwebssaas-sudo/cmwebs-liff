@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 
 const sessionSource = readFileSync(new URL('../apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js', import.meta.url), 'utf8');
 const source = readFileSync(new URL('../apps-script/V2_CONTRACT_ARTIFACT_STORAGE.js', import.meta.url), 'utf8');
+const lineIdentitySource = readFileSync(new URL('../apps-script/V2_LINE_IDENTITY.js', import.meta.url), 'utf8');
 const headers = ['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'signing_mode', 'artifact_type', 'drive_file_id', 'mime_type', 'byte_size', 'sha256', 'idempotency_key', 'created_by_user_id', 'created_at', 'status'];
 
 class Sheet {
@@ -65,7 +66,7 @@ const makeRuntime = (mode = 'new_tenant') => {
     }
   };
   vm.createContext(context);
-  vm.runInContext(sessionSource + '\n' + source + '\nthis.api={tenantLiffSigningAuthenticate_,createTenantLiffSessionToken_,tenantContractArtifactStore_,tenantContractArtifactHandleUploadPost_,tenantContractArtifactReadExchange_,tenantContractArtifactValidatePayload_};', context);
+  vm.runInContext(lineIdentitySource + '\n' + sessionSource + '\n' + source + '\nthis.api={tenantLiffSigningAuthenticate_,createTenantLiffSessionToken_,tenantContractArtifactStore_,tenantContractArtifactHandleUploadPost_,tenantContractArtifactReadExchange_,tenantContractArtifactValidatePayload_};', context);
   const auth = context.api.tenantLiffSigningAuthenticate_('mock');
   return { state, api: context.api, sessionToken: auth.data.session_token };
 };

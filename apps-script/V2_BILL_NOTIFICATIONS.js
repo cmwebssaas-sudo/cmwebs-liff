@@ -40,8 +40,6 @@ const V2_BILL_NOTIFICATION_SHEETS_ = {
     'V2_line_message_logs'
 };
 
-const V2_BILL_NOTIFICATION_TENANT_LIFF_URL_ =
-  'https://liff.line.me/2010314940-iJB1D6sN';
 
 
 /**
@@ -399,7 +397,9 @@ function getLandlordBillNotificationsInitByLineUid_(
         status_filter:
           statusFilter,
         tenant_liff_url:
-          V2_BILL_NOTIFICATION_TENANT_LIFF_URL_,
+          lineTenantLiffUrl_(
+            access.workspace.workspace_id
+          ),
         properties:
           properties,
         summary:
@@ -2192,7 +2192,9 @@ function billNotificationBuildMessage_(
       ),
     '',
     '請使用本人 LINE 開啟 CMWebs 查看帳單明細與付款回報：',
-    V2_BILL_NOTIFICATION_TENANT_LIFF_URL_,
+    lineTenantLiffUrl_(
+      item.workspace_id
+    ),
     '',
     '若您已完成繳款，請忽略此訊息或與房東確認。'
   );

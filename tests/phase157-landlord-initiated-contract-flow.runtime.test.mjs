@@ -10,6 +10,7 @@ const signingSessionSource = readFileSync(new URL('../apps-script/V2_TENANT_LIFF
 const landlordReviewSessionSource = readFileSync(new URL('../apps-script/V2_LANDLORD_LIFF_SIGNING_REVIEW_SESSION.js', import.meta.url), 'utf8');
 const signingSubmissionSource = readFileSync(new URL('../apps-script/V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js', import.meta.url), 'utf8');
 const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
+const lineIdentitySource = readFileSync(new URL('../apps-script/V2_LINE_IDENTITY.js', import.meta.url), 'utf8');
 const landlordAccessSource = readFileSync(new URL('../apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js', import.meta.url), 'utf8');
 assert.equal(existsSync(sourcePath), true, 'landlord initiation module must exist before runtime tests can run');
 const source = readFileSync(sourcePath, 'utf8');
@@ -148,6 +149,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false, previousSta
       newBlob: value => ({ getDataAsString: () => Buffer.from(value).toString() })
     },
     PropertiesService: { getScriptProperties: () => ({ getProperty: key => scriptProperties.get(key) || null }) },
+    lineSendRoute_: workspaceId => ({ transport: 'legacy', workspace_id: String(workspaceId || '') }),
     CacheService: { getScriptCache: () => ({ put: (key, value) => cache.set(key, value), get: key => cache.get(key) || null, remove: key => cache.delete(key) }) },
     UrlFetchApp: { fetch: () => ({ getResponseCode: () => 200, getContentText: () => JSON.stringify({ iss: 'https://access.line.me', aud: 'channel-1', sub: 'new-tenant-line', exp: Math.floor(Date.now() / 1000) + 600, iat: Math.floor(Date.now() / 1000) }) }) },
     tenantContractSigningReviewText_: value => String(value == null ? '' : value).trim(),
@@ -161,6 +163,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false, previousSta
     }
   };
   vm.createContext(context);
+  vm.runInContext(lineIdentitySource, context, { filename: 'V2_LINE_IDENTITY.js' });
   vm.runInContext(renewalHistorySource, context, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
   vm.runInContext(landlordReviewSessionSource, context, { filename: 'V2_LANDLORD_LIFF_SIGNING_REVIEW_SESSION.js' });
   vm.runInContext(source, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });

@@ -1433,3 +1433,39 @@ the existing channel. Denials:
 Apps Script caches the registry answer for five minutes (one minute when not
 active). The read Worker checks D1 on each request. See
 `docs/V3-BYO-LINE-OA-SPEC.md` section 4.3.
+
+## 2026-11-06 V3 tenant routes by LINE channel (stage 4B, undeployed)
+
+No route is added or renamed. Tenant actions now accept a token from a
+landlord's own channel, with the same registry and allowlist checks as 4A. The
+change applies to `tenant_*` GET reads and submits, the POST
+`tenant_contract_renewal_intent`, `tenant_contract_auth_init`,
+`tenant_contract_invite_auth_init` and the ID-token path of
+`tenant_repair_tickets_init`.
+
+- Every `V2_tenants` row bound to the LINE account must belong to the token's
+  channel. A landlord's own channel covers its Workspace only. The existing
+  channel covers every Workspace not in `CMWEBS_LINE_WORKER_WORKSPACES`; a row
+  with no `workspace_id` counts as the existing channel. Otherwise the request
+  stops before any tenant lookup with `LINE_CHANNEL_TENANT_CONFLICT`.
+- `tenant_bind_submit` matches the phone number only against tenant rows in the
+  token's channel.
+- An invite whose Workspace is outside the token's channel returns
+  `INVITE_NOT_FOUND` and is not claimed.
+- `test=1` tenant requests, `vendor_repair_*` POST actions and other
+  non-landlord, non-tenant actions still return `LINE_CHANNEL_TENANT_NOT_READY`
+  for an own-channel token.
+- While the allowlist is empty, a token from any channel other than the existing
+  one is refused without a registry read, no extra sheet read happens, and every
+  response for the existing channel is unchanged.
+
+Tenant links in notifications and in the `tenant_liff_url` and invite URL
+fields come from `lineTenantLiffUrl_`. Workspaces outside the allowlist keep
+`https://liff.line.me/2010314940-iJB1D6sN`. A Workspace in the allowlist gets
+`https://liff.line.me/<its LIFF ID>/tenant-bind.html` (invites:
+`/tenant-contract.html?invite_id=…`), read with the registry `get` action and
+cached for five minutes. When the registry has no active LIFF app the link is
+empty rather than pointing at another LIFF app.
+The read Worker's generated calculator takes `lineTenantLiffUrl_` as a runtime
+adapter that returns the existing link. Its `/v1/home` summary drops invite
+links, so no Worker response changes.

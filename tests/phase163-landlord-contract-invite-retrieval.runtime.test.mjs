@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
+const lineIdentitySource = readFileSync(new URL('../apps-script/V2_LINE_IDENTITY.js', import.meta.url), 'utf8');
 
 class Sheet {
   constructor(headers, rows = []) {
@@ -99,12 +100,14 @@ function makeRuntime() {
     },
     CacheService: { getScriptCache: () => ({ put: (key, value) => cache.set(key, value), get: key => cache.get(key) || null, remove: key => cache.delete(key) }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: key => ({ CMWEBS_LINE_LOGIN_CHANNEL_ID: 'channel-1', CMWEBS_LIFF_SESSION_HMAC_SECRET: 'session-secret' }[key] || null) }) },
+    lineSendRoute_: workspaceId => ({ transport: 'legacy', workspace_id: String(workspaceId || '') }),
     tenantContractSigningReviewText_: value => String(value == null ? '' : value).trim(),
     tenantLiffSigningText_: value => String(value == null ? '' : value).trim(),
     tenantContractSigningReviewError_: code => ({ success: false, code, message: 'contract error' }),
     workspaceResult_: (success, code, message) => ({ success, code, message, data: null })
   };
   vm.createContext(context);
+  vm.runInContext(lineIdentitySource, context, { filename: 'V2_LINE_IDENTITY.js' });
   vm.runInContext(source, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });
   context.tenantContractSigningReviewAccessFromSession_ = (_token, _permission) => ({ success: true, data: access });
   context.workspaceLandlordResolveAccess_ = () => access;

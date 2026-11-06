@@ -374,3 +374,21 @@ Status: stage 4A source only; not deployed.
   Workspace, so one setting moves a Workspace onto its own channel.
 - Tenant actions refuse own-channel tokens until stage 4B scopes tenant binding,
   tenant links in notifications and the signing sessions by channel.
+
+## 2026-11-06 V3 tenant functions by LINE channel
+
+Status: stage 4B source only; not deployed.
+
+- A tenant request may reach only tenant rows inside the token's channel: the
+  landlord's own Workspace, or for the existing channel every Workspace not on
+  `CMWEBS_LINE_WORKER_WORKSPACES`. An account bound on both sides is refused,
+  because tenant rows are keyed by `line_user_id` alone. This only happens when
+  a landlord's OA shares the existing CMWebs provider.
+- A landlord's LIFF endpoint URL is the site root with `cmwebs_liff`, for
+  example `https://cmwebssaas-sudo.github.io/cmwebs-liff/?cmwebs_liff=<LIFF ID>`.
+  LINE appends the path of `https://liff.line.me/<LIFF ID>/<page>` to the
+  endpoint, so one LIFF app opens both landlord and tenant pages. The root page
+  only forwards when a landlord's LIFF opened it.
+- Tenant links in notifications follow the send route: a Workspace that sends
+  through its own channel links to its own LIFF app, and never falls back to
+  the existing one.

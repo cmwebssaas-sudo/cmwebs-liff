@@ -43,8 +43,6 @@ const V2_TENANT_CHECKIN_SHEETS_ = {
     'V2_line_message_logs'
 };
 
-const V2_TENANT_CHECKIN_LIFF_URL_ =
-  'https://liff.line.me/2010314940-iJB1D6sN';
 
 
 /**
@@ -565,7 +563,9 @@ function getLandlordTenantCheckinsInitByLineUid_(
           ),
 
         tenant_liff_url:
-          V2_TENANT_CHECKIN_LIFF_URL_,
+          lineTenantLiffUrl_(
+            access.workspace.workspace_id
+          ),
 
         selected_property_id:
           propertyId,
@@ -2581,7 +2581,9 @@ function tenantCheckinBuildBindingInvitation_(
     '，您好：',
     '',
     '請使用本人 LINE 開啟 CMWebs 房客入口，完成租約帳號綁定：',
-    V2_TENANT_CHECKIN_LIFF_URL_,
+    lineTenantLiffUrl_(
+      item.workspace_id
+    ),
     '',
     '開啟後請輸入租約登記的手機號碼。',
     '完成綁定後，即可查看租約、帳單、付款回報與房東訊息。',
@@ -2651,7 +2653,9 @@ function tenantCheckinBuildWelcomeMessage_(
       ),
     '',
     '請使用本人 LINE 開啟 CMWebs 房客入口：',
-    V2_TENANT_CHECKIN_LIFF_URL_,
+    lineTenantLiffUrl_(
+      item.workspace_id
+    ),
     '',
     '您可在系統中查看租約、帳單、付款回報與房東訊息。',
     '入住資料若有異動，請直接與房東聯絡。'

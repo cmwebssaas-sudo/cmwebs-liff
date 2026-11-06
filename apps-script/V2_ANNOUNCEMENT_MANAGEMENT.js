@@ -45,8 +45,6 @@ const V2_ANNOUNCEMENT_SHEETS_ = {
     'V2_line_message_logs'
 };
 
-const V2_ANNOUNCEMENT_TENANT_LIFF_URL_ =
-  'https://liff.line.me/2010314940-iJB1D6sN';
 
 /*
  * Google Sheets 單一檔案有總儲存格上限。
@@ -262,7 +260,9 @@ function getLandlordAnnouncementsInitByLineUid_(
           ),
 
         tenant_liff_url:
-          V2_ANNOUNCEMENT_TENANT_LIFF_URL_,
+          lineTenantLiffUrl_(
+            access.workspace.workspace_id
+          ),
 
         history_filter:
           historyFilter,
@@ -706,7 +706,8 @@ function sendLandlordAnnouncementByLineUid_(
             body,
             category,
             priority,
-            recipient
+            recipient,
+            mainRow.workspace_id
           );
 
         const record = {
@@ -1500,7 +1501,8 @@ function retryLandlordAnnouncementByLineUid_(
             announcement.body,
             announcement.category,
             announcement.priority,
-            current
+            current,
+            access.workspace.workspace_id
           );
 
         prepared.push({
@@ -2790,7 +2792,8 @@ function announcementBuildMessage_(
   body,
   category,
   priority,
-  recipient
+  recipient,
+  workspaceId
 ) {
   const priorityPrefix =
     priority ===
@@ -2830,7 +2833,9 @@ function announcementBuildMessage_(
       ),
     '',
     '房客入口：',
-    V2_ANNOUNCEMENT_TENANT_LIFF_URL_
+    lineTenantLiffUrl_(
+      workspaceId
+    )
   ];
 
   if (
@@ -4736,7 +4741,8 @@ function testAnnouncementMessagePreview() {
             '明日上午 10:00 將進行公共區域清潔，請勿在走道堆放私人物品。',
             'general',
             'normal',
-            recipient
+            recipient,
+            recipient.workspace_id
           )
         : '找不到目前有效租約房客'
   };

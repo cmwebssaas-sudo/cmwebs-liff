@@ -230,7 +230,7 @@ const notificationSource = readFileSync(
   'utf8'
 );
 const notificationContext = {
-  V2_BILL_NOTIFICATION_TENANT_LIFF_URL_: 'https://example.test/tenant-bills.html',
+  lineTenantLiffUrl_: () => 'https://example.test/tenant-bills.html',
   billNotificationMoneyText_: value => String(Math.round(Number(value) || 0))
 };
 

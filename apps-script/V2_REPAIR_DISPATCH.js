@@ -269,8 +269,10 @@ function repairDispatchVendorView_(state, ticket, actor) {
 function repairDispatchRoute_(action, request) {
   try {
     if(action.indexOf('vendor_repair_')===0){
-      const verified=tenantLiffSigningVerifyIdTokenClaims_(request.id_token||'');
+      const verified=tenantLiffSigningVerifyLineToken_(request.id_token||'');
       if(!verified||!verified.success)return verified||{success:false,code:'AUTH_REQUIRED'};
+      // Repair partners are not split by LINE channel yet.
+      if(lineRequestChannelScope_().workspace_id)return lineChannelTenantNotReady_();
       if(action==='vendor_repair_identity_init')return {success:true,data:{line_user_id:String(verified.data.sub||'')}};
       const invitationId=String(request.invitation_id||'');
       const rows=repairDispatchRows_().filter(function(row){return String(row.entity_id).indexOf('partner:')!==0;});

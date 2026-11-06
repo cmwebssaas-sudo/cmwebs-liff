@@ -301,7 +301,10 @@ function bindTenantByLineUid_(lineUserId, phoneNumber) {
           listByTenantId[tenantId] || {}
         );
 
-      return registeredPhone === phoneNumber;
+      return (
+        registeredPhone === phoneNumber &&
+        lineTenantRowInChannel_(tenant)
+      );
     });
 
     if (matchedTenants.length === 0) {

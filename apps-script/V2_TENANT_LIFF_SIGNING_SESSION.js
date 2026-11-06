@@ -132,9 +132,21 @@ function tenantLiffSigningInviteAuthenticate_(inviteId, confirmationCode, idToke
   };
 }
 
+// The token's channel decides which Workspace's tenant rows the signer may
+// reach, the same way as tenant page requests.
 function tenantLiffSigningVerifyIdTokenClaims_(idToken) {
-  const channelId = PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID');
-  if (!channelId) return tenantLiffSigningError_('LINE_LOGIN_CHANNEL_NOT_CONFIGURED');
+  const verified = tenantLiffSigningVerifyLineToken_(idToken);
+  if (!verified.success) return verified;
+  return lineTenantChannelDenied_(verified.data.sub) || verified;
+}
+
+// Verifies the token against its own channel and records that channel's scope.
+function tenantLiffSigningVerifyLineToken_(idToken) {
+  if (!PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID')) return tenantLiffSigningError_('LINE_LOGIN_CHANNEL_NOT_CONFIGURED');
+  let channel;
+  try { channel = lineLoginChannelForToken_(String(idToken)); } catch (_) { return tenantLiffSigningError_('LINE_TOKEN_VERIFY_FAILED'); }
+  if (!channel) return tenantLiffSigningError_('LINE_TOKEN_VERIFY_FAILED');
+  const channelId = channel.channel_id;
   let response;
   try {
     response = UrlFetchApp.fetch('https://api.line.me/oauth2/v2.1/verify', { method: 'post', muteHttpExceptions: true, contentType: 'application/x-www-form-urlencoded', payload: { id_token: String(idToken), client_id: channelId } });
@@ -144,6 +156,7 @@ function tenantLiffSigningVerifyIdTokenClaims_(idToken) {
   try { claims = JSON.parse(response.getContentText()); } catch (_) { return tenantLiffSigningError_('LINE_TOKEN_VERIFY_FAILED'); }
   const now = Math.floor(Date.now() / 1000);
   if (claims.iss !== 'https://access.line.me' || claims.aud !== channelId || !tenantLiffSigningText_(claims.sub) || !Number.isFinite(Number(claims.exp)) || Number(claims.exp) <= now || !Number.isFinite(Number(claims.iat)) || Number(claims.iat) > now + 60 || now - Number(claims.iat) > 86400) return tenantLiffSigningError_('LINE_TOKEN_CLAIMS_INVALID');
+  lineRequestSetChannelScope_(channel);
   return { success: true, code: 'OK', data: claims };
 }
 

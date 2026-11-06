@@ -20,6 +20,7 @@ const helpers=['landlordRoomWebsiteCoverTarget_','landlordRoomWebsitePhotosFromH
 // Runtime services replace IO, schema mutation, identity resolution and the
 // optional request-local Intl collator used with unchanged GAS text rules.
 // C3 must supply verified access; these readers never resolve a client UID.
+// Tenant LIFF links depend on Apps Script's channel routing.
 const adapters = [
   'workspaceLandlordResolveAccess_', 'runtimeSpreadsheet_',
   'runtimeSnapshotGetValues_', 'runtimeSnapshotGetContext_',
@@ -28,7 +29,7 @@ const adapters = [
   'ensureV2ContractRequestsSheet_', 'lmEnsurePaymentReportSheet_',
   'lmEnsureTenantMessageSheet_', 'landlordInitiatedContractSchema_',
   'contractRequestResolveLandlordIdentity_', 'lmResolveLandlord_',
-  'runtimePropertyRoomCompareText_', 'runtimeMemoizeMonths_'
+  'runtimePropertyRoomCompareText_', 'runtimeMemoizeMonths_', 'lineTenantLiffUrl_'
 ];
 const excluded = new Set(adapters);
 const definitions = new Map(), sources = new Map();

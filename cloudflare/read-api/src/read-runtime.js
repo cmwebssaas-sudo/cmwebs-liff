@@ -164,6 +164,8 @@ export function createReplicaRuntime(dataset,options={},deferSheetValues=false) 
     ensureV2ContractRequestsSheet_:()=>requiredSheet('V2_contract_requests'),
     lmEnsurePaymentReportSheet_:()=>requiredSheet('V2_payment_reports'),
     lmEnsureTenantMessageSheet_:()=>requiredSheet('V2_tenant_messages'),
+    // Worker summary views drop invite links, so the existing LIFF app stands in.
+    lineTenantLiffUrl_:()=>'https://liff.line.me/2010314940-iJB1D6sN',
     landlordInitiatedContractSchema_:()=>({success:true,code:'OK',data:{
       properties:requiredSheet('V2_properties'),rooms:requiredSheet('V2_rooms'),users:requiredSheet('V2_users'),
       tenants:requiredSheet('V2_tenants'),contracts:requiredSheet('V2_contracts'),invites:requiredSheet('V2_contract_invites')

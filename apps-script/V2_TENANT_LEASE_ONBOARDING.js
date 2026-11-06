@@ -44,8 +44,6 @@ const V2_TENANT_LEASE_SHEETS_ = {
     'V2_bills'
 };
 
-const V2_TENANT_LIFF_URL_ =
-  'https://liff.line.me/2010314940-iJB1D6sN';
 
 const V2_TENANT_LEASE_MAX_TERM_DAYS_ =
   3650;
@@ -709,7 +707,9 @@ function getLandlordTenantCreateInitByLineUid_(
               }
             : null,
         tenant_liff_url:
-          V2_TENANT_LIFF_URL_,
+          lineTenantLiffUrl_(
+            access.workspace.workspace_id
+          ),
         defaults: {
           start_date:
             tenantLeaseFormatDate_(
@@ -1698,7 +1698,8 @@ function createLandlordTenantLeaseByLineUid_(
       tenantLeaseBuildInvitationMessage_(
         tenantName,
         roomName,
-        tenantPhone
+        tenantPhone,
+        workspaceId
       );
 
     const result =
@@ -1765,7 +1766,9 @@ function createLandlordTenantLeaseByLineUid_(
           },
           binding: {
             tenant_liff_url:
-              V2_TENANT_LIFF_URL_,
+              lineTenantLiffUrl_(
+                workspaceId
+              ),
             registered_phone:
               tenantPhone,
             registered_phone_masked:
@@ -2822,7 +2825,8 @@ function tenantLeaseSetValues_(
 function tenantLeaseBuildInvitationMessage_(
   tenantName,
   roomName,
-  tenantPhone
+  tenantPhone,
+  workspaceId
 ) {
   return (
     tenantName +
@@ -2830,7 +2834,9 @@ function tenantLeaseBuildInvitationMessage_(
     roomName +
     '）。\n\n' +
     '請使用本人 LINE 開啟以下連結：\n' +
-    V2_TENANT_LIFF_URL_ +
+    lineTenantLiffUrl_(
+      workspaceId
+    ) +
     '\n\n' +
     '進入後輸入租約登記手機號碼 ' +
     tenantPhone +

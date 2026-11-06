@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js', import.meta.url), 'utf8');
+const lineIdentitySource = readFileSync(new URL('../apps-script/V2_LINE_IDENTITY.js', import.meta.url), 'utf8');
 const now = Math.floor(Date.now() / 1000);
 const makeRows = (headers, rows) => ({ getLastRow: () => rows.length + 1, getDataRange: () => ({ getValues: () => [headers, ...rows] }) });
 const makeRuntime = () => {
@@ -16,7 +17,7 @@ const makeRuntime = () => {
   state.sheetMap = sheets();
   const context = { JSON, String, Number, Math, Date, RegExp, Error, console: { log() {}, warn() {}, error() {} }, SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: n => state.sheetMap[n] || null }) }, PropertiesService: { getScriptProperties: () => ({ getProperty: k => state.props.get(k) || null }) }, CacheService: { getScriptCache: () => ({ put: (k,v) => state.cache.set(k,v), get: k => state.cache.get(k) || null, remove: k => state.cache.delete(k) }) }, UrlFetchApp: { fetch: () => ({ getResponseCode: () => state.verify.code, getContentText: () => typeof state.verify.body === 'string' ? state.verify.body : JSON.stringify(state.verify.body) }) }, Utilities: { getUuid: () => crypto.randomUUID(), computeHmacSha256Signature: (v,k) => [...crypto.createHmac('sha256', k).update(v).digest()].map(x => x > 127 ? x - 256 : x), base64EncodeWebSafe: v => Buffer.from(v).toString('base64url'), base64DecodeWebSafe: v => Buffer.from(v, 'base64url'), newBlob: v => ({ getDataAsString: () => Buffer.from(v).toString() }) } };
   vm.createContext(context);
-  vm.runInContext(source + '\nthis.api={tenantLiffSigningAuthenticate_,tenantLiffSigningHandleAuthPost_,tenantLiffSigningReadExchange_,verifyTenantLiffSessionToken_,createTenantLiffSessionToken_};', context);
+  vm.runInContext(lineIdentitySource + '\n' + source + '\nthis.api={tenantLiffSigningAuthenticate_,tenantLiffSigningHandleAuthPost_,tenantLiffSigningReadExchange_,verifyTenantLiffSessionToken_,createTenantLiffSessionToken_};', context);
   return { state, api: context.api };
 };
 const validRequest = () => ({ action: 'tenant_contract_auth_init', id_token: 'mock-id-token', request_id: 'a'.repeat(22), poll_secret: 'b'.repeat(43) });
