@@ -99,7 +99,9 @@ function makeRuntime({ renewal = false, includeViews = true, previousStatus = 'a
       const found = new Set(artifacts.filter(item => item.contract_id === claims.contract_id && item.tenant_id === claims.tenant_id && item.workspace_id === claims.workspace_id && item.status === 'stored').map(item => item.artifact_type));
       return required.every(type => found.has(type)) ? { success: true } : { success: false, code: 'REQUIRED_ARTIFACT_MISSING' };
     },
-    pushLineTextMessage_: () => ({ success: true })
+    pushLineTextMessage_: () => ({ success: true }),
+    lineTenantLiffUrl_: () => 'https://liff.line.me/2010314940-iJB1D6sN',
+    lineRequestChannelDenied_: () => null
   };
   vm.createContext(context);
   vm.runInContext(renewalHistorySource, context, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
@@ -277,6 +279,22 @@ function markSubmitted(runtime, contractId, tenantId, mode) {
   const result = runtime.api.updateLandlordContractSigningReviewBySessionToken_('server-session', created.data.contract.contract_id, 'approve', '');
   assert.equal(result.code, 'CONTRACT_FINALIZATION_SCHEMA_NOT_READY');
   assert.deepEqual(runtime.sheets.V2_contracts.rows[0], before);
+}
+
+{
+  const runtime = makeRuntime();
+  const created = runtime.api.landlordInitiatedContractCreateNew_(access, input());
+  const invite = created.data.invite;
+  assert.equal(invite.url, 'https://liff.line.me/2010314940-iJB1D6sN?invite_id=' + encodeURIComponent(invite.invite_id));
+  runtime.api.lineRequestChannelDenied_ = workspaceId => workspaceId === 'W1' ? { success: false, code: 'WORKSPACE_FORBIDDEN' } : null;
+  const refused = runtime.api.landlordInitiatedContractInviteClaim_(invite.invite_id, invite.confirmation_code, 'tenant-line', { tenant_name: '新房客', tenant_phone: '0912345678' });
+  assert.equal(refused.code, 'INVITE_NOT_FOUND', 'a token from another channel cannot claim the invite');
+  const pending = runtime.api.landlordInitiatedContractRows_(runtime.sheets.V2_contract_invites)[0];
+  assert.equal(pending.status, 'pending');
+  assert.equal(pending.claimed_line_user_id, '');
+  runtime.api.lineRequestChannelDenied_ = () => null;
+  const claimed = runtime.api.landlordInitiatedContractInviteClaim_(invite.invite_id, invite.confirmation_code, 'tenant-line', { tenant_name: '新房客', tenant_phone: '0912345678' });
+  assert.equal(claimed.success, true, claimed.code);
 }
 
 console.log('Phase 158 landlord-initiated contract activation RED/GREEN tests passed.');

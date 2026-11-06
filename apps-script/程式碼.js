@@ -441,6 +441,14 @@ function dispatchV2Get_(e) {
 
   runtimeSnapshotBegin_(v2Action);
 
+  const channelDenied = verifiedLineAction && /^tenant_/.test(v2Action)
+    ? lineTenantChannelDenied_(lineUserId)
+    : null;
+  if (channelDenied) {
+    if (bridge === '1') return htmlBridgeOutput_(channelDenied, requestId);
+    return jsonOutput_(channelDenied, callback);
+  }
+
   try {
     if (!verifiedLineAction) {
       lineUserId =
@@ -3855,8 +3863,8 @@ function dispatchV2Post_(e) {
           'tenant_contract_renewal_intent'
       ) {
         const verifiedIdentity = resolveVerifiedLineRequestIdentity_(request);
-        const identity = verifiedIdentity.success && verifiedIdentity.data.channel_workspace_id
-          ? lineChannelTenantNotReady_()
+        const identity = verifiedIdentity.success
+          ? lineTenantChannelDenied_(verifiedIdentity.data.sub) || verifiedIdentity
           : verifiedIdentity;
         if (!identity.success) {
           return ContentService.createTextOutput(JSON.stringify(identity))

@@ -80,26 +80,74 @@ function lineRegistryLoginChannel_(channelId) {
   return found;
 }
 
+const LINE_EXISTING_TENANT_LIFF_URL_ = 'https://liff.line.me/2010314940-iJB1D6sN';
+
+// A Workspace that sends through its own channel links tenants to its own
+// LIFF app. That app's endpoint is the site root, so the path picks the page.
+// Returns '' when the registry cannot name an active LIFF app. List views build
+// one link per row, so each Workspace is looked up once per execution.
+const LINE_WORKSPACE_LIFF_IDS_ = {};
+
+function lineTenantLiffUrl_(workspaceId, page) {
+  const route = lineSendRoute_(workspaceId);
+  if (route.transport !== 'worker') return LINE_EXISTING_TENANT_LIFF_URL_;
+  if (!Object.prototype.hasOwnProperty.call(LINE_WORKSPACE_LIFF_IDS_, route.workspace_id)) {
+    try {
+      LINE_WORKSPACE_LIFF_IDS_[route.workspace_id] = lineRegistryWorkspaceLiffId_(route.workspace_id);
+    } catch (_) {
+      LINE_WORKSPACE_LIFF_IDS_[route.workspace_id] = '';
+    }
+  }
+  const liffId = LINE_WORKSPACE_LIFF_IDS_[route.workspace_id];
+  return liffId ? 'https://liff.line.me/' + liffId + '/' + (page || 'tenant-bind.html') : '';
+}
+
+function lineRegistryWorkspaceLiffId_(workspaceId) {
+  const cache = CacheService.getScriptCache();
+  const key = 'v3_line_workspace_liff:' + workspaceId;
+  try {
+    const cached = JSON.parse(cache.get(key) || 'null');
+    if (cached) return cached.liff_id;
+  } catch (_) {}
+  const request = lineWorkerSignedRequest_('/internal/line-channels', { action: 'get', workspace_id: workspaceId });
+  const response = UrlFetchApp.fetch(request.url, request);
+  const code = response.getResponseCode();
+  if (code !== 200 && code !== 404) return '';
+  const data = code === 200 ? JSON.parse(response.getContentText()).data || {} : {};
+  const liffId = data.status === 'active' && /^\d{10}-[A-Za-z0-9]{8}$/.test(String(data.liff_id || '')) ? data.liff_id : '';
+  try { cache.put(key, JSON.stringify({ liff_id: liffId }), liffId ? 300 : 60); } catch (_) {}
+  return liffId;
+}
+
+// Picks the LINE Login channel a token must be verified against. A landlord's
+// own channel counts only while its registry row is active and its Workspace
+// is on the Worker list. Returns null when the token cannot be accepted.
+function lineLoginChannelForToken_(token) {
+  const legacyChannelId = PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID');
+  if (!legacyChannelId) return null;
+  const hinted = lineIdTokenAudience_(token);
+  if (!hinted || hinted === legacyChannelId) return { channel_id: legacyChannelId, workspace_id: '' };
+  if (!lineOwnChannelWorkspaces_().length) return null;
+  const channel = lineRegistryLoginChannel_(hinted);
+  if (!channel || channel.status !== 'active' || !channel.workspace_id ||
+    lineOwnChannelWorkspaces_().indexOf(channel.workspace_id) < 0) return null;
+  return { channel_id: hinted, workspace_id: channel.workspace_id };
+}
+
+function lineRequestSetChannelScope_(channel) {
+  LINE_REQUEST_CHANNEL_SCOPE_ = { workspace_id: channel.workspace_id };
+}
+
 function verifyLandlordLineIdToken_(idToken) {
   const token = typeof idToken === 'string' ? idToken.trim() : '';
   if (!token || token.length > 8192) return lineRequestAuthRequired_();
   try {
-    const legacyChannelId = PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID');
-    if (!legacyChannelId) return lineRequestAuthRequired_();
-    // A landlord's own channel counts only while its registry row is active
-    // and its Workspace is on the Worker list.
-    const hinted = lineIdTokenAudience_(token);
-    let channelId = legacyChannelId;
-    let channelWorkspaceId = '';
-    if (hinted && hinted !== legacyChannelId) {
-      const channel = lineRegistryLoginChannel_(hinted);
-      if (!channel || channel.status !== 'active' || !channel.workspace_id ||
-        lineOwnChannelWorkspaces_().indexOf(channel.workspace_id) < 0) return lineRequestAuthRequired_();
-      channelId = hinted;
-      channelWorkspaceId = channel.workspace_id;
-    }
+    const channel = lineLoginChannelForToken_(token);
+    if (!channel) return lineRequestAuthRequired_();
+    const channelId = channel.channel_id;
+    const channelWorkspaceId = channel.workspace_id;
     const verified = function (principal) {
-      LINE_REQUEST_CHANNEL_SCOPE_ = { workspace_id: channelWorkspaceId };
+      lineRequestSetChannelScope_(channel);
       if (!channelWorkspaceId) return { success: true, data: principal };
       return { success: true, data: Object.assign({}, principal, { channel_workspace_id: channelWorkspaceId }) };
     };
@@ -128,10 +176,13 @@ function verifyLandlordLineIdToken_(idToken) {
   }
 }
 
-// Tenant pages are not yet split by channel, so tokens from a landlord's own
-// channel are refused there instead of reaching shared tenant lookups.
+// Tenant actions verify the token and then stay inside its channel's
+// Workspaces. Other non-landlord actions are not split by channel yet, so
+// they refuse tokens from a landlord's own channel.
 function lineRequestChannelGate_(action, parameter) {
-  if (/^landlord_/.test(String(action || ''))) return null;
+  const name = String(action || '');
+  if (/^landlord_/.test(name)) return null;
+  if (/^tenant_/.test(name) && String((parameter || {}).test || '') !== '1') return null;
   const hinted = lineIdTokenAudience_(parameter && parameter.id_token);
   if (!hinted) return null;
   const legacyChannelId = PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID');
@@ -141,6 +192,36 @@ function lineRequestChannelGate_(action, parameter) {
 
 function lineChannelTenantNotReady_() {
   return { success: false, code: 'LINE_CHANNEL_TENANT_NOT_READY', message: '這個 LINE 官方帳號尚未開放房客功能', data: null };
+}
+
+function lineTenantChannelConflict_() {
+  return { success: false, code: 'LINE_CHANNEL_TENANT_CONFLICT', message: '這個 LINE 帳號已綁定其他房東的租屋資料，請聯絡房東', data: null };
+}
+
+// Every tenant row the LINE account is bound to must belong to the verified
+// channel. Nothing is read while no Workspace uses its own channel.
+function lineTenantChannelDenied_(lineUserId) {
+  const scope = LINE_REQUEST_CHANNEL_SCOPE_;
+  if (!scope || (!scope.workspace_id && !lineOwnChannelWorkspaces_().length)) return null;
+  const sub = String(lineUserId || '').trim();
+  const sheet = runtimeSpreadsheet_().getSheetByName('V2_tenants');
+  if (!sub || !sheet) return null;
+  const values = runtimeSnapshotGetValues_(sheet);
+  const headers = (values[0] || []).map(function (value) { return String(value || '').trim(); });
+  const column = function (name) { return headers.indexOf(name); };
+  const workspace = column('workspace_id');
+  const lineColumns = [column('tenant_line_user_id'), column('line_user_id'), column('tenant_line_uid')]
+    .filter(function (index) { return index >= 0; });
+  for (let row = 1; row < values.length; row++) {
+    const bound = lineColumns.some(function (index) { return String(values[row][index] || '').trim() === sub; });
+    if (bound && lineRequestChannelDenied_(workspace >= 0 ? values[row][workspace] : '')) return lineTenantChannelConflict_();
+  }
+  return null;
+}
+
+// Tenant binding only matches tenant rows inside the verified channel.
+function lineTenantRowInChannel_(row) {
+  return !lineRequestChannelDenied_(row && row.workspace_id);
 }
 
 // Returns a denial when the verified LINE channel does not match the Workspace.

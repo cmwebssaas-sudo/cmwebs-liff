@@ -74,7 +74,26 @@
             }
         }
 
-        main();
+        // A landlord's own LIFF app uses the site root as its endpoint. LIFF
+        // moves on to the page named in liff.state after init; a bare link
+        // opens the tenant entry.
+        async function openWorkspacePage(liffId) {
+            try {
+                const hasPage = new URLSearchParams(location.search).has('liff.state');
+                await liff.init({ liffId: liffId });
+                if (!hasPage) location.replace('tenant-bind.html');
+            } catch (err) {
+                console.error("LIFF 初始化失敗", err);
+                document.getElementById('loader').innerHTML = "<p>系統連線失敗，請關閉視窗後重試。</p>";
+            }
+        }
+
+        const workspaceLiffId = CMWebsLiffConfig.workspaceLiffId();
+        if (workspaceLiffId) {
+            openWorkspacePage(workspaceLiffId);
+        } else {
+            main();
+        }
     </script>
 </body>
 </html>

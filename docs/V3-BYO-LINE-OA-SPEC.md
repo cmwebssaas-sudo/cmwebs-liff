@@ -1,6 +1,6 @@
 # V3 房東自有 LINE 官方帳號規格
 
-**狀態：** 設計決定已確認，尚未實作
+**狀態：** 階段 2、3A、3B、4A 已於 2026-11-05 部署，允許清單為空所以尚未啟用；4B 程式已完成，尚未部署
 **Issue：** [#296](https://github.com/cmwebssaas-sudo/cmwebs-liff/issues/296)
 **日期：** 2026-11-02（Asia/Taipei）
 
@@ -101,16 +101,26 @@ LINE、LIFF、Webhook 或 Rich Menu。每個實作階段都要另外授權。
 
 ### 4.3 登入
 
-- 房東 LIFF 的 Endpoint URL 帶上自己的 LIFF ID（參數 `cmwebs_liff`）。頁面用它
-  初始化 LIFF，不必多一次查詢；同一分頁換頁時沿用。這個值只決定開哪個 LIFF，
-  不授權任何資料。
+- 房東 LIFF 的 Endpoint URL 是網站根目錄，帶上自己的 LIFF ID（參數 `cmwebs_liff`），
+  例如 `https://cmwebssaas-sudo.github.io/cmwebs-liff/?cmwebs_liff=<LIFF ID>`。
+  頁面用它初始化 LIFF，不必多一次查詢；同一分頁換頁時沿用。這個值只決定開哪個
+  LIFF，不授權任何資料。
+- 連結寫成 `https://liff.line.me/<LIFF ID>/<頁面>`，LINE 會把頁面路徑接在 Endpoint
+  後面，所以同一個 LIFF 可以開房東頁與房客頁。只寫 LIFF 網址時開房客入口。
 - 頁面不再寫死 LIFF ID，全部改讀 `liff-config.js`。
 - Apps Script 與 Worker 依 Workspace 取得 `line_login_channel_id`，並以它
   驗證 ID Token 的 `aud`。
 - ID Token 頻道與請求的 Workspace 不一致時，一律拒絕。
 - 同一人向兩位房東租屋時，視為兩個獨立身分，不合併資料。
-- 4A 只開放房東功能。房客綁定、房客頁面、通知中的房客連結與簽約流程要依頻道
-  分開後才開放（4B）；在此之前，房客功能拒絕房東自有頻道的 token。
+- 4A 只開放房東功能。4B 開放房客綁定、房客頁面、通知中的房客連結與簽約流程：
+  - 房客的請求只能碰到 token 頻道範圍內的房客資料。房東自有頻道只含該 Workspace；
+    原有頻道含所有不在允許清單內的 Workspace，沒有 `workspace_id` 的資料算原有頻道。
+  - 同一個 LINE 帳號已綁在另一個頻道範圍的房客資料上時一律拒絕
+    （`LINE_CHANNEL_TENANT_CONFLICT`）。這只會在房東 OA 與 CMWebs 原有頻道同一個
+    Provider 時發生，所以房東開通前要確認 Provider。
+  - 手機綁定只比對範圍內的房客；合約邀請不屬於該頻道時不認領。
+  - 通知中的房客連結跟著發送路徑：走 Worker 的 Workspace 用自己的 LIFF，查不到
+    啟用中的 LIFF 時連結留空，不退回其他 LIFF。
 
 ### 4.4 Webhook
 
@@ -176,9 +186,9 @@ LINE、LIFF、Webhook 或 Rich Menu。每個實作階段都要另外授權。
 | --- | --- | --- |
 | 0 | 規格、路線圖、決策紀錄 | 無 |
 | 1 | 備份復原演練與操作手冊 | 不改使用者行為 |
-| 2 | Channel Registry，既有 Workspace 轉入（資料表、加密與內部路由已實作，尚未部署） | 不改使用者行為 |
-| 3 | 統一 LINE 發送入口：3A 全部接入，既有 Workspace 行為不變（程式已完成，尚未部署）；3B Worker 發送，只開放允許清單內的 Workspace（程式已完成，尚未部署）；3C 測試 OA 實測 | 影響正式通知 |
-| 4 | 多頻道登入與集中 LIFF 設定：4A 房東登入與集中 LIFF 設定（程式已完成，尚未部署）；4B 房客綁定、房客頁面與通知連結依頻道分開 | 影響正式登入 |
+| 2 | Channel Registry，既有 Workspace 轉入（資料表、加密與內部路由已部署，尚未啟用） | 不改使用者行為 |
+| 3 | 統一 LINE 發送入口：3A 全部接入，既有 Workspace 行為不變（已部署）；3B Worker 發送，只開放允許清單內的 Workspace（已部署，尚未啟用）；3C 測試 OA 實測 | 影響正式通知 |
+| 4 | 多頻道登入與集中 LIFF 設定：4A 房東登入與集中 LIFF 設定（已部署，尚未啟用）；4B 房客綁定、房客頁面與通知連結依頻道分開（程式已完成，尚未部署） | 影響正式登入 |
 | 5 | Worker Webhook | 影響正式訊息接收 |
 | 6 | 設定精靈與圖文選單發布 | 只開放測試 OA |
 | 7 | 測試 OA 全流程 | 不影響既有 Workspace |

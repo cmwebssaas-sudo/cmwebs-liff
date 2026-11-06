@@ -170,14 +170,16 @@ test('the verified channel decides which Workspaces a landlord can open', () => 
   assert.equal(existing.context.lineRequestChannelDenied_('W_OWN').code, 'WORKSPACE_FORBIDDEN');
 });
 
-test('tenant actions refuse own-channel tokens before any lookup', () => {
+test('tenant actions pass the channel gate; other non-landlord actions still refuse own-channel tokens', () => {
   const { context, state } = gas();
-  assert.equal(context.lineRequestChannelGate_('tenant_home_init', { id_token: jwt({ aud: own }) }).code, 'LINE_CHANNEL_TENANT_NOT_READY');
-  assert.equal(context.lineRequestChannelGate_('tenant_bind_submit', { id_token: jwt({ aud: own }) }).code, 'LINE_CHANNEL_TENANT_NOT_READY');
-  for (const parameter of [{ id_token: jwt({ aud: legacy }) }, { id_token: 'synthetic-token' }, {}]) {
-    assert.equal(context.lineRequestChannelGate_('tenant_home_init', parameter), null);
+  for (const action of ['tenant_home_init', 'tenant_bind_submit', 'landlord_home_init']) {
+    assert.equal(context.lineRequestChannelGate_(action, { id_token: jwt({ aud: own }) }), null, action);
   }
-  assert.equal(context.lineRequestChannelGate_('landlord_home_init', { id_token: jwt({ aud: own }) }), null);
+  assert.equal(context.lineRequestChannelGate_('tenant_home_init', { id_token: jwt({ aud: own }), test: '1' }).code, 'LINE_CHANNEL_TENANT_NOT_READY');
+  assert.equal(context.lineRequestChannelGate_('vendor_repair_init', { id_token: jwt({ aud: own }) }).code, 'LINE_CHANNEL_TENANT_NOT_READY');
+  for (const parameter of [{ id_token: jwt({ aud: legacy }) }, { id_token: 'synthetic-token' }, {}]) {
+    assert.equal(context.lineRequestChannelGate_('vendor_repair_init', parameter), null);
+  }
   assert.deepEqual([...state.verified, ...state.registryCalls], []);
 });
 

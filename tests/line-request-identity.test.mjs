@@ -12,9 +12,12 @@ const tenantReadHandlers = ['getTenantBindingStatusByLineUid_', 'getTenantHomeBy
   'getTenantContractInitByLineUid_', 'getTenantContractRequestsByLineUid_'];
 function runtime() {
   const state = { calls: 0, effects: [], entries: new Map(), puts: [], channel: 'synthetic-channel',
-    claims: { iss: 'https://access.line.me', aud: 'synthetic-channel', sub: 'synthetic-owner', exp: now + 3600 }, code: 200 };
+    claims: { iss: 'https://access.line.me', aud: 'synthetic-channel', sub: 'synthetic-owner', exp: now + 3600 }, code: 200,
+    workspaces: null, tenantRows: [] };
   const context = vm.createContext({ Date, JSON, String, Number, Math, Error, RegExp,
-    PropertiesService: { getScriptProperties: () => ({ getProperty: () => state.channel }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => key === 'CMWEBS_LINE_WORKER_WORKSPACES' ? state.workspaces : state.channel }) },
+    runtimeSpreadsheet_: () => ({ getSheetByName: name => name === 'V2_tenants' ? { name } : null }),
+    runtimeSnapshotGetValues_: () => [['tenant_id', 'workspace_id', 'line_user_id'], ...state.tenantRows],
     CacheService: { getScriptCache: () => ({ get: k => state.entries.get(k) || null, put(k, v, ttl) { state.entries.set(k, v); state.puts.push({ k, ttl }); } }) },
     Utilities: { DigestAlgorithm: { SHA_256: 'sha256' }, Charset: { UTF_8: 'utf8' },
       computeDigest: (_, value) => [...createHash('sha256').update(value).digest()].map(n => n > 127 ? n - 256 : n) },
@@ -125,6 +128,22 @@ test('tenant reads resolve only the verified LINE principal', () => {
       assert.equal(state.calls, 1, action);
     }
   }
+});
+
+test('tenant requests stop before any lookup when the account is bound in another channel', () => {
+  const blocked = runtime();
+  blocked.state.workspaces = 'W_OWN';
+  blocked.state.tenantRows = [['T1', 'W_OWN', 'synthetic-owner']];
+  const read = blocked.get({ v2_action: 'tenant_home', id_token: 'synthetic-token' });
+  assert.equal(read.result.code, 'LINE_CHANNEL_TENANT_CONFLICT');
+  const renewal = blocked.post({ v2_action: 'tenant_contract_renewal_intent', id_token: 'synthetic-token', contract_id: 'synthetic-contract', decision: 'accepted' });
+  assert.equal(renewal.result.code, 'LINE_CHANNEL_TENANT_CONFLICT');
+  assert.ok(blocked.state.effects.every(effect => effect === 'snapshot'), 'no tenant or business resolution');
+
+  const allowed = runtime();
+  allowed.state.workspaces = 'W_OWN';
+  allowed.state.tenantRows = [['T2', 'W000001', 'synthetic-owner']];
+  assert.equal(allowed.get({ v2_action: 'tenant_home', id_token: 'synthetic-token' }).result.data.principal, 'synthetic-owner');
 });
 
 test('tenant read test mode keeps its configured test identity', () => {

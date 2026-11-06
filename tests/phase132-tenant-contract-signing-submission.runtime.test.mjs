@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 
 const sessionSource = readFileSync(new URL('../apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js', import.meta.url), 'utf8');
 const submitSource = readFileSync(new URL('../apps-script/V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js', import.meta.url), 'utf8');
+const lineIdentitySource = readFileSync(new URL('../apps-script/V2_LINE_IDENTITY.js', import.meta.url), 'utf8');
 
 class Sheet {
   constructor(headers, rows = []) { this.headers = headers; this.rows = rows; }
@@ -87,6 +88,7 @@ function makeRuntime(mode = 'new_tenant', options = {}) {
     }
   };
   vm.createContext(context);
+  vm.runInContext(lineIdentitySource, context);
   vm.runInContext(sessionSource, context);
   vm.runInContext(submitSource, context);
   return { api: context, sheets, props, materializeCalls };

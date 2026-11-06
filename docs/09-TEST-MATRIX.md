@@ -5101,3 +5101,17 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/line-multi-login.test.mjs`：沒有頁面寫死 LIFF ID，集中設定先載入；網址帶入的 LIFF ID 格式錯誤時回到既有 LIFF
 - [x] `cloudflare/read-api/test/line-channels.test.mjs`：依 LINE Login 頻道查詢，不回傳機密
 - [ ] 測試 OA 實際登入（`HUMAN_REQUIRED`）
+
+## 2026-11-06 V3 房客功能依頻道分開 4B
+
+- [x] `tests/line-tenant-channel.test.mjs`：允許清單為空時不多讀資料、連結不變
+- [x] `tests/line-tenant-channel.test.mjs`：房客綁定的資料必須在 token 頻道範圍內；自有頻道不能讀原有頻道房客，原有頻道不能讀清單內房客
+- [x] `tests/line-tenant-channel.test.mjs`：手機綁定只比對頻道範圍內的房客
+- [x] `tests/line-tenant-channel.test.mjs`：清單內 Workspace 的房客連結用自己的 LIFF，未啟用或查不到時不退回其他 LIFF
+- [x] `tests/line-tenant-channel.test.mjs`：簽署驗證依 token 頻道並套用範圍；網站根目錄只在房東自有 LIFF 開啟時轉頁
+- [x] `tests/line-request-identity.test.mjs`：頻道衝突時，GET 讀取與 POST 續約回覆都在查詢房客前停止
+- [x] `tests/phase158-landlord-initiated-contract-activation.runtime.test.mjs`：其他頻道的邀請不被認領
+- [x] `tests/line-multi-login.test.mjs`：房客動作通過頻道關卡，`test=1` 與其他動作仍拒絕自有頻道
+- [x] `tests/repair-dispatch-route.test.mjs`：維修廠商動作在查詢前拒絕房東自有頻道
+- [x] `tests/read-parity-engine.test.mjs`：Worker 讀取產生器以替換項目取得房客連結，比對結果不變
+- [ ] 測試 OA 實際綁定、帳單通知、付款回報與簽約（`HUMAN_REQUIRED`）
