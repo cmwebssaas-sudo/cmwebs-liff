@@ -3,7 +3,8 @@ import test from 'node:test';
 import fs from 'node:fs';
 import {syncBuiltinESMExports} from 'node:module';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,readFileSync,lstatSync,unlinkSync} from 'node:fs';
+import {chmodSync,readFileSync,lstatSync,unlinkSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
@@ -14,7 +15,7 @@ const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.r
 const file=()=>({id:newId,mimeType:mime,ownedByMe:true,trashed:false});
 test.after(()=>{for(const epoch of epochs){const p=join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(epoch))+'.import.json');for(const x of [p,p+'.stop'])try{const s=lstatSync(x),v=JSON.parse(readFileSync(x)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-import-')))unlinkSync(x);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 function setup(patch={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-import-'));chmodSync(dir,0o700);const epoch='SYNTHETIC_IMPORT_'+randomUUID(),calls=[],order=[],bytes=Buffer.from('PK\x03\x04SYNTHETIC_OFFLINE_PREFLIGHT_FIXTURE'),fixtureHash=hash(bytes);let now=clock,spent=0;
+ const dir=tempDir('cmwebs-import-');chmodSync(dir,0o700);const epoch='SYNTHETIC_IMPORT_'+randomUUID(),calls=[],order=[],bytes=Buffer.from('PK\x03\x04SYNTHETIC_OFFLINE_PREFLIGHT_FIXTURE'),fixtureHash=hash(bytes);let now=clock,spent=0;
  const control={waitForExternalReadSlot:async()=>{order.push('wait');},reserveExternalReads:async()=>{order.push('debit');spent++;}};
  const options={path:join(dir,'receipt.json'),epoch,originalSheetId,publisherHash,fixtureHash,fixtureBytes:bytes,expiresAt:clock+21600000,
   preflightReceipt:{source:'fixed-trial-xlsx-preflight',fixtureHash,size:bytes.length,tabs:20,unsafeFeatures:false},control,now:()=>now,

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,chmodSync,writeFileSync,readFileSync,lstatSync,unlinkSync,existsSync} from 'node:fs';
+import {mkdirSync,chmodSync,writeFileSync,readFileSync,lstatSync,unlinkSync,existsSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
@@ -15,7 +16,7 @@ const oldPins={'read-authority-preparation-control.mjs':'8e9917e117d9e5902a4e4f4
 const oldBytes=new Map(Object.keys(oldPins).map(name=>{const bytes=readFileSync(new URL('./fixtures/read-authority/preflight-incident-controller/'+name,import.meta.url));assert.equal(hash(bytes),oldPins[name]);return [name,bytes];}));
 async function frozenOldControl(dir,options){const root=join(dir,'frozen-b01-runtime');mkdirSync(root,{mode:0o700});for(const [name,bytes] of oldBytes)writeFileSync(join(root,name),bytes,{mode:0o600});const api=await import(pathToFileURL(join(root,'read-authority-preparation-control.mjs')).href);return api.createAuthorityPreparationControl(options);}
 async function setup({frozenOld=false}={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-binding-repair-'));chmodSync(dir,0o700);const path=join(dir,'counter.json'),epoch='SYNTHETIC_BINDING_REPAIR_'+randomUUID();let time=clock;
+ const dir=tempDir('cmwebs-binding-repair-');chmodSync(dir,0o700);const path=join(dir,'counter.json'),epoch='SYNTHETIC_BINDING_REPAIR_'+randomUUID();let time=clock;
  const legacy={limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40},raw=JSON.stringify(legacy);writeFileSync(path,raw,{mode:0o600});
  const options={path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,decisionHash,nativeTargets:targets,now:()=>time,pause:async ms=>{time+=ms;}};
  const old=frozenOld?await frozenOldControl(dir,options):createAuthorityPreparationControl(options);await assert.rejects(old.withPreparation(cap=>cap.externalRead(async()=>{throw Error('SYNTHETIC_UNDECLARED_BINDING');},'P:caller-bind')),/TRIAL_STOPPED/);const drain=await old.stopAndDrain();

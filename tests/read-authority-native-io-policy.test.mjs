@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,writeFileSync,readFileSync,unlinkSync,existsSync} from 'node:fs';
+import {chmodSync,writeFileSync,readFileSync,unlinkSync,existsSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {tmpdir,homedir} from 'node:os';
 import {join} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
@@ -25,7 +26,7 @@ const windows=()=>['wrapper-before','wrapper-after'].flatMap(phase=>['caller','p
 const operation=(ordinal,stage='research',target='original-settings',operation='snapshot')=>({stage,ordinal,actor:target==='caller-executions'?'caller':'publisher',target,operation});
 function planInput(){return {stage:'single-wrapper-compatibility',decisionHash,counter:{limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40},nativeWindows:windows(),additionalOperations:[{name:'native-prepare-caller',units:1},{name:'native-prepare-publisher',units:3},{name:'unknown-settlement',units:3}],nativeResearch:{usedReads:0,remainingOperations:[]}};}
 function setup(patch={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-native-io-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_NATIVE_IO_'+randomUUID();let now=clock;
+ const dir=tempDir('cmwebs-native-io-');chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_NATIVE_IO_'+randomUUID();let now=clock;
  const legacy={limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40},raw=JSON.stringify(legacy);writeFileSync(path,raw,{mode:0o600});writeFileSync(path+'.lock','',{mode:0o600});owned.push({epoch,path});
  const options={path,epoch,approvalHash:legacy.approval_sha256,proposalHash:legacy.proposal_sha256,legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>now,pause:async ms=>{now+=ms;},decisionHash,nativeTargets:targets,...patch};
  return {control:createAuthorityPreparationControl(options),options,get:()=>JSON.parse(readFileSync(path)),setNow:v=>{now=v;}};

@@ -1,5 +1,5 @@
-import {mkdtempSync,chmodSync,mkdirSync,writeFileSync,readFileSync,openSync,closeSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import {chmodSync,mkdirSync,writeFileSync,readFileSync,openSync,closeSync} from 'node:fs';
+import {tempDir} from '../temp-dir.mjs';
 import {join,resolve} from 'node:path';
 import {spawn} from 'node:child_process';
 import {createHash,randomUUID,randomBytes} from 'node:crypto';
@@ -8,7 +8,7 @@ export const compact=v=>JSON.stringify(v&&typeof v==='object'?Array.isArray(v)?v
 export const wrapped=v=>compact({value:v,sha256:hash(compact(v))});
 export const clock=Date.parse('2026-10-16T00:00:00Z');
 export function fixture(){
- const home=mkdtempSync(join(tmpdir(),'cmwebs-continuation-'));chmodSync(home,0o700);
+ const home=tempDir('cmwebs-continuation-');chmodSync(home,0o700);
  const root=join(home,'.codex/private/cmwebs-authority-trials');mkdirSync(root,{recursive:true,mode:0o700});
  const path=join(home,'budget.json'),epoch='SYNTHETIC_CONTINUATION_'+randomUUID(),binding='c'.repeat(64),expired=clock-1000;
  const original={path,epoch,binding,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:'d'.repeat(64),importedReads:25,expiresAt:expired,now:clock,decisionHash:'3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9',nativeTargets:Object.fromEntries(['original-settings','original-triggers','thin-settings','oauth-audience','oauth-client','caller-executions','publisher-executions'].map(v=>[v,'SYNTHETIC_'+v]))};

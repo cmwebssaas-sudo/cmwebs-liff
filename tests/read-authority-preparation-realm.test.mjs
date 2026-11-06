@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {mkdtempSync,chmodSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import {chmodSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const program=String.raw`
@@ -29,7 +29,7 @@ const options={dir,mode:mode==='lifecycle'?'all':mode,lifecycle:mode==='lifecycl
 const result=await helper.exercisePreparationRealm(api,options);console.log(JSON.stringify({...result,ambientProcess:vm.runInContext('typeof process',context)}));
 `;
 function run(mode,kind){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-preparation-realm-'));chmodSync(dir,0o700);const root=fileURLToPath(new URL('..',import.meta.url));
+ const dir=tempDir('cmwebs-preparation-realm-');chmodSync(dir,0o700);const root=fileURLToPath(new URL('..',import.meta.url));
  return JSON.parse(execFileSync(process.execPath,['--experimental-vm-modules','--input-type=module','-',dir,root,mode,kind],{input:program,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'},encoding:'utf8',timeout:20000,stdio:['pipe','pipe','pipe']}));
 }
 for(const mode of ['import','reader','publication','thin','oauth'])test(mode+' private journal can initialize with no ambient process and keeps ownership/mode checks',()=>{

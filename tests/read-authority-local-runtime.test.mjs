@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {mkdtempSync,chmodSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import {chmodSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -61,7 +61,7 @@ try{
 console.log(JSON.stringify({ok,error,calls,spent:JSON.parse(readFileSync(path)).spent,rawMode,ambientProcess:vm.runInContext('typeof process',context),browserReads:0}));
 `;
 function run(mode){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-local-realm-'));chmodSync(dir,0o700);
+ const dir=tempDir('cmwebs-local-realm-');chmodSync(dir,0o700);
  const root=fileURLToPath(new URL('..',import.meta.url));
  return JSON.parse(execFileSync(process.execPath,['--experimental-vm-modules','--input-type=module','-',dir,root,mode],{input:program,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'},encoding:'utf8',timeout:15000,stdio:['pipe','pipe','pipe']}));
 }

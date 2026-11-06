@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,writeFileSync,readFileSync,chmodSync,symlinkSync,statSync,renameSync} from 'node:fs';
+import {writeFileSync,readFileSync,chmodSync,symlinkSync,statSync,renameSync} from 'node:fs';
+import {tempDir} from './fixtures/temp-dir.mjs';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
@@ -16,7 +17,7 @@ const userUrl='https://www.googleapis.com/oauth2/v2/userinfo?fields=email%2Cveri
 const token=()=>({access_token:'SYNTHETIC_RENEWED_TOKEN',token_type:'Bearer',expires_in:3920,scope:managementScopes.join(' ')});
 const profile=()=>({tokens:{default:{access_token:'SYNTHETIC_EXPIRED_TOKEN',refresh_token:'SYNTHETIC_EXISTING_GRANT',client_id:'123-synthetic.apps.googleusercontent.com',client_secret:'SYNTHETIC_CLIENT_SECRET',token_type:'Bearer',expiry_date:clock-1000,id_token:'SYNTHETIC_UNTRUSTED_ID_TOKEN'}}});
 function setup(patch={}){
- const dir=mkdtempSync(join(tmpdir(),'cmwebs-credential-'));chmodSync(dir,0o700);const path=join(dir,'profile.json'),raw=JSON.stringify(profile());writeFileSync(path,raw,{mode:0o600});
+ const dir=tempDir('cmwebs-credential-');chmodSync(dir,0o700);const path=join(dir,'profile.json'),raw=JSON.stringify(profile());writeFileSync(path,raw,{mode:0o600});
  let time=clock;const calls=[],charges=[],events=[];
  const control={decisionHash,externalRead:async(io,label)=>{charges.push(label);events.push('debit');return await io();}};
  const options={source:{path,sha256:hash(raw)},publisherHash,decisionHash,expiresAt:clock+7200000,now:()=>time,
