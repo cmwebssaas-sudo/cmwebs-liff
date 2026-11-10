@@ -861,6 +861,7 @@
         padding-left: 13px;
       }
     }
+      .contract-expiry.renewal-pending { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
   </style>
   <link rel="stylesheet" href="landlord-glass-theme.css?v=20261111-assistant-finder-v1" />
 </head>
@@ -2037,7 +2038,9 @@
           tenant.end_date
         );
 
+      const pendingRenewal = Boolean(rawText(tenant.pending_renewal_contract_id).trim());
       const canQuickRenew = Boolean(
+        !pendingRenewal &&
         tenant.current_contract_id &&
         contractExpiry &&
         [
@@ -2113,6 +2116,12 @@
                         合約到期日 ${safeHtml(contractExpiry.date)}・${safeHtml(contractExpiry.statusLabel)}・${safeHtml(contractExpiry.daysLabel)}
                       </div>
                     `
+                    : ''
+                }
+
+                ${
+                  pendingRenewal
+                    ? `<div class="contract-expiry renewal-pending">已發出續約・等房客簽名</div>`
                     : ''
                 }
               </div>
@@ -2220,6 +2229,20 @@
                       <span>快速續約</span>
                       <small>合約即將到期／已到期</small>
                     </span>
+                  </button>
+                `
+                : ''
+            }
+
+            ${
+              pendingRenewal
+                ? `
+                  <button
+                    class="tenant-action-button purple"
+                    type="button"
+                    onclick="goPage('landlord-contract-requests.html')"
+                  >
+                    查看續約進度
                   </button>
                 `
                 : ''
@@ -2393,7 +2416,9 @@
           tenant.end_date
         );
 
+      const pendingRenewal = Boolean(rawText(tenant.pending_renewal_contract_id).trim());
       const canQuickRenew = Boolean(
+        !pendingRenewal &&
         tenant.current_contract_id &&
         contractExpiry &&
         [
@@ -2420,6 +2445,7 @@
           </td>
           <td>
             ${contractExpiry ? safeHtml(contractExpiry.date) : '-'}
+            ${pendingRenewal ? '<div class="tenant-desktop-meta"><span class="badge warning">續約待簽署</span></div>' : ''}
             <div class="tenant-desktop-meta">
               待審 ${contract.pending}・待完成 ${contract.approved}
             </div>
@@ -2436,6 +2462,7 @@
                   ? `<button class="tenant-action-button quick-renewal" type="button" aria-label="快速續約" onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)"><span class="quick-renewal-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 11a8 8 0 0 0-14.7-4L3 10"></path><path d="M3 5v5h5"></path><path d="M4 13a8 8 0 0 0 14.7 4L21 14"></path><path d="M21 19v-5h-5"></path></svg></span><span class="quick-renewal-copy"><span>快速續約</span><small>合約即將到期／已到期</small></span></button>`
                   : ''
               }
+              ${pendingRenewal ? `<button class="tenant-action-button purple" type="button" onclick="goPage('landlord-contract-requests.html')">續約進度</button>` : ''}
               ${
                 bindingStatus === 'unbound'
                   ? `<button class="tenant-action-button" type="button" onclick="shareTenantBindingInvite(event)">邀請綁定</button>`

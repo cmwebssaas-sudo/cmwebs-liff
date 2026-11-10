@@ -915,6 +915,9 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
+      .line-notice { margin: 12px 0; padding: 12px 14px; border-radius: 14px; font-weight: 700; line-height: 1.5; }
+    .line-notice.sent { background: #e9f8ef; color: #166534; }
+    .line-notice.manual { background: #fff4e5; color: #9a3412; }
   </style>
   <link rel="stylesheet" href="landlord-glass-theme.css?v=20261111-assistant-finder-v1" />
 </head>
@@ -3640,6 +3643,8 @@
               )}
             </div>
 
+            ${initiated ? lineNotificationHtml(CREATED_DATA.line_notification) : ''}
+
             <div class="invite-box">
               <div class="invite-title">
                 ${initiated && renewal ? '傳給房客的新版續約簽署邀請（含確認碼）' : initiated ? '傳給房客的合約邀請（含確認碼）' : renewal ? '傳給房客的續約通知' : '傳給房客的 LINE 綁定訊息'}
@@ -3745,6 +3750,19 @@
             </div>
           </div>
         </section>
+      `;
+    }
+
+    // 系統已直接用 LINE 發給房客時，房東不必再複製；失敗或未綁定時提示自行傳送。
+    function lineNotificationHtml(notice) {
+      if (!notice) return '';
+      const sent = notice.sent === true;
+      return `
+        <div class="line-notice ${sent ? 'sent' : 'manual'}" role="status">
+          ${sent
+            ? '✓ 已用 LINE 把簽約邀請（連結、確認碼與說明）發給房客，不需要再複製傳送。'
+            : safeHtml((notice.message || 'LINE 未發送') + '：請複製下方訊息，用 LINE 傳給房客。')}
+        </div>
       `;
     }
 

@@ -2776,7 +2776,13 @@
           });
           closeConfirmModal(true);
           renderLandlordInviteModal();
-          showAlert('邀請已重新產生', '新的確認碼是：' + invite.confirmation_code + '\n請把新的 QR／連結與確認碼交給房客；舊邀請已失效。');
+          const lineNotice = data && data.line_notification;
+          showAlert(
+            '邀請已重新產生',
+            lineNotice && lineNotice.sent === true
+              ? '已用 LINE 把新的連結、確認碼與簽署說明發給房客；舊邀請已失效。\n新的確認碼是：' + invite.confirmation_code
+              : '新的確認碼是：' + invite.confirmation_code + '\n' + ((lineNotice && lineNotice.message) || 'LINE 未發送') + '。請按「複製邀請訊息（含確認碼）」用 LINE 傳給房客；舊邀請已失效。'
+          );
         } catch (error) {
           closeConfirmModal(true);
           showAlert('重新產生失敗', error.message || '請重新整理後再試。');

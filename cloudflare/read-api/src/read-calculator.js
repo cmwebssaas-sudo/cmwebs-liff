@@ -8730,6 +8730,17 @@ function workspaceDashboardBuildTenantList_(
           current_contract_status:
             contractRenewalHistoryEffectiveStatus_(currentContract),
 
+          // 已發出邀請、等房客簽名的續約；名單據此顯示「續約待簽署」。
+          // 系統預先準備、房東尚未審查的續約草稿不算已發出。
+          pending_renewal_contract_id:
+            workspaceDashboardText_(
+              (contracts.find(function (contract) {
+                const status = workspaceDashboardText_(contract.contract_status || contract.status).toLowerCase();
+                return status !== 'pending_landlord_review' &&
+                  workspaceDashboardContractIsUnsignedRenewal_(contract, status);
+              }) || {}).contract_id
+            ),
+
           // The summary projection removes this entire field. Keep default
           // readers complete and skip only work the explicit summary discards.
           contract_history:

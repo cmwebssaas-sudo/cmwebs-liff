@@ -5146,3 +5146,11 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/landlord-assistant.test.mjs`：常見問法（新增房客、退房、續約、重傳邀請、催繳、入帳核對等 18 句）第一個結果正確，無關問題不回答
 - [x] `tests/landlord-assistant.test.mjs`：結果顯示步驟與前往按鈕，內容會跳脫 HTML
 - [ ] 正式「更多」頁手機實際輸入與語音輸入（`HUMAN_REQUIRED`）
+## 2026-11-11 續約邀請自動 LINE 發送與名單「續約待簽署」
+
+- [x] `tests/renewal-invite-line-push.test.mjs`：快速續約與重新產生邀請後，已綁定 LINE 的房客收到連結、確認碼與簽署說明；重試沿用邀請 ID 不重複發送
+- [x] `tests/renewal-invite-line-push.test.mjs`：房客未綁定、LINE 發送失敗或例外時，邀請照常建立並提示房東自行傳送
+- [x] `tests/renewal-invite-line-push.test.mjs`：不使用其他 Workspace 的房客 LINE
+- [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：名單資料標出等簽名的續約
+- [x] `tests/tenant-list-pending-renewal.test.mjs`：有待簽續約時隱藏快速續約，顯示「續約待簽署」與續約進度按鈕
+- [ ] 正式環境以測試房客實際收到 LINE 簽約邀請（`HUMAN_REQUIRED`）
