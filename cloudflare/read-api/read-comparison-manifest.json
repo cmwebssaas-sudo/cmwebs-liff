@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-da757f536c726b1dbb3d64ba459647f95055a661f195cfd691483aa1b0adfe3d",
+  "comparison_version": "read-1e89390cc2f4ee1c26f6dc9f2a8110c17a1023b41831836d954f22143043116c",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -128,7 +128,7 @@
     "landlord-activity.html": "65f7fb73fc197ab631c3e9f4f414b959bd3c9cb8523fe3070edea44487b49285",
     "landlord-announcements.html": "2fabf7b4daa69afadbbc4550544455ec2c1537a7491d66279dbaf580235e5aa0",
     "landlord-api.js": "1f2a3934664e80dc8f5832d9b63365981032f936bb347ee6c9500892d6b22956",
-    "landlord-arrears.html": "586ddf9856139cac2c1f0a667d995a17f144a515aa6cce838e834ad3ef4e96f2",
+    "landlord-arrears.html": "50102b19da1cb01e8be153c0b48ff98bec851e4f3c3cd4218e47408063867419",
     "landlord-auth.js": "1c448cf4f645c2337bb9f5fe30dea9c2da3556d7db5373210ca62a292f79782e",
     "landlord-bill-notifications.html": "46303c347c5437bd763589ababee543d8a6f734f2203e1592d08bdbad7355ec9",
     "landlord-billing.html": "e8c7274ec1f2e31a9f9d944de3a9270b5872d519618db8c095cce2754de3952f",

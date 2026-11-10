@@ -10,14 +10,14 @@
 
   <title>CMWebs 房客欠款</title>
 
-<script src="frontend-release.js?v=20261106-meter-auth-prewarm-v1"></script>
-  <script src="liff-config.js?v=20261106-meter-auth-prewarm-v1"></script>
-  <script src="liff-request-auth.js?v=20261106-meter-auth-prewarm-v1"></script>
-  <script src="landlord-auth.js?v=20261106-meter-auth-prewarm-v1"></script>
-  <script src="landlord-api.js?v=20261106-meter-auth-prewarm-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261106-meter-auth-prewarm-v1" />
-  <script src="landlord-glass-nav.js?v=20261106-meter-auth-prewarm-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261106-meter-auth-prewarm-v1" defer></script>
+<script src="frontend-release.js?v=20261110-pay-calendar-room-order-v1"></script>
+  <script src="liff-config.js?v=20261110-pay-calendar-room-order-v1"></script>
+  <script src="liff-request-auth.js?v=20261110-pay-calendar-room-order-v1"></script>
+  <script src="landlord-auth.js?v=20261110-pay-calendar-room-order-v1"></script>
+  <script src="landlord-api.js?v=20261110-pay-calendar-room-order-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261110-pay-calendar-room-order-v1" />
+  <script src="landlord-glass-nav.js?v=20261110-pay-calendar-room-order-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261110-pay-calendar-room-order-v1" defer></script>
 
   <style>
     :root {
@@ -1488,7 +1488,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261106-meter-auth-prewarm-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261110-pay-calendar-room-order-v1" />
 </head>
 
 <body>
@@ -4592,14 +4592,17 @@
       vacant: '空房'
     };
 
-    // 本月格子的排序：要處理的放前面，空房放最後。
-    const PAYMENT_CALENDAR_ORDER = {
-      overdue: 0,
-      unpaid: 1,
-      no_bill: 2,
-      paid: 3,
-      vacant: 4
-    };
+    // 房間固定照物件、房號排列；繳費狀態只改顏色，不改位置。
+    function comparePaymentCalendarRooms(a, b) {
+      return (
+        rawText(a.property_name).localeCompare(rawText(b.property_name), 'zh-Hant', { numeric: true }) ||
+        rawText(a.room_name).localeCompare(rawText(b.room_name), 'zh-Hant', { numeric: true })
+      );
+    }
+
+    function sortedPaymentCalendarRooms(data) {
+      return (Array.isArray(data.rooms) ? data.rooms : []).slice().sort(comparePaymentCalendarRooms);
+    }
 
     function monthLabel(month, withYear) {
       const match = rawText(month).match(/^(\d{4})-(\d{2})$/);
@@ -4625,15 +4628,9 @@
       const months = Array.isArray(data.months) ? data.months : [];
       const summary = months[months.length - 1] || {};
       const index = months.length - 1;
-      const rooms = (Array.isArray(data.rooms) ? data.rooms : [])
+      const rooms = sortedPaymentCalendarRooms(data)
         .map(function (room) {
           return { room: room, cell: (room.cells || [])[index] || { status: 'vacant' } };
-        })
-        .sort(function (a, b) {
-          return (
-            PAYMENT_CALENDAR_ORDER[a.cell.status] - PAYMENT_CALENDAR_ORDER[b.cell.status] ||
-            Number(b.cell.days_overdue || 0) - Number(a.cell.days_overdue || 0)
-          );
         });
       const total = Number(summary.room_count || 0);
       const owing = Number(summary.unpaid_count || 0) + Number(summary.overdue_count || 0);
@@ -4719,7 +4716,7 @@
 
     function renderPaymentCalendarQuarter(data) {
       const months = Array.isArray(data.months) ? data.months : [];
-      const rooms = Array.isArray(data.rooms) ? data.rooms : [];
+      const rooms = sortedPaymentCalendarRooms(data);
 
       return `
         <div class="pay-cal-caption">
