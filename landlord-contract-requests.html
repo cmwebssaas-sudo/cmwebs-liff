@@ -8,14 +8,14 @@
   />
   <title>CMWebs 合約申請管理</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261110-pay-calendar-room-order-v1"></script>
-  <script src="liff-config.js?v=20261110-pay-calendar-room-order-v1"></script>
-  <script src="liff-request-auth.js?v=20261110-pay-calendar-room-order-v1"></script>
-  <script src="landlord-auth.js?v=20261110-pay-calendar-room-order-v1"></script>
-  <script src="landlord-api.js?v=20261110-pay-calendar-room-order-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261110-pay-calendar-room-order-v1" />
-  <script src="landlord-glass-nav.js?v=20261110-pay-calendar-room-order-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261110-pay-calendar-room-order-v1" defer></script>
+<script src="frontend-release.js?v=20261110-invite-copy-message-v1"></script>
+  <script src="liff-config.js?v=20261110-invite-copy-message-v1"></script>
+  <script src="liff-request-auth.js?v=20261110-invite-copy-message-v1"></script>
+  <script src="landlord-auth.js?v=20261110-invite-copy-message-v1"></script>
+  <script src="landlord-api.js?v=20261110-invite-copy-message-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261110-invite-copy-message-v1" />
+  <script src="landlord-glass-nav.js?v=20261110-invite-copy-message-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261110-invite-copy-message-v1" defer></script>
 
   <style>
     :root {
@@ -1180,7 +1180,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261110-pay-calendar-room-order-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261110-invite-copy-message-v1" />
 </head>
 
 <body>
@@ -2699,11 +2699,22 @@
           <div class="invite-recovery-status">${safeText(status)}</div>
           ${expiresAt ? `<div class="review-contract-meta">有效期限：${safeText(expiresAt)}</div>` : ''}
           <div class="modal-actions two" style="margin-top:12px;">
-            <button class="btn btn-primary" type="button" onclick="copyLandlordInviteLink()" ${inviteUrl ? '' : 'disabled'}>複製邀請連結</button>
+            <button class="btn btn-primary" type="button" onclick="copyLandlordInviteLink()" ${inviteUrl ? '' : 'disabled'}>${confirmationCode ? '複製邀請訊息（含確認碼）' : '複製邀請連結'}</button>
             <button class="btn btn-light" type="button" onclick="reissueLandlordInvite('${escapeHtml(contract.invite_id || '')}')">重新產生邀請</button>
           </div>
         </div>
       `;
+    }
+
+    // 剛產生確認碼時，複製和建立合約時相同的完整訊息；之後確認碼已無法取回，只能複製連結。
+    function landlordInviteCopyText(contract, invite) {
+      const inviteUrl = rawText(invite.url || (contract && contract.invite_url)).trim();
+      const confirmationCode = rawText(invite.confirmation_code).trim();
+      if (!inviteUrl || !confirmationCode) return inviteUrl;
+      const renewal = normalizeStatus(contract && (contract.signing_mode || contract.contract_mode)) === 'renewal';
+      return (renewal ? '請開啟房客續約簽署邀請：\n' : '請開啟房客合約邀請：\n') + inviteUrl +
+        '\n\n確認碼：' + confirmationCode +
+        '\n\n請用本人 LINE 開啟連結，確認新版合約內容並完成線上簽署。房東審核通過後合約才會生效。';
     }
 
     async function copyLandlordInviteLink() {
@@ -2713,12 +2724,14 @@
         showAlert('目前沒有邀請連結', '請先重新產生邀請。');
         return;
       }
+      const copyText = landlordInviteCopyText(ACTIVE_LANDLORD_INVITE, resultInvite);
+      const withCode = copyText !== inviteUrl;
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(inviteUrl);
+          await navigator.clipboard.writeText(copyText);
         } else {
           const textarea = document.createElement('textarea');
-          textarea.value = inviteUrl;
+          textarea.value = copyText;
           textarea.setAttribute('readonly', '');
           textarea.style.position = 'fixed';
           textarea.style.opacity = '0';
@@ -2727,7 +2740,12 @@
           document.execCommand('copy');
           textarea.remove();
         }
-        showAlert('已複製邀請連結', '請將連結交給新房客，再提供畫面上的一次性確認碼。');
+        showAlert(
+          withCode ? '已複製邀請訊息' : '已複製邀請連結',
+          withCode
+            ? '已包含連結、確認碼與簽署說明，直接貼到 LINE 傳給房客即可。'
+            : '這裡只有連結；確認碼只在產生當下顯示。若房客沒有確認碼，請按「重新產生邀請」後再複製。'
+        );
       } catch (error) {
         showAlert('複製失敗', '請長按邀請連結手動複製。');
       }

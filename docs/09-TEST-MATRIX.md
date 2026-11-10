@@ -5127,3 +5127,10 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/payment-calendar.test.mjs`：本月卡片照物件、房號排列，繳費狀態只改顏色，不移動位置
 - [x] `tests/payment-calendar.test.mjs`：近三個月列表同樣照房號排列
 - [ ] 正式帳款頁手機實際查看（`HUMAN_REQUIRED`）
+
+## 2026-11-10 重新產生邀請後複製完整訊息
+
+- [x] `tests/landlord-invite-copy-message.test.mjs`：剛重新產生的續約邀請，複製內容包含連結、確認碼與簽署說明
+- [x] `tests/landlord-invite-copy-message.test.mjs`：新房客合約使用合約邀請字樣
+- [x] `tests/landlord-invite-copy-message.test.mjs`：沒有確認碼時只複製連結，並提示需重新產生邀請
+- [ ] 正式合約申請管理頁手機實際複製並貼到 LINE（`HUMAN_REQUIRED`）
