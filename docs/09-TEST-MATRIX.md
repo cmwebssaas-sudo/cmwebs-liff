@@ -5128,6 +5128,11 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/payment-calendar.test.mjs`：近三個月列表同樣照房號排列
 - [ ] 正式帳款頁手機實際查看（`HUMAN_REQUIRED`）
 
+## 2026-11-10 待簽署的續約不取代原租約
+
+- [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：續約版本仍在等房客簽名（起租日已過）時，房客名單仍顯示原租約與到期狀態
+- [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：續約簽署生效後改顯示新租約
+- [ ] 正式房客名單 403、502、505 顯示與 405、406 一致（`HUMAN_REQUIRED`）
 ## 2026-11-10 重新產生邀請後複製完整訊息
 
 - [x] `tests/landlord-invite-copy-message.test.mjs`：剛重新產生的續約邀請，複製內容包含連結、確認碼與簽署說明

@@ -124,4 +124,32 @@ assert.equal(
   'a future active contract must not use the expired-contract recovery fallback'
 );
 
+// A renewal sent for signature whose start date has already passed must not
+// replace the expired lease before the tenant signs (room 403 on 2026-11-10).
+activeData = structuredClone(data);
+activeData.contracts[0].contract_status = 'active';
+activeData.contracts.push({
+  ...structuredClone(data.contracts[0]),
+  contract_id: 'C000502-R1',
+  renewal_sequence: 2,
+  signing_mode: 'renewal',
+  contract_origin: 'landlord_initiated',
+  start_date: '2026-09-02',
+  end_date: '2027-09-01',
+  contract_status: 'pending_tenant_signature'
+});
+const pendingResult = context.getWorkspaceLandlordTenantsNativeByLineUid_('landlord-line');
+assert.equal(pendingResult.data.tenants.length, 1);
+assert.equal(
+  pendingResult.data.tenants[0].current_contract_id,
+  'C000502',
+  'an unsigned renewal must not become the current lease'
+);
+assert.equal(pendingResult.data.tenants[0].contract_end_date || pendingResult.data.tenants[0].end_date, '2026-09-01');
+
+// A signed renewal still becomes current.
+activeData.contracts[1].contract_status = 'active';
+const signedResult = context.getWorkspaceLandlordTenantsNativeByLineUid_('landlord-line');
+assert.equal(signedResult.data.tenants[0].current_contract_id, 'C000502-R1');
+
 console.log('Phase 201 expired tenant renewal recovery runtime tests passed.');

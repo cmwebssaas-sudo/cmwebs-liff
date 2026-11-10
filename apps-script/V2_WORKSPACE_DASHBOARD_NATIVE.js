@@ -2592,6 +2592,16 @@ function workspaceDashboardContractIsCurrent_(
     return false;
   }
 
+  // 尚未簽署完成的續約版本不能取代原租約；起租日已過也一樣。
+  if (
+    workspaceDashboardContractIsUnsignedRenewal_(
+      contract,
+      status
+    )
+  ) {
+    return false;
+  }
+
   const today =
     workspaceDashboardToday_();
 
@@ -2641,6 +2651,24 @@ function workspaceDashboardContractIsCurrent_(
   ].indexOf(
     status
   ) >= 0;
+}
+
+
+function workspaceDashboardContractIsUnsignedRenewal_(
+  contract,
+  status
+) {
+  const text = workspaceDashboardText_;
+  const renewal =
+    text(contract.signing_mode).toLowerCase() === 'renewal' ||
+    Boolean(text(contract.renewed_from_contract_id)) ||
+    Boolean(text(contract.previous_contract_id));
+
+  return renewal && [
+    'pending_landlord_review',
+    'pending_tenant_signature',
+    'awaiting_tenant_signature'
+  ].indexOf(status) >= 0;
 }
 
 

@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261110-invite-copy-message-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-c482bf71c41f3837db1e9fc9b26f73ff1d88ec93c79ba7c38226f6796ccdf723";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-f16b3d02df4b204ebab1d244a73574cb24a17a4c46995f27a3a58390506593df";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';
