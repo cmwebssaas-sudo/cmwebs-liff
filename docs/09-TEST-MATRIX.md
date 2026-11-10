@@ -5122,3 +5122,8 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/settlement-leading-zero.test.mjs`：更新既有列時同樣保留 `0` 開頭的代碼
 - [x] `tests/settlement-leading-zero.test.mjs`：銀行入帳通知的配對帳單月份依台灣時間顯示，不再把 11 月顯示成 10 月
 - [ ] 正式環境 203 房 11 月入帳通知確認銷帳（`HUMAN_REQUIRED`）
+## 2026-11-10 繳費月曆固定房號順序
+
+- [x] `tests/payment-calendar.test.mjs`：本月卡片照物件、房號排列，繳費狀態只改顏色，不移動位置
+- [x] `tests/payment-calendar.test.mjs`：近三個月列表同樣照房號排列
+- [ ] 正式帳款頁手機實際查看（`HUMAN_REQUIRED`）

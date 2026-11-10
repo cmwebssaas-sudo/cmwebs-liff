@@ -11,7 +11,7 @@ const releaseScript = fs.readFileSync(
   'utf8'
 );
 
-if (!/CMWEBS_RELEASE_VERSION\s*=\s*'20261106-meter-auth-prewarm-v1'/.test(releaseScript)) {
+if (!/CMWEBS_RELEASE_VERSION\s*=\s*'20261110-pay-calendar-room-order-v1'/.test(releaseScript)) {
   throw new Error('frontend-release.js must define the approved stable release version.');
 }
 

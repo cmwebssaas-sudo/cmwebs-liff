@@ -172,7 +172,7 @@ function loadPage() {
   return { page, context };
 }
 
-test('arrears page shows the month counts and puts owing rooms first', () => {
+test('arrears page shows the month counts and keeps rooms in room-number order', () => {
   const { page, context } = loadPage();
   assert.match(page, /\$\{renderPaymentCalendarSection\(\)\}/);
   assert.match(page, /loadTestBillArchiveCandidates\(\);\n\s+loadPaymentCalendar\(\);/);
@@ -189,8 +189,10 @@ test('arrears page shows the month counts and puts owing rooms first', () => {
   assert.match(month, /空房<\/div>\s*<div class="pay-cal-stat-value">5<small>間/);
   const tiles = [...month.matchAll(/pay-cal-room (\w+)"[^>]*>\s*(?:<span class="pay-cal-room-go"[^>]*>›<\/span>\s*)?<div class="pay-cal-room-name">(\d+)/g)]
     .map(match => match[2] + ':' + match[1]);
-  assert.deepEqual(tiles.slice(0, 2), ['201:unpaid', '207:no_bill']);
-  assert.equal(tiles.at(-1).endsWith(':vacant'), true);
+  // Paying a bill only changes a tile's colour; tiles stay in room-number order.
+  assert.deepEqual(tiles.map(tile => tile.split(':')[0]), ['201', '202', '203', '204', '205', '206', '207']);
+  assert.equal(tiles[0], '201:unpaid');
+  assert.equal(tiles.at(-1), '207:no_bill');
 
   // Rooms with a tenant open that tenant; rooms without one are not buttons.
   assert.match(month, /<button class="pay-cal-room unpaid" type="button" data-tenant-id="T1" onclick="openTenantDetail\(this\.dataset\.tenantId\)"/);
@@ -203,7 +205,7 @@ test('arrears page shows the month counts and puts owing rooms first', () => {
   assert.match(quarter, /9 月\s*<small>已繳 1\/2<\/small>/);
   assert.equal((quarter.match(/pay-cal-row-tag">欠繳/g) || []).length, 2);
   const rows = [...quarter.matchAll(/pay-cal-row-room">\s*(\d+)/g)].map(match => match[1]);
-  assert.deepEqual(rows, ['205', '201', '203', '206', '207', '202', '204']);
+  assert.deepEqual(rows, ['201', '202', '203', '204', '205', '206', '207']);
   assert.match(quarter, /! 逾期<\/div>\s*<div class="pay-cal-cell-amount">\$10,300/);
 
   context.PAYMENT_CALENDAR.data = null;
