@@ -1535,6 +1535,7 @@ function appendSettlementObjectRowVerified_(
     );
 
   try {
+    settlementKeepLeadingZeroText_(sheet, rowIndex, row);
     rowRange.setValues([row]);
 
     const verifiedRow =
@@ -1656,6 +1657,7 @@ function updateSettlementRowByObjectVerified_(
         : updates[header];
     });
 
+  settlementKeepLeadingZeroText_(sheet, rowIndex, nextRow);
   rowRange.setValues([nextRow]);
 
   const verifiedRow =
@@ -1687,6 +1689,28 @@ function updateSettlementRowByObjectVerified_(
     });
 
   return verifiedObject;
+}
+
+
+/**
+ * 末五碼等代碼以 0 開頭時，Sheets 會轉成數字而吃掉 0，讀回驗證就會失敗。
+ * 寫入前先把這些格子設為純文字。
+ */
+function settlementKeepLeadingZeroText_(
+  sheet,
+  rowIndex,
+  values
+) {
+  values.forEach(function (value, index) {
+    if (
+      typeof value === 'string' &&
+      /^0\d+$/.test(value)
+    ) {
+      sheet
+        .getRange(rowIndex, index + 1)
+        .setNumberFormat('@');
+    }
+  });
 }
 
 

@@ -201,8 +201,7 @@ function bankReceiptNotify_(row) {
   const bill=bankReceiptRows_('V2_bills').find(function(b){return b.bill_id===row.match_bill_id&&bankReceiptBillInWorkspace_(b,row.workspace_id,scope);});
   const committed=row.confirmed_by==='system:bank_email_auto'?bankReceiptCommittedPayment_(row):null;
   const completed=!!committed;
-  const month=bankReceiptText_(bill&&bill.bill_month);
-  const billMonth=/^\d{4}-\d{2}/.test(month)?month.slice(0,7):bill&&bill.bill_month&&Number.isFinite(new Date(bill.bill_month).getTime())?Utilities.formatDate(new Date(bill.bill_month),'Asia/Taipei','yyyy-MM'):'-';
+  const billMonth=bankReceiptBillMonth_(bill&&bill.bill_month)||'-';
   if(row.status==='settled'&&!completed)return;
   const message=(completed?'已完成自動對帳，帳單已銷帳。無需再次確認。\n':'')+'收到入帳 '+Number(row.amount).toLocaleString('zh-TW')+' 元\n付款帳戶：'+(row.payer_bank||'未提供銀行')+'／末五碼 '+(row.payer_last5||'未提供')+
     '\n入帳時間：'+bankReceiptText_(row.payment_at).replace('T',' ').replace(':00+08:00','')+
@@ -373,7 +372,13 @@ function bankReceiptInit_(access) {
   return {success:true,code:'OK',data:{can_approve_payment:!!(access.permissions&&access.permissions.can_approve_payment),
     receipts:receipts.filter(function(r){return ['pending','unmatched'].indexOf(r.status)>=0;}).concat(receipts.filter(function(r){return ['pending','unmatched'].indexOf(r.status)<0;}).slice(0,25)).map(function(r){return {receipt_id:r.receipt_id,amount:r.amount,payment_at:r.payment_at,payer_bank:r.payer_bank,payer_last5:r.payer_last5,
       source_kind:r.source_kind,status:r.status,match_bill_id:r.match_bill_id,report_id:r.report_id,payment_id:r.payment_id};}),
-    bills:bills.map(function(b){return {bill_id:b.bill_id,room_name:b.room_name,tenant_name:b.tenant_name,bill_month:b.bill_month,total_amount:b.total_amount};})}};
+    bills:bills.map(function(b){return {bill_id:b.bill_id,room_name:b.room_name,tenant_name:b.tenant_name,bill_month:bankReceiptBillMonth_(b.bill_month),total_amount:b.total_amount};})}};
+}
+// Sheets returns month cells as Dates at Taipei midnight; JSON would shift them to the previous UTC day.
+function bankReceiptBillMonth_(value) {
+  const month=bankReceiptText_(value);
+  if(/^\d{4}-\d{2}/.test(month))return month.slice(0,7);
+  return value&&Number.isFinite(new Date(value).getTime())?Utilities.formatDate(new Date(value),'Asia/Taipei','yyyy-MM'):'';
 }
 function bankReceiptCommittedPayment_(row,tables) {
   if(!row.report_id)return null;

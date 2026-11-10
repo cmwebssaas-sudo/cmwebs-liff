@@ -5115,3 +5115,10 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/repair-dispatch-route.test.mjs`：維修廠商動作在查詢前拒絕房東自有頻道
 - [x] `tests/read-parity-engine.test.mjs`：Worker 讀取產生器以替換項目取得房客連結，比對結果不變
 - [ ] 測試 OA 實際綁定、帳單通知、付款回報與簽約（`HUMAN_REQUIRED`）
+
+## 2026-11-10 末五碼 0 開頭導致銷帳失敗
+
+- [x] `tests/settlement-leading-zero.test.mjs`：付款回報銷帳與手動銷帳寫入 `0` 開頭的末五碼時保留原值，讀回驗證通過
+- [x] `tests/settlement-leading-zero.test.mjs`：更新既有列時同樣保留 `0` 開頭的代碼
+- [x] `tests/settlement-leading-zero.test.mjs`：銀行入帳通知的配對帳單月份依台灣時間顯示，不再把 11 月顯示成 10 月
+- [ ] 正式環境 203 房 11 月入帳通知確認銷帳（`HUMAN_REQUIRED`）
