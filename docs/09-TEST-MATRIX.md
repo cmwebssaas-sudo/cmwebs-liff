@@ -5133,3 +5133,9 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：續約版本仍在等房客簽名（起租日已過）時，房客名單仍顯示原租約與到期狀態
 - [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：續約簽署生效後改顯示新租約
 - [ ] 正式房客名單 403、502、505 顯示與 405、406 一致（`HUMAN_REQUIRED`）
+## 2026-11-10 重新產生邀請後複製完整訊息
+
+- [x] `tests/landlord-invite-copy-message.test.mjs`：剛重新產生的續約邀請，複製內容包含連結、確認碼與簽署說明
+- [x] `tests/landlord-invite-copy-message.test.mjs`：新房客合約使用合約邀請字樣
+- [x] `tests/landlord-invite-copy-message.test.mjs`：沒有確認碼時只複製連結，並提示需重新產生邀請
+- [ ] 正式合約申請管理頁手機實際複製並貼到 LINE（`HUMAN_REQUIRED`）
