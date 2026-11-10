@@ -146,10 +146,22 @@ assert.equal(
   'an unsigned renewal must not become the current lease'
 );
 assert.equal(pendingResult.data.tenants[0].contract_end_date || pendingResult.data.tenants[0].end_date, '2026-09-01');
+assert.equal(
+  pendingResult.data.tenants[0].pending_renewal_contract_id,
+  'C000502-R1',
+  'the list marks a renewal that is waiting for the tenant signature'
+);
+
+// A prepared draft the landlord has not reviewed was never sent to the tenant.
+activeData.contracts[1].contract_status = 'pending_landlord_review';
+const draftResult = context.getWorkspaceLandlordTenantsNativeByLineUid_('landlord-line');
+assert.equal(draftResult.data.tenants[0].current_contract_id, 'C000502');
+assert.equal(draftResult.data.tenants[0].pending_renewal_contract_id, '');
 
 // A signed renewal still becomes current.
 activeData.contracts[1].contract_status = 'active';
 const signedResult = context.getWorkspaceLandlordTenantsNativeByLineUid_('landlord-line');
 assert.equal(signedResult.data.tenants[0].current_contract_id, 'C000502-R1');
+assert.equal(signedResult.data.tenants[0].pending_renewal_contract_id, '');
 
 console.log('Phase 201 expired tenant renewal recovery runtime tests passed.');

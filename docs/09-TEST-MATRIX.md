@@ -5139,3 +5139,12 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/landlord-invite-copy-message.test.mjs`：新房客合約使用合約邀請字樣
 - [x] `tests/landlord-invite-copy-message.test.mjs`：沒有確認碼時只複製連結，並提示需重新產生邀請
 - [ ] 正式合約申請管理頁手機實際複製並貼到 LINE（`HUMAN_REQUIRED`）
+
+## 2026-11-11 續約邀請自動 LINE 發送與名單「續約待簽署」
+
+- [x] `tests/renewal-invite-line-push.test.mjs`：快速續約與重新產生邀請後，已綁定 LINE 的房客收到連結、確認碼與簽署說明；重試沿用邀請 ID 不重複發送
+- [x] `tests/renewal-invite-line-push.test.mjs`：房客未綁定、LINE 發送失敗或例外時，邀請照常建立並提示房東自行傳送
+- [x] `tests/renewal-invite-line-push.test.mjs`：不使用其他 Workspace 的房客 LINE
+- [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：名單資料標出等簽名的續約
+- [x] `tests/tenant-list-pending-renewal.test.mjs`：有待簽續約時隱藏快速續約，顯示「續約待簽署」與續約進度按鈕
+- [ ] 正式環境以測試房客實際收到 LINE 簽約邀請（`HUMAN_REQUIRED`）
