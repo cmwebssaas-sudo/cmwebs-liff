@@ -356,7 +356,7 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
 }
 
 function landlordInitiatedContractCreateDirectRenewal_(access, input) {
-  return landlordInitiatedContractWithScriptLock_(function() {
+  return landlordInitiatedContractSendSigningInviteByLine_(landlordInitiatedContractWithScriptLock_(function() {
     const created = landlordInitiatedContractCreateRenewalUnlocked_(access, input);
     if (!created || created.success !== true) return created;
 
@@ -377,7 +377,7 @@ function landlordInitiatedContractCreateDirectRenewal_(access, input) {
       renewal_tenant_intent: 'manual_direct',
       renewal_tenant_intent_at: nowIso
     });
-  });
+  }));
 }
 
 function landlordInitiatedContractCreateRenewalInviteUnlocked_(access, schema, contract, extraUpdates) {
@@ -642,9 +642,63 @@ function landlordInitiatedContractInviteIsCurrent_(contract, invite, invites, wo
 }
 
 function landlordInitiatedContractReissueBySession_(sessionToken, inviteId) {
-  return landlordInitiatedContractWithScriptLock_(function() {
+  return landlordInitiatedContractSendSigningInviteByLine_(landlordInitiatedContractWithScriptLock_(function() {
     return landlordInitiatedContractReissueBySessionUnlocked_(sessionToken, inviteId);
+  }));
+}
+
+// 快速續約與重新產生邀請後，房客已綁定 LINE 時直接把連結、確認碼與說明推播給房客。
+// 在 ScriptLock 之外發送；發送失敗不影響已建立的邀請，房東仍可複製訊息自行傳送。
+function landlordInitiatedContractSendSigningInviteByLine_(result) {
+  if (!result || result.success !== true || !result.data || !result.data.contract || !result.data.invite) return result;
+  const contract = result.data.contract;
+  const invite = result.data.invite;
+  const notice = function (sent, code, message) {
+    result.data.line_notification = { sent: sent, code: code, message: message };
+    return result;
+  };
+  if (!landlordInitiatedContractText_(invite.url) || !landlordInitiatedContractText_(invite.confirmation_code)) {
+    return notice(false, 'INVITE_INCOMPLETE', '邀請缺少連結或確認碼，請複製訊息自行傳送');
+  }
+  try {
+    const lineUserId = landlordInitiatedContractTenantLineUserId_(contract);
+    if (!lineUserId) return notice(false, 'TENANT_LINE_UID_MISSING', '房客尚未綁定 LINE，請複製訊息自行傳送');
+    if (typeof pushLineTextMessage_ !== 'function') return notice(false, 'LINE_PUSH_MODULE_REQUIRED', '找不到 LINE 發送模組，請複製訊息自行傳送');
+    const push = pushLineTextMessage_(lineUserId, landlordInitiatedContractSigningInviteText_(contract, invite), landlordInitiatedContractText_(invite.invite_id), contract.workspace_id);
+    if (!push || push.success !== true) return notice(false, (push && push.code) || 'LINE_PUSH_FAILED', 'LINE 發送失敗，請複製訊息自行傳送');
+    return notice(true, 'OK', '已用 LINE 把簽約邀請發給房客');
+  } catch (error) {
+    return notice(false, 'LINE_PUSH_FAILED', 'LINE 發送失敗，請複製訊息自行傳送');
+  }
+}
+
+function landlordInitiatedContractTenantLineUserId_(contract) {
+  const direct = landlordInitiatedContractText_(contract.tenant_line_user_id);
+  if (direct) return direct;
+  const tenantId = landlordInitiatedContractText_(contract.tenant_id);
+  if (!tenantId) return '';
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('V2_tenants');
+  const tenant = landlordInitiatedContractRows_(sheet).find(function (row) {
+    return landlordInitiatedContractText_(row.tenant_id) === tenantId &&
+      (!landlordInitiatedContractText_(row.workspace_id) || landlordInitiatedContractText_(row.workspace_id) === landlordInitiatedContractText_(contract.workspace_id));
   });
+  return tenant ? landlordInitiatedContractText_(tenant.tenant_line_user_id || tenant.line_user_id) : '';
+}
+
+function landlordInitiatedContractSigningInviteText_(contract, invite) {
+  const renewal = landlordInitiatedContractText_(contract.signing_mode).toLowerCase() === 'renewal';
+  return [
+    renewal ? '【CMWebs 續約簽署邀請】' : '【CMWebs 合約簽署邀請】',
+    '',
+    (contract.property_name || '租屋') + ' ' + (contract.room_name || '') + (renewal ? ' 的續約合約已準備完成。' : ' 的租賃合約已準備完成。'),
+    '請用本人 LINE 開啟以下連結，確認合約內容並完成線上簽署：',
+    invite.url,
+    '',
+    '確認碼：' + landlordInitiatedContractText_(invite.confirmation_code),
+    '租期：' + (contract.start_date || contract.contract_start_date || '-') + ' ～ ' + (contract.end_date || contract.contract_end_date || '-'),
+    '',
+    '房東審核通過後合約才會生效。'
+  ].join('\n');
 }
 
 function landlordInitiatedContractReissueBySessionUnlocked_(sessionToken, inviteId) {
