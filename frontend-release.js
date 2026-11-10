@@ -3,9 +3,9 @@
  * It is intentionally stable for the lifetime of a release so page-navigation
  * URLs can reuse the browser cache without changing API cache behavior.
  */
-window.CMWEBS_RELEASE_VERSION = '20261110-invite-copy-message-v1';
+window.CMWEBS_RELEASE_VERSION = '20261111-assistant-finder-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-f16b3d02df4b204ebab1d244a73574cb24a17a4c46995f27a3a58390506593df";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-9ad56f9f8c9148d78a514dd2e93db062f3398d1c8bb1f88666b18ee106b8d4ed";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';

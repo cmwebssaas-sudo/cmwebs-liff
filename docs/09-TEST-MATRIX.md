@@ -5139,3 +5139,10 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/landlord-invite-copy-message.test.mjs`：新房客合約使用合約邀請字樣
 - [x] `tests/landlord-invite-copy-message.test.mjs`：沒有確認碼時只複製連結，並提示需重新產生邀請
 - [ ] 正式合約申請管理頁手機實際複製並貼到 LINE（`HUMAN_REQUIRED`）
+
+## 2026-11-11 房東助理階段 0：功能目錄與找功能
+
+- [x] `tests/landlord-assistant.test.mjs`：功能目錄每一項都有步驟，前往的頁面都存在
+- [x] `tests/landlord-assistant.test.mjs`：常見問法（新增房客、退房、續約、重傳邀請、催繳、入帳核對等 18 句）第一個結果正確，無關問題不回答
+- [x] `tests/landlord-assistant.test.mjs`：結果顯示步驟與前往按鈕，內容會跳脫 HTML
+- [ ] 正式「更多」頁手機實際輸入與語音輸入（`HUMAN_REQUIRED`）
