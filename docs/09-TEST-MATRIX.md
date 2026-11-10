@@ -5127,3 +5127,9 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/payment-calendar.test.mjs`：本月卡片照物件、房號排列，繳費狀態只改顏色，不移動位置
 - [x] `tests/payment-calendar.test.mjs`：近三個月列表同樣照房號排列
 - [ ] 正式帳款頁手機實際查看（`HUMAN_REQUIRED`）
+
+## 2026-11-10 待簽署的續約不取代原租約
+
+- [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：續約版本仍在等房客簽名（起租日已過）時，房客名單仍顯示原租約與到期狀態
+- [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：續約簽署生效後改顯示新租約
+- [ ] 正式房客名單 403、502、505 顯示與 405、406 一致（`HUMAN_REQUIRED`）
