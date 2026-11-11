@@ -5,14 +5,15 @@ export const LIFF_ENDPOINT_BASE = 'https://cmwebssaas-sudo.github.io/cmwebs-liff
 export const liffEndpoint = liffId => LIFF_ENDPOINT_BASE + '?cmwebs_liff=' + liffId;
 const api = 'https://api.line.me';
 
-function stop(code, status = 400) { throw Object.assign(new Error(code), { code, status }); }
+export function stop(code, status = 400) { throw Object.assign(new Error(code), { code, status }); }
 
-async function call(fetcher, method, url, { token, json, form } = {}) {
+export async function call(fetcher, method, url, { token, json, form, bytes, type } = {}) {
   const headers = {};
   if (token) headers.Authorization = 'Bearer ' + token;
   let body;
   if (json !== undefined) { headers['content-type'] = 'application/json'; body = JSON.stringify(json); }
   if (form) { headers['content-type'] = 'application/x-www-form-urlencoded'; body = new URLSearchParams(form).toString(); }
+  if (bytes) { headers['content-type'] = type; body = bytes; }
   let response;
   try { response = await fetcher(url,{ method, headers, body, redirect:'manual', signal:AbortSignal.timeout(10000) }); }
   catch { stop('LINE_UNREACHABLE',502); }
@@ -139,14 +140,20 @@ export async function restoreWebhook(db, row, secrets, fetcher) {
   return { restored:Boolean(previous), endpoint:previous };
 }
 
+// Returns the LINE user ID of an ID token issued by this channel's Login channel.
+export async function idTokenUser(row, idToken, fetcher) {
+  if (typeof idToken !== 'string' || !idToken || idToken.length > 8192) stop('INVALID_LINE_CHANNEL');
+  const claims = await call(fetcher,'POST',api+'/oauth2/v2.1/verify',{ form:{ id_token:idToken, client_id:row.line_login_channel_id } });
+  const sub = claims.status === 200 && claims.data.aud === row.line_login_channel_id ? String(claims.data.sub || '') : '';
+  if (!/^U[0-9a-f]{32}$/.test(sub)) stop('LINE_ID_TOKEN_INVALID',401);
+  return sub;
+}
+
 // User IDs match only under one provider. If the OA can see the profile of
 // the person who just logged in through this channel's LIFF, the Login channel
 // and the OA share a provider (and that person has added the OA).
 export async function checkProvider(db, row, secrets, input, fetcher) {
-  if (typeof input.id_token !== 'string' || !input.id_token || input.id_token.length > 8192) stop('INVALID_LINE_CHANNEL');
-  const claims = await call(fetcher,'POST',api+'/oauth2/v2.1/verify',{ form:{ id_token:input.id_token, client_id:row.line_login_channel_id } });
-  const sub = claims.status === 200 && claims.data.aud === row.line_login_channel_id ? String(claims.data.sub || '') : '';
-  if (!/^U[0-9a-f]{32}$/.test(sub)) stop('LINE_ID_TOKEN_INVALID',401);
+  const sub = await idTokenUser(row,input.id_token,fetcher);
   const profile = await call(fetcher,'GET',api+'/v2/bot/profile/'+sub,{ token:secrets.messaging_access_token });
   if (profile.status === 404) return { provider_match:false };
   if (profile.status !== 200) stop('LINE_UNREACHABLE',502);

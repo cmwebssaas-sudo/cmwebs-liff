@@ -392,3 +392,27 @@ Status: stage 4B source only; not deployed.
 - Tenant links in notifications follow the send route: a Workspace that sends
   through its own channel links to its own LIFF app, and never falls back to
   the existing one.
+
+## 2026-11-12 V3 webhook, setup wizard and rich menus (stages 5 and 6)
+
+- Each landlord channel posts LINE webhooks to the Worker at
+  `/line/webhook/<webhook_key>`. The Worker checks the signature with that
+  channel's secret and forwards each `webhookEventId` once to Apps Script with
+  the verified Workspace. The existing channel's webhook to Apps Script is
+  unchanged.
+- CMWebs creates the landlord's LIFF app through the LIFF server API (owner
+  decision 2026-11-12), so landlords only create the LINE Login channel.
+- A channel turns `active` only with evidence: the token names the OA, LINE's
+  webhook test reached CMWebs (which proves the channel secret), and the OA can
+  see the profile of the landlord who logged in through the new LIFF (which
+  proves one provider).
+- Rich menus: one standard menu with two switching tabs, 房客服務 and 房東管理,
+  shared by tenants and landlords so every landlord can reuse it (owner request
+  2026-11-12), in four fixed palettes (owner decision 2026-11-12, option A). Name, logo and contact details stay on the pages.
+  `V2_LINE_RICH_MENU_CONTROL.js` (OA Manager owns the menu) still governs the
+  existing channel and every Workspace not using its own channel. For a
+  landlord's own channel CMWebs publishes menus by API, but sets the default
+  only as a separate, confirmed step after per-user trials.
+- The OA Manager menu cannot be read by API. CMWebs keeps only a default the
+  landlord set by API; removing CMWebs's default lets the OA Manager menu show
+  again.

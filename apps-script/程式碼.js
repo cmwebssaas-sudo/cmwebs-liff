@@ -437,6 +437,7 @@ function dispatchV2Get_(e) {
       return jsonOutput_(identity, callback);
     }
     lineUserId = identity.data.sub;
+    if (/^landlord_/.test(v2Action) && typeof lineMenuSyncLandlord_ === 'function') lineMenuSyncLandlord_(lineUserId);
   }
 
   runtimeSnapshotBegin_(v2Action);

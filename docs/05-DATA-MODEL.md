@@ -599,3 +599,14 @@ Migration `0012_line_channel_setup.sql` adds three nullable columns to
 kept for rollback), `webhook_verified_at` and `provider_checked_at`. A channel can
 become `active` only when both timestamps and `bot_user_id` are set. Not applied
 to Production yet.
+
+## 2026-11-12 V3 rich menus (Cloudflare D1)
+
+Migration `0013_line_rich_menus.sql` adds `line_rich_menus` (one row per
+Workspace: palette, template, tenant and landlord menu IDs,
+`previous_default_menu_id`, `default_enabled`, `updated_at`) and
+`line_rich_menu_users` (Workspace, LINE user ID, `landlord` or `tenant`) so a new
+template can relink people. The two menus are the two tabs of one menu, switched through the aliases
+`cmwebs-tenant` and `cmwebs-landlord`. Images are `assets/line-rich-menu/<menu>-<palette>.png` (2500×1686),
+rendered by `scripts/generate-line-rich-menu-images.mjs`; the Worker checks
+their SHA-256 from `src/line-rich-menu-images.js`. Not applied to Production yet.

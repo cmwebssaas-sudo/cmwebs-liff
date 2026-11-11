@@ -87,24 +87,83 @@ test('replacing an existing webhook needs the explicit confirmation flag', () =>
   assert.deepEqual(calls.map(call => call.replace_existing), [false, true]);
 });
 
-test('the phone link carries a one-time code that is used up once the provider matches', () => {
+test('the phone link carries a short-lived code tied to the Workspace', () => {
   const { ctx, calls, cache } = setup({ answers: { check_provider: { status: 200, body: { success: true, data: { provider_match: true } } } } });
   const link = ctx.lineSetupHandle_('landlord_line_setup_provider_link', { id_token: 'landlord' });
   assert.equal(link.data.url, 'https://liff.line.me/1000000001-AbCdEfGh/landlord-line-setup.html?setup_code=0123abcd0123456789ab0123456789ab');
   assert.equal(cache.get('v3_line_setup_code:0123abcd0123456789ab0123456789ab'), 'W_TEST');
   const result = ctx.lineSetupHandle_('line_setup_provider_check', { setup_code: '0123abcd0123456789ab0123456789ab', id_token: 'phone-token' });
   assert.equal(result.data.provider_match, true);
+  assert.equal(result.data.channel_active, false);
   assert.equal(JSON.stringify(calls.at(-1)), JSON.stringify({ action: 'check_provider', workspace_id: 'W_TEST', id_token: 'phone-token' }));
-  assert.equal(ctx.lineSetupHandle_('line_setup_provider_check', { setup_code: '0123abcd0123456789ab0123456789ab', id_token: 'phone-token' }).code,
-    'LINE_SETUP_CODE_INVALID');
   assert.equal(ctx.lineSetupHandle_('line_setup_provider_check', { setup_code: 'bad', id_token: 'x' }).code, 'LINE_SETUP_CODE_INVALID');
+  assert.equal(ctx.lineSetupHandle_('line_setup_provider_check', { setup_code: 'f'.repeat(32), id_token: 'x' }).code, 'LINE_SETUP_CODE_INVALID');
 });
 
-test('a failed provider match keeps the code for another try', () => {
-  const { ctx, cache } = setup({ answers: { check_provider: { status: 200, body: { success: true, data: { provider_match: false } } } } });
+test('the phone link can try a menu on the opener\'s own LINE', () => {
+  const { ctx, calls } = setup();
   ctx.lineSetupHandle_('landlord_line_setup_provider_link', { id_token: 'landlord' });
-  assert.equal(ctx.lineSetupHandle_('line_setup_provider_check', { setup_code: '0123abcd0123456789ab0123456789ab', id_token: 't' }).data.provider_match, false);
-  assert.equal(cache.has('v3_line_setup_code:0123abcd0123456789ab0123456789ab'), true);
+  const code = '0123abcd0123456789ab0123456789ab';
+  assert.equal(ctx.lineSetupHandle_('line_setup_menu_preview', { setup_code: code, id_token: 'phone', menu: 'landlord' }).success, true);
+  assert.equal(JSON.stringify(calls.at(-1)), JSON.stringify({ action: 'preview_menu', workspace_id: 'W_TEST', id_token: 'phone', menu: 'landlord' }));
+  assert.equal(ctx.lineSetupHandle_('line_setup_menu_preview', { setup_code: code, id_token: 'phone', menu: 'admin' }).code, 'INVALID_LINE_SETUP');
+  assert.equal(ctx.lineSetupHandle_('line_setup_menu_preview', { setup_code: 'f'.repeat(32), id_token: 'phone', menu: 'tenant' }).code, 'LINE_SETUP_CODE_INVALID');
+});
+
+test('menu publishing, default switch and restore are owner actions with fixed values', () => {
+  const { ctx, calls, audits } = setup();
+  assert.equal(ctx.lineSetupHandle_('landlord_line_setup_menu_publish', { id_token: 'landlord', palette: 'neon' }).code, 'INVALID_LINE_SETUP');
+  ctx.lineSetupHandle_('landlord_line_setup_menu_publish', { id_token: 'landlord', palette: 'ocean' });
+  ctx.lineSetupHandle_('landlord_line_setup_menu_default', { id_token: 'landlord', enabled: 'true' });
+  ctx.lineSetupHandle_('landlord_line_setup_menu_default', { id_token: 'landlord', enabled: 'false' });
+  ctx.lineSetupHandle_('landlord_line_setup_menu_restore', { id_token: 'landlord' });
+  assert.equal(JSON.stringify(calls.map(call => [call.action, call.palette ?? call.enabled ?? null])),
+    JSON.stringify([['publish_menus', 'ocean'], ['set_default_menu', true], ['set_default_menu', false], ['restore_menus', null]]));
+  assert.equal(audits.length, 4);
+  const admin = setup({ role: 'admin' });
+  assert.equal(admin.ctx.lineSetupHandle_('landlord_line_setup_menu_restore', { id_token: 'landlord' }).code, 'LINE_SETUP_OWNER_REQUIRED');
+});
+
+function syncContext({ scope, member = true, answer = { status: 200, body: { success: true } } } = {}) {
+  const env = setup({ answers: { link_menu: answer } });
+  env.ctx.lineRequestChannelScope_ = () => scope;
+  env.ctx.workspaceLandlordResolveAccess_ = () => member ? { success: true, workspace: { workspace_id: 'w_test' } } : { success: false };
+  return env;
+}
+const sub = 'U' + 'a'.repeat(32);
+
+test('landlords opening their own LIFF get the landlord menu once per six hours', () => {
+  const { ctx, calls, cache } = syncContext({ scope: { workspace_id: 'W_TEST' } });
+  ctx.lineMenuSyncLandlord_(sub);
+  ctx.lineMenuSyncLandlord_(sub);
+  assert.equal(calls.length, 1);
+  assert.equal(JSON.stringify(calls[0]), JSON.stringify({ action: 'link_menu', workspace_id: 'W_TEST', line_user_id: sub, menu: 'landlord' }));
+  assert.equal(cache.get('v3_line_menu:W_TEST:' + sub), 'landlord');
+});
+
+test('people who are not members lose the landlord menu', () => {
+  const { ctx, calls } = syncContext({ scope: { workspace_id: 'W_TEST' }, member: false });
+  ctx.lineMenuSyncLandlord_(sub);
+  assert.equal(calls[0].menu, 'none');
+});
+
+test('the existing channel never touches rich menus', () => {
+  for (const scope of [null, { workspace_id: '' }]) {
+    const { ctx, calls } = syncContext({ scope });
+    ctx.lineMenuSyncLandlord_(sub);
+    assert.equal(calls.length, 0);
+  }
+  const main = readFileSync(new URL('程式碼.js', dir), 'utf8');
+  assert.match(main, /lineUserId = identity\.data\.sub;\s*if \(\/\^landlord_\/\.test\(v2Action\) && typeof lineMenuSyncLandlord_ === 'function'\) lineMenuSyncLandlord_\(lineUserId\);/);
+});
+
+test('an unpublished menu is retried after ten minutes and errors never break the request', () => {
+  const { ctx, cache } = syncContext({ scope: { workspace_id: 'W_TEST' }, answer: { status: 409, body: { success: false, code: 'LINE_RICH_MENU_NOT_PUBLISHED' } } });
+  ctx.lineMenuSyncLandlord_(sub);
+  assert.equal(cache.get('v3_line_menu:W_TEST:' + sub), 'unpublished');
+  const broken = syncContext({ scope: { workspace_id: 'W_TEST' } });
+  broken.ctx.workspaceLandlordResolveAccess_ = () => { throw new Error('sheet'); };
+  assert.doesNotThrow(() => broken.ctx.lineMenuSyncLandlord_(sub));
 });
 
 test('activating clears the cached login channel and LIFF lookups', () => {

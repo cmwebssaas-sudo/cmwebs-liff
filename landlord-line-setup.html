@@ -51,8 +51,28 @@
 <p>全部檢查通過後才能啟用。啟用後，通知改用您的官方帳號發送前，仍需 CMWebs 另外開通。</p>
 <button type="button" id="activate" disabled>啟用 LINE 官方帳號</button>
 </section>
+<section id="step-menu" aria-disabled="true"><h2>6. 圖文選單</h2>
+<p>所有房東使用同一套選單，您只能選配色。選單上方有「房客服務」「房東管理」兩個分頁，點一下就能切換。房客與還沒綁定的人打開時是「房客服務」；您與團隊成員用自己的 LIFF 開啟租管頁後，打開時會是「房東管理」。</p>
+<p id="menu-state"></p>
+<div role="radiogroup" aria-label="選單配色" id="palettes">
+<label class="check"><input type="radio" name="palette" value="forest" checked><span>森林綠</span></label>
+<label class="check"><input type="radio" name="palette" value="ocean"><span>海洋藍</span></label>
+<label class="check"><input type="radio" name="palette" value="terracotta"><span>陶土紅</span></label>
+<label class="check"><input type="radio" name="palette" value="charcoal"><span>炭灰</span></label>
 </div>
-<div id="phone" hidden><section><h2>確認 Provider</h2><p id="phone-text">正在確認…</p></section></div>
+<p><img id="menu-preview" alt="租屋服務選單預覽" src="assets/line-rich-menu/tenant-forest.png" style="width:100%;border-radius:8px"></p>
+<button type="button" id="menu-publish">發布選單（還不會換掉房客的選單）</button>
+<p>發布後，可以先用手機開啟第 4 步的連結，只在自己的 LINE 試看。確認沒問題再設為所有人的預設選單。</p>
+<label class="check"><input type="checkbox" id="menu-confirm"><span>我已試看過，同意把這套選單設為官方帳號所有好友的預設選單（打開時是「房客服務」）。</span></label>
+<button type="button" id="menu-default-on">設為預設選單</button>
+<button type="button" class="secondary" id="menu-default-off">取消預設選單，恢復原本的選單</button>
+<button type="button" class="secondary" id="menu-restore">移除 CMWebs 選單</button>
+</section>
+</div>
+<div id="phone" hidden><section><h2>確認 Provider</h2><p id="phone-text">正在確認…</p>
+<div id="phone-preview" hidden><p>在您自己的 LINE 試看選單（只影響您自己）：</p>
+<button type="button" data-menu="landlord">試看房東選單</button><button type="button" data-menu="tenant">試看房客選單</button><button type="button" class="secondary" data-menu="none">取消試看</button></div>
+</section></div>
 </main><nav class="bottom-nav" aria-label="租管導覽"><a href="landlord-home.html">首頁</a><a href="landlord-arrears.html">帳款</a><a href="landlord-tenants.html">房客</a><a href="landlord-rooms.html">房源</a><a href="landlord-more.html" aria-current="page">更多</a></nav><script>
 (function(){
   const API_URL='https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
@@ -81,6 +101,7 @@
     const ack=$('ack').checked;
     enable('step-console',ack);enable('step-form',ack);
     enable('step-verify',ack&&!!channel);enable('step-activate',ack&&!!channel);
+    enable('step-menu',ack&&!!channel&&channel.status==='active');
     $('saved-note').textContent=channel?'已儲存（'+new Date(channel.updated_at).toLocaleString('zh-TW')+'）。重新送出會取代原資料，並需要重新檢查。':'';
     if(channel&&channel.status==='active'){$('activate').disabled=true;$('activate').textContent='已啟用';}
   }
@@ -103,13 +124,18 @@
     finally{button.disabled=false;render();}
   }
 
+  function showMenus(data){
+    const menus=data&&data.menus;
+    $('menu-state').textContent=!menus?'尚未發布。':'已發布（'+menus.palette+'）。'+(menus.default_enabled?'目前是所有好友的預設選單。':'尚未設為預設選單。');
+  }
   async function phoneMode(code){
     $('phone').hidden=false;say('');
     if(!await ensureLine())return;
     const idToken=liff.getIDToken();
     try{
       const data=await call('line_setup_provider_check',{setup_code:code,id_token:idToken});
-      $('phone-text').textContent=data.provider_match?'確認完成：兩個頻道在同一個 Provider。請回到電腦按「執行檢查」。':'查不到您的資料。請先把官方帳號加入好友後重新開啟連結；若已是好友，代表 LINE Login 頻道不在同一個 Provider，需要在正確的 Provider 重建。';
+      $('phone-preview').hidden=!(data.provider_match&&data.channel_active);
+      $('phone-text').textContent=data.provider_match?(data.channel_active?'確認完成。發布選單後，可以在下方試看。':'確認完成：兩個頻道在同一個 Provider。請回到電腦按「執行檢查」。啟用並發布選單後，可以再開一次這個連結試看選單。'):'查不到您的資料。請先把官方帳號加入好友後重新開啟連結；若已是好友，代表 LINE Login 頻道不在同一個 Provider，需要在正確的 Provider 重建。';
     }catch(error){$('phone-text').textContent=error.message;}
   }
 
@@ -122,6 +148,7 @@
     say('');$('root').hidden=false;
     if(channel)$('ack').checked=true;
     render();
+    if(channel&&channel.status==='active')showMenus(await call('landlord_line_setup_menu_status').catch(()=>null));
   }
 
   $('ack').addEventListener('change',render);
@@ -154,6 +181,24 @@
   }));
   $('provider-copy').addEventListener('click',()=>{navigator.clipboard&&navigator.clipboard.writeText($('provider-url').textContent).then(()=>say('已複製連結'),()=>say('請手動複製連結'));});
   $('activate').addEventListener('click',()=>run($('activate'),async()=>{channel=await call('landlord_line_setup_activate');say('已啟用。');}));
+  document.querySelectorAll('input[name=palette]').forEach(input=>input.addEventListener('change',()=>{$('menu-preview').src='assets/line-rich-menu/tenant-'+input.value+'.png';}));
+  $('menu-publish').addEventListener('click',()=>run($('menu-publish'),async()=>{
+    say('發布中…');showMenus(await call('landlord_line_setup_menu_publish',{palette:document.querySelector('input[name=palette]:checked').value}));say('選單已發布。');
+  }));
+  $('menu-default-on').addEventListener('click',()=>run($('menu-default-on'),async()=>{
+    if(!$('menu-confirm').checked){say('請先勾選確認。');return;}
+    showMenus(await call('landlord_line_setup_menu_default',{enabled:'true'}));say('已設為預設選單。');
+  }));
+  $('menu-default-off').addEventListener('click',()=>run($('menu-default-off'),async()=>{showMenus(await call('landlord_line_setup_menu_default',{enabled:'false'}));say('已取消，原本的選單會恢復。');}));
+  $('menu-restore').addEventListener('click',()=>run($('menu-restore'),async()=>{
+    if(!confirm('確定移除 CMWebs 的圖文選單？房東與房客都會回到原本的選單。'))return;
+    showMenus(await call('landlord_line_setup_menu_restore'));say('已移除。');
+  }));
+  document.querySelectorAll('#phone-preview button').forEach(button=>button.addEventListener('click',()=>run(button,async()=>{
+    const code=new URLSearchParams(location.search).get('setup_code');
+    await call('line_setup_menu_preview',{setup_code:code,id_token:liff.getIDToken(),menu:button.dataset.menu});
+    $('phone-text').textContent=button.dataset.menu==='none'?'已取消試看。':'已套用，請回到聊天室查看。';
+  })));
   start().catch(()=>say('頁面載入失敗，請重新整理。'));
 })();
 </script></body></html>

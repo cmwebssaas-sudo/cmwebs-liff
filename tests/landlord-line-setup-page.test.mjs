@@ -40,3 +40,11 @@ test('the replaced webhook URL is shown and can be restored after a confirmation
   assert.match(page, /CMWebs 取代前的網址/);
   assert.match(script, /if\(!confirm\('確定把 Webhook 改回[^']*'\)\)return;\s*const data=await call\('landlord_line_setup_webhook_restore'\)/);
 });
+
+test('the default menu changes only after publishing, trying and an explicit confirmation', () => {
+  assert.match(script, /if\(!\$\('menu-confirm'\)\.checked\)\{say\('請先勾選確認。'\);return;\}/);
+  assert.match(script, /enable\('step-menu',ack&&!!channel&&channel\.status==='active'\)/);
+  assert.match(page, /發布選單（還不會換掉房客的選單）/);
+  for (const palette of ['forest', 'ocean', 'terracotta', 'charcoal']) assert.match(page, new RegExp('value="' + palette + '"'));
+  assert.match(script, /\$\('phone-preview'\)\.hidden=!\(data\.provider_match&&data\.channel_active\)/);
+});

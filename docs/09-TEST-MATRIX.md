@@ -5190,3 +5190,13 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/line-setup-route.test.mjs`：只有開通清單內 Workspace 的房東本人可用；格式錯誤在呼叫 Worker 前拒絕；手機連結一次性；啟用後清除快取
 - [x] `tests/landlord-line-setup-page.test.mjs`：機密只走 POST、輸入框為密碼欄位、Provider 警告在前、取代 Webhook 須勾選
 - [ ] 真實 LINE 後台與手機流程（`HUMAN_REQUIRED`，第 8 階段）
+
+## 2026-11-12 V3 圖文選單（階段 6）
+
+- [x] `cloudflare/read-api/test/line-rich-menu.test.mjs`：提交的選單圖片與 Worker 檢查的雜湊一致；發布「房客服務」「房東管理」兩個分頁、分頁可互相切換（別名指向最新選單）、連結指向房東 LIFF、不動預設選單；圖片被竄改時不建立選單
+- [x] `cloudflare/read-api/test/line-webhook.test.mjs`：切換分頁產生的 postback 不轉交成訊息
+- [x] `cloudflare/read-api/test/line-rich-menu.test.mjs`：可先只套用到單一 LINE；設為預設時保存房東原本 API 選單，取消時還原；只有後台選單時清除 API 預設
+- [x] `cloudflare/read-api/test/line-rich-menu.test.mjs`：換配色時重新連結成員、移動預設並刪除舊選單；停用還原刪除所有 CMWebs 選單並恢復原預設；未啟用頻道不能發布
+- [x] `tests/line-setup-route.test.mjs`：選單動作只限房東本人與固定值；手機連結只改開啟者自己的選單；房東自有頻道的成員自動掛房東選單、非成員移除；原有頻道完全不碰選單
+- [x] `tests/landlord-line-setup-page.test.mjs`：須先發布與勾選確認才可設為預設選單
+- [ ] 真實 OA 試看、預設選單與還原（`HUMAN_REQUIRED`，第 8 階段）
