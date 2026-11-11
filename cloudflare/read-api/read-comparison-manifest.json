@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-64241b429a4415a3c173fb097f6b5ac6129bef7f79531f0ae45b3c8a1be2e3df",
+  "comparison_version": "read-b9b90bed05cd6dfdb6cbd1e22400a72d6a3b6030d3f766008d207b66565aec44",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -67,7 +67,7 @@
     "apps-script/V2_WORKSPACE_NOTIFICATIONS.js": "ebffffd1182df5fec359c1a71f45cca6d6d30139a7cee5f622d39c9c09af9394",
     "apps-script/V2_WORKSPACE_OPERATION_AUDIT.js": "83270892d86a2cf01e87d4f6fe0722b5903f7beeab004d2757d3c82f8a9f4cba",
     "apps-script/V3_LANDLORD_REGISTRATION.js": "c1eb37708fb6df92fc82b528ea2024aa15a8123c1edc5a681aa9ae33e884b290",
-    "apps-script/V3_LINE_WEBHOOK.js": "fc98b46c386bd5c43bf9e44456632d098f61fdd617ac2e1ce245b78d6efd58d4",
+    "apps-script/V3_LINE_WEBHOOK.js": "56699b7fe4e5d955ee22aa248d2cd4b78d8b02df05b2ac5dc4d4fc690596d352",
     "apps-script/V3_PLATFORM_CORE_BILLING.js": "ea6b0c4d37a12da268d88bdf699d338d96d847a7e6527b51c2ed86f0b3c8ae21",
     "apps-script/V3_PLATFORM_CORE_BILLING_CONTRACT.js": "4b760ab4062a77aee23d43fa3a04fe1de9caff8acec5dc180928c23791fede00",
     "apps-script/V3_PLATFORM_CORE_HUMAN_BRIDGE.js": "0081406ecbede93dd246feec24a4c9cc02ae4ec1c483e20c0860290baa06f4c0",
@@ -109,7 +109,7 @@
     "cloudflare/read-api/src/assistant.js": "18c0eb2e062490ff5cab55ce1861200eec6ac90fd1975ad110a9eab2d73754e4",
     "cloudflare/read-api/src/index.js": "83b90018ac9b5568698fe0ee2db10bd640fa52e3a7cb6fe6c4015f7070ec3735",
     "cloudflare/read-api/src/line-channels.js": "3d0bb55526708370d8d964c50ff6442f1e0a99a643e3ccc263a3d1301f90d909",
-    "cloudflare/read-api/src/line-webhook.js": "29dc5ec6ae1cf9663ff1534ebe2e06ccb1c13720e105fcdc7dff223119072729",
+    "cloudflare/read-api/src/line-webhook.js": "0584d809722c5fcc8b69ecd9a0405a2de743ce3b630858e6936d4262bb35093e",
     "cloudflare/read-api/src/public-room-resources.js": "9715b0d320162ed2d88050320e1aeb34f4db86bd8e9099ff0229d696e03ed961",
     "cloudflare/read-api/src/read-access.js": "a53451d58e8d044fcf872afba01ed1662830429e6c6e2ce67813198fe8e0a9de",
     "cloudflare/read-api/src/read-calculator.js": "3544edeeb5d50b2a86bd4b32120c6ab2fb572880e5531970bb69d8095169d0fc",

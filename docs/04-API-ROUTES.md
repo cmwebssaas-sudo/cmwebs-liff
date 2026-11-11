@@ -1501,10 +1501,14 @@ it only picks the channel and is not a secret.
 - An empty `events` list (the console's Verify button) and any event for a
   `verifying` channel return 200 without forwarding.
 - Each `webhookEventId` is forwarded once. Only a successful forward counts as a
-  duplicate, so LINE's redelivery of a failed event is forwarded again.
+  duplicate, so a manual redelivery of a failed event is forwarded again.
 - The Worker answers LINE first, then posts to `APPS_SCRIPT_WEBHOOK_URL` with one
-  retry. Returns 503 `LINE_WEBHOOK_NOT_CONFIGURED` until that variable and both
-  registry secrets exist.
+  retry. LINE does not redeliver after a 200, so an event whose forward fails
+  twice is lost; only its `failed` status row (no content) remains.
+- Returns 503 `LINE_WEBHOOK_NOT_CONFIGURED` without both registry secrets, and for
+  events of an `active` channel while `APPS_SCRIPT_WEBHOOK_URL` is unset. Setup
+  tests for a `verifying` channel still answer 200, so the wizard can verify a
+  channel before forwarding is turned on.
 
 Apps Script receives the forward as the JSON action `line_worker_webhook` with
 `timestamp`, `nonce`, `payload` and `signature` (hex HMAC-SHA256 of

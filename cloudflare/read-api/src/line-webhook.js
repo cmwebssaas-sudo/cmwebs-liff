@@ -77,12 +77,11 @@ function validEvents(body) {
 }
 
 // Answers LINE before Apps Script has the events; LINE does not wait long.
+// LINE never redelivers after a 200, so an event whose forward fails twice is
+// lost; its row stays 'failed' for inspection. A manual redelivery is forwarded.
 export async function lineWebhook(request, env, ctx, fetcher = fetch) {
   if (request.method !== 'POST') return reply('METHOD_NOT_ALLOWED',405);
-  if (!env.DB || !env.LINE_CHANNEL_SECRET_KEY || !env.LINE_REGISTRY_SIGNING_SECRET ||
-      !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(env.APPS_SCRIPT_WEBHOOK_URL || '')) {
-    return reply('LINE_WEBHOOK_NOT_CONFIGURED',503);
-  }
+  if (!env.DB || !env.LINE_CHANNEL_SECRET_KEY || !env.LINE_REGISTRY_SIGNING_SECRET) return reply('LINE_WEBHOOK_NOT_CONFIGURED',503);
   try {
     const db = env.DB.withSession ? env.DB.withSession('first-primary') : env.DB;
     const row = await db.prepare('SELECT workspace_id,status,encrypted_secrets,bot_user_id FROM line_channels WHERE webhook_key=?')
@@ -100,6 +99,10 @@ export async function lineWebhook(request, env, ctx, fetcher = fetch) {
     const parsed = validEvents(body);
     if (!parsed || (row.bot_user_id && parsed.destination !== row.bot_user_id)) return reply('LINE_WEBHOOK_INVALID',400);
     if (!parsed.events.length) return reply('OK');
+    // Setup tests above work without it, so forwarding can stay off until approved.
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(env.APPS_SCRIPT_WEBHOOK_URL || '')) {
+      return reply('LINE_WEBHOOK_NOT_CONFIGURED',503);
+    }
     const events = await claimEvents(db,row.workspace_id,parsed.events,Date.now());
     if (!events.length) return reply('OK');
     const work = forward(db,env,row.workspace_id,parsed.destination,events,fetcher).catch(() => {});

@@ -33,7 +33,7 @@ function lineWorkerWebhookHandle_(request) {
     const nonceKey = 'cmwebs:line-webhook:nonce:' + request.nonce;
     const cache = CacheService.getScriptCache();
     const lock = LockService.getScriptLock();
-    if (!lock.tryLock(5000)) return lineWorkerWebhookRejected_('LINE_WEBHOOK_BUSY');
+    if (!lock.tryLock(250)) return lineWorkerWebhookRejected_('LINE_WEBHOOK_BUSY');
     try {
       if (cache.get(nonceKey)) return lineWorkerWebhookRejected_();
       cache.put(nonceKey, 'used', 600);

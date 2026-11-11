@@ -98,10 +98,12 @@ test('bad signatures, unknown keys and inactive channels never reach Apps Script
   });
 });
 
-test('Verify requests and channels still being verified answer 200 without forwarding', async () => {
+test('Verify requests and channels still being verified answer 200 without forwarding, even with forwarding off', async () => {
   await withDb(async db => {
     await addChannel(db,{ status:'verifying', botUserId:null });
     const { calls, fetcher } = appsScriptStub();
+    const off = { ...env(db), APPS_SCRIPT_WEBHOOK_URL:'' };
+    assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[event('E9')] }),off,null,fetcher)).status,200);
     assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[] }),env(db),null,fetcher)).status,200);
     assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[event('E1')] }),env(db),null,fetcher)).status,200);
     assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[{ type:'test' }] }),env(db),null,fetcher)).status,200);
@@ -155,6 +157,7 @@ test('missing configuration and other methods are refused', async () => {
     for (const broken of [{ APPS_SCRIPT_WEBHOOK_URL:'' },{ APPS_SCRIPT_WEBHOOK_URL:'https://evil.test/exec' },{ LINE_CHANNEL_SECRET_KEY:'' }]) {
       assert.equal((await lineWebhook(lineRequest(body),{ ...env(db), ...broken },null,fetcher)).status,503);
     }
+    assert.deepEqual(await statuses(db),{});
     assert.equal((await lineWebhook(new Request('https://local.test/line/webhook/'+webhookKey),env(db),null,fetcher)).status,405);
     assert.equal(calls.length,0);
   });
