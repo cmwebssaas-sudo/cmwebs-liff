@@ -572,6 +572,7 @@
       const token =
         getSessionToken();
       setSessionToken('');
+      try { window.localStorage.removeItem('cmwebs_landlord_assistant_chat_v1'); } catch (error) { /* AI 助理對話隨登出清除 */ }
       showLogoutBusy();
       const revoked = token
         ? bridgePost(
