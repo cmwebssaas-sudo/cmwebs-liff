@@ -406,8 +406,9 @@ Status: stage 4B source only; not deployed.
   webhook test reached CMWebs (which proves the channel secret), and the OA can
   see the profile of the landlord who logged in through the new LIFF (which
   proves one provider).
-- Rich menus: one standard layout in four fixed palettes (owner decision
-  2026-11-12, option A). Name, logo and contact details stay on the pages.
+- Rich menus: one standard menu with two switching tabs, 房客服務 and 房東管理,
+  shared by tenants and landlords so every landlord can reuse it (owner request
+  2026-11-12), in four fixed palettes (owner decision 2026-11-12, option A). Name, logo and contact details stay on the pages.
   `V2_LINE_RICH_MENU_CONTROL.js` (OA Manager owns the menu) still governs the
   existing channel and every Workspace not using its own channel. For a
   landlord's own channel CMWebs publishes menus by API, but sets the default

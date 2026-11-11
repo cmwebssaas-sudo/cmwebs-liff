@@ -162,3 +162,16 @@ test('missing configuration and other methods are refused', async () => {
     assert.equal(calls.length,0);
   });
 });
+
+test('rich menu tab switches are not forwarded as messages', async () => {
+  await withDb(async db => {
+    await addChannel(db);
+    const { calls, fetcher } = appsScriptStub();
+    const tab = { type:'postback', webhookEventId:'T1', postback:{ data:'cmwebs-tab:landlord' }, source:{ type:'user', userId:'U'+'c'.repeat(32) } };
+    const other = { ...tab, webhookEventId:'P1', postback:{ data:'something-else' } };
+    assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[tab] }),env(db),null,fetcher)).status,200);
+    assert.equal(calls.length,0);
+    await lineWebhook(lineRequest({ destination:bot, events:[tab,other] }),env(db),null,fetcher);
+    assert.deepEqual(JSON.parse(calls[0].envelope.payload).events.map(item => item.webhookEventId),['P1']);
+  });
+});

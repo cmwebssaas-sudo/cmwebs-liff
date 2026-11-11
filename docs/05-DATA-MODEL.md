@@ -606,6 +606,7 @@ Migration `0013_line_rich_menus.sql` adds `line_rich_menus` (one row per
 Workspace: palette, template, tenant and landlord menu IDs,
 `previous_default_menu_id`, `default_enabled`, `updated_at`) and
 `line_rich_menu_users` (Workspace, LINE user ID, `landlord` or `tenant`) so a new
-template can relink people. Images are `assets/line-rich-menu/<menu>-<palette>.png`,
+template can relink people. The two menus are the two tabs of one menu, switched through the aliases
+`cmwebs-tenant` and `cmwebs-landlord`. Images are `assets/line-rich-menu/<menu>-<palette>.png` (2500×1686),
 rendered by `scripts/generate-line-rich-menu-images.mjs`; the Worker checks
 their SHA-256 from `src/line-rich-menu-images.js`. Not applied to Production yet.

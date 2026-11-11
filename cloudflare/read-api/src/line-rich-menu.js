@@ -25,12 +25,20 @@ async function deleteMenu(fetcher, token, menuId) {
 async function createMenu(fetcher, token, menu, liffId, image) {
   const created = await call(fetcher,'POST',api+'/v2/bot/richmenu',{ token, json:{
     size:RICH_MENU_SIZE, selected:false, name:'CMWebs '+menu+' '+RICH_MENU_TEMPLATE,
-    chatBarText:RICH_MENUS[menu].chatBarText, areas:richMenuAreas(RICH_MENUS[menu].items,liffId) } });
+    chatBarText:RICH_MENUS[menu].chatBarText, areas:richMenuAreas(menu,liffId) } });
   const menuId = created.status === 200 ? String(created.data.richMenuId || '') : '';
   if (!menuId) stop('LINE_RICH_MENU_FAILED',502);
   const uploaded = await call(fetcher,'POST','https://api-data.line.me/v2/bot/richmenu/'+menuId+'/content',{ token, bytes:image, type:'image/png' });
   if (uploaded.status !== 200) { await deleteMenu(fetcher,token,menuId); stop('LINE_RICH_MENU_FAILED',502); }
   return menuId;
+}
+
+// The tabs switch through aliases, so each alias must point at the current menu.
+async function pointAlias(fetcher, token, aliasId, menuId) {
+  const updated = await call(fetcher,'POST',api+'/v2/bot/richmenu/alias/'+aliasId,{ token, json:{ richMenuId:menuId } });
+  if (updated.status === 200) return true;
+  const created = await call(fetcher,'POST',api+'/v2/bot/richmenu/alias',{ token, json:{ richMenuAliasId:aliasId, richMenuId:menuId } });
+  return created.status === 200;
 }
 
 const menuRow = (db, workspaceId) => db.prepare('SELECT * FROM line_rich_menus WHERE workspace_id=?').bind(workspaceId).first();
@@ -47,6 +55,11 @@ export async function publishMenus(db, channel, secrets, input, fetcher) {
   let landlord;
   try { landlord = await createMenu(fetcher,token,'landlord',channel.liff_id,images.landlord); }
   catch (error) { await deleteMenu(fetcher,token,tenant); throw error; }
+  for (const [menu, menuId] of [['tenant',tenant],['landlord',landlord]]) {
+    if (!await pointAlias(fetcher,token,RICH_MENUS[menu].alias,menuId)) {
+      await deleteMenu(fetcher,token,tenant); await deleteMenu(fetcher,token,landlord); stop('LINE_RICH_MENU_FAILED',502);
+    }
+  }
   const old = await menuRow(db,channel.workspace_id);
   const users = (await db.prepare('SELECT line_user_id,menu FROM line_rich_menu_users WHERE workspace_id=?').bind(channel.workspace_id).all()).results || [];
   for (const [menu, menuId] of [['tenant',tenant],['landlord',landlord]]) {
@@ -153,6 +166,10 @@ export async function restoreMenus(db, channel, secrets, fetcher) {
   for (let start = 0; start < users.length; start += 500) {
     const unlinked = await call(fetcher,'POST',api+'/v2/bot/richmenu/bulk/unlink',{ token, json:{ userIds:users.slice(start,start+500) } });
     if (unlinked.status !== 200 && unlinked.status !== 202) stop('LINE_RICH_MENU_FAILED',502);
+  }
+  for (const { alias } of Object.values(RICH_MENUS)) {
+    const removed = await call(fetcher,'DELETE',api+'/v2/bot/richmenu/alias/'+alias,{ token });
+    if (removed.status !== 200 && removed.status !== 404) stop('LINE_RICH_MENU_FAILED',502);
   }
   for (const menuId of [row.tenant_menu_id,row.landlord_menu_id]) {
     const removed = await call(fetcher,'DELETE',api+'/v2/bot/richmenu/'+menuId,{ token });

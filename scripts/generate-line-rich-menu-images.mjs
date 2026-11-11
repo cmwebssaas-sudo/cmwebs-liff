@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { RICH_MENUS, RICH_MENU_PALETTES, RICH_MENU_SIZE } from '../cloudflare/read-api/src/line-rich-menu-layout.js';
+import { RICH_MENUS, RICH_MENU_ORDER, RICH_MENU_PALETTES, RICH_MENU_SIZE, RICH_MENU_TAB_HEIGHT } from '../cloudflare/read-api/src/line-rich-menu-layout.js';
 
 const chrome = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const root = new URL('../', import.meta.url);
@@ -16,13 +16,19 @@ try {
   for (const [menu, { items }] of Object.entries(RICH_MENUS)) {
     hashes[menu] = {};
     for (const [palette, colors] of Object.entries(RICH_MENU_PALETTES)) {
-      const cells = items.map(([label]) => `<div>${label}</div>`).join('');
+      const tabs = RICH_MENU_ORDER.map(name => `<div class="tab${name === menu ? ' on' : ''}">${RICH_MENUS[name].tab}</div>`).join('');
+      const cells = items.map(([label]) => `<div class="cell">${label}</div>`).join('');
       const html = `<!doctype html><meta charset="utf-8"><style>
-html,body{margin:0;width:${RICH_MENU_SIZE.width}px;height:${RICH_MENU_SIZE.height}px;overflow:hidden;background:${colors.background}}
-main{display:grid;grid-template-columns:833px 834px 833px;grid-template-rows:421px 422px;width:100%;height:100%}
-div{display:flex;align-items:center;justify-content:center;color:${colors.text};font:600 112px "Noto Sans TC","PingFang TC","Heiti TC",sans-serif;
+html,body{margin:0;width:${RICH_MENU_SIZE.width}px;height:${RICH_MENU_SIZE.height}px;overflow:hidden;background:${colors.background};
+font-family:"Noto Sans TC","PingFang TC","Heiti TC",sans-serif}
+nav{display:grid;grid-template-columns:1fr 1fr;height:${RICH_MENU_TAB_HEIGHT}px}
+.tab{display:flex;align-items:center;justify-content:center;font-size:96px;font-weight:700;letter-spacing:8px;
+background:${colors.background};color:${colors.text};opacity:.62;box-shadow:inset 0 -6px 0 ${colors.line}}
+.tab.on{background:${colors.tab};color:${colors.tabText};opacity:1;box-shadow:none}
+main{display:grid;grid-template-columns:833px 834px 833px;grid-template-rows:718px 718px;height:${RICH_MENU_SIZE.height - RICH_MENU_TAB_HEIGHT}px}
+.cell{display:flex;align-items:center;justify-content:center;color:${colors.text};font-size:124px;font-weight:600;letter-spacing:4px;
 box-shadow:inset -3px -3px 0 ${colors.line}}
-</style><main>${cells}</main>`;
+</style><nav>${tabs}</nav><main>${cells}</main>`;
       const page = join(work, `${menu}-${palette}.html`);
       const out = new URL(`assets/line-rich-menu/${menu}-${palette}.png`, root);
       writeFileSync(page, html);

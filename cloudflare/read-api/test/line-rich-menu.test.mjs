@@ -24,7 +24,7 @@ test('committed menu images match the hashes the Worker checks', async () => {
 });
 
 function fakeLine({ apiDefault = '', tamper = false } = {}) {
-  const state = { menus:new Map(), defaultMenu:apiDefault, links:new Map(), unlinked:[], calls:[], next:1 };
+  const state = { menus:new Map(), aliases:new Map(), defaultMenu:apiDefault, links:new Map(), unlinked:[], calls:[], next:1 };
   const json = (body, status = 200) => Response.json(body,{ status });
   state.fetch = async (url, init = {}) => {
     const parsed = new URL(url);
@@ -44,13 +44,23 @@ function fakeLine({ apiDefault = '', tamper = false } = {}) {
       state.menus.set(id,{ body:JSON.parse(init.body), image:null }); return json({ richMenuId:id });
     }
     let match;
-    if ((match = /^\/v2\/bot\/richmenu\/([^/]+)\/content$/.exec(path))) {
+    if ((match = /^\/v2\/bot\/richmenu\/(richmenu-[^/]+)\/content$/.exec(path))) {
       state.menus.get(match[1]).image = init.headers['content-type']; return json({});
     }
-    if ((match = /^\/v2\/bot\/richmenu\/([^/]+)$/.exec(path)) && method === 'DELETE') {
+    if ((match = /^\/v2\/bot\/richmenu\/(richmenu-[^/]+)$/.exec(path)) && method === 'DELETE') {
       if (!state.menus.delete(match[1])) return json({},404);
       for (const [user, menu] of state.links) if (menu === match[1]) state.links.delete(user);
       if (state.defaultMenu === match[1]) state.defaultMenu = '';
+      return json({});
+    }
+    if (path === '/v2/bot/richmenu/alias' && method === 'POST') {
+      const body = JSON.parse(init.body);
+      if (state.aliases.has(body.richMenuAliasId)) return json({},400);
+      state.aliases.set(body.richMenuAliasId,body.richMenuId); return json({});
+    }
+    if ((match = /^\/v2\/bot\/richmenu\/alias\/(.+)$/.exec(path))) {
+      if (!state.aliases.has(match[1])) return json({},404);
+      if (method === 'DELETE') state.aliases.delete(match[1]); else state.aliases.set(match[1],JSON.parse(init.body).richMenuId);
       return json({});
     }
     if (path === '/v2/bot/richmenu/bulk/unlink') {
@@ -110,11 +120,17 @@ test('publishing creates both menus pointing at the landlord LIFF without touchi
     assert.equal(result.status,200);
     assert.deepEqual({ ...result.body.data.menus, updated_at:null },{ palette:'forest', template:'v1', default_enabled:false, has_previous_default:false, updated_at:null });
     assert.equal(line.menus.size,2);
+    const [tenant, landlord] = ids(line);
     for (const { body, image } of line.menus.values()) {
       assert.equal(image,'image/png');
-      assert.equal(body.areas.length,6);
-      for (const area of body.areas) assert.match(area.action.uri,new RegExp('^https://liff\\.line\\.me/'+liffId+'/(tenant|landlord)-[a-z-]+\\.html$'));
+      assert.deepEqual(body.size,{ width:2500, height:1686 });
+      assert.equal(body.areas.length,8);
+      assert.deepEqual(body.areas.slice(0,2).map(area => [area.action.type,area.action.richMenuAliasId]),
+        [['richmenuswitch','cmwebs-tenant'],['richmenuswitch','cmwebs-landlord']]);
+      for (const area of body.areas.slice(2)) assert.match(area.action.uri,new RegExp('^https://liff\\.line\\.me/'+liffId+'/(tenant|landlord)-[a-z-]+\\.html$'));
     }
+    assert.equal(line.aliases.get('cmwebs-tenant'),tenant);
+    assert.equal(line.aliases.get('cmwebs-landlord'),landlord);
     assert.equal(line.defaultMenu,'');
     assert.ok(!line.calls.some(call => call.includes('/user/all/')));
   });
@@ -186,6 +202,8 @@ test('a new palette relinks members, moves the default and deletes the old menus
     assert.ok(!old.includes(tenant) && !old.includes(landlord));
     assert.equal(line.links.get(member),landlord);
     assert.equal(line.defaultMenu,tenant);
+    assert.equal(line.aliases.get('cmwebs-tenant'),tenant);
+    assert.equal(line.aliases.get('cmwebs-landlord'),landlord);
     assert.equal((await db.prepare('SELECT palette FROM line_rich_menus').first()).palette,'charcoal');
   });
 });
@@ -200,6 +218,7 @@ test('restore removes CMWebs menus everywhere and gives back the earlier default
     const restored = await send({ action:'restore_menus' },line);
     assert.equal(restored.body.data.restored_previous,true);
     assert.equal(line.menus.size,0);
+    assert.equal(line.aliases.size,0);
     assert.equal(line.links.size,0);
     assert.deepEqual(line.unlinked,[member]);
     assert.equal(line.defaultMenu,'landlord-own-menu');

@@ -1,5 +1,6 @@
 import { boundedBody } from './sync.js';
 import { decryptChannelSecrets } from './line-channels.js';
+import { RICH_MENU_SWITCH_DATA } from './line-rich-menu-layout.js';
 
 // V3 stage 5. Each landlord channel posts to /line/webhook/<webhook_key>. The
 // key only picks the channel; LINE's signature over the raw body, made with
@@ -98,6 +99,9 @@ export async function lineWebhook(request, env, ctx, fetcher = fetch) {
     if (row.status !== 'active') return reply('OK');
     const parsed = validEvents(body);
     if (!parsed || (row.bot_user_id && parsed.destination !== row.bot_user_id)) return reply('LINE_WEBHOOK_INVALID',400);
+    // A rich menu tab switch is a postback, not a message; Apps Script never sees it.
+    parsed.events = parsed.events.filter(event => !(event.type === 'postback' &&
+      String(event.postback?.data || '').startsWith(RICH_MENU_SWITCH_DATA)));
     if (!parsed.events.length) return reply('OK');
     // Setup tests above work without it, so forwarding can stay off until approved.
     if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(env.APPS_SCRIPT_WEBHOOK_URL || '')) {
