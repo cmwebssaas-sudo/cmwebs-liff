@@ -71,3 +71,42 @@ test('the More page loads the assistant and mounts the panel', () => {
   assert.match(page, /<form id="assistantPanel"/);
   assert.match(page, /CMWEBS_LANDLORD_ASSISTANT\.mount\('assistantPanel'\)/);
 });
+
+function loadWithApi(askAssistant) {
+  const context = vm.createContext({ window: { CMWebsLandlordApi: { askAssistant } } });
+  vm.runInContext(read('landlord-assistant.js'), context);
+  return context.window.CMWEBS_LANDLORD_ASSISTANT;
+}
+
+test('pressing ask shows the AI reply and the catalog entry it chose', async () => {
+  let sent;
+  const assistant = loadWithApi(async (question, catalog) => {
+    sent = { question, ids: catalog.map(item => item.id) };
+    return { id: 'checkout', reply: '退房請到房客資料按「辦理退房」。' };
+  });
+  const html = await assistant.ask('房客月底要搬走');
+  assert.equal(sent.question, '房客月底要搬走');
+  assert.ok(sent.ids.includes('checkout') && sent.ids.length === assistant.catalog.length);
+  assert.match(html, /assistant-ai-reply">退房請到房客資料按「辦理退房」。/);
+  assert.match(html, /房客退房、退租/);
+  assert.equal((html.match(/assistant-result"/g) || []).length, 1);
+});
+
+test('an AI none answer or an AI failure falls back to keyword results', async () => {
+  const none = await loadWithApi(async () => ({ id: 'none', reply: '這個問題我幫不上忙。' })).ask('房客要退房');
+  assert.match(none, /這個問題我幫不上忙/);
+  assert.match(none, /房客退房、退租/);
+  const failed = await loadWithApi(async () => { throw new Error('ASSISTANT_NOT_ENABLED'); }).ask('房客要退房');
+  assert.doesNotMatch(failed, /assistant-ai-reply/);
+  assert.match(failed, /房客退房、退租/);
+  const invented = await loadWithApi(async () => ({ id: 'not_in_catalog', reply: '<b>x</b>' })).ask('房客要退房');
+  assert.doesNotMatch(invented, /<b>/);
+});
+
+test('the read client posts the question to the read service with the landlord credential', () => {
+  const api = read('landlord-api.js');
+  assert.match(api, /askAssistant: async function \(question, catalog\)/);
+  assert.match(api, /'\/v1\/assistant'/);
+  assert.match(api, /method: 'POST'/);
+  assert.match(read('landlord-more.html'), /<button class="assistant-ask" type="submit">問助理<\/button>/);
+});

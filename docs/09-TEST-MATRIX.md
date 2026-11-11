@@ -5154,3 +5154,11 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/phase201-expired-tenant-renewal-recovery.runtime.test.mjs`：名單資料標出等簽名的續約
 - [x] `tests/tenant-list-pending-renewal.test.mjs`：有待簽續約時隱藏快速續約，顯示「續約待簽署」與續約進度按鈕
 - [ ] 正式環境以測試房客實際收到 LINE 簽約邀請（`HUMAN_REQUIRED`）
+
+## 2026-11-11 房東助理階段 1：接 AI-00 模型
+
+- [x] `ai-bridge/test_cmwebs_assistant_bridge.py`（經 `tests/assistant-ai-bridge.test.mjs`）：密碼錯誤不呼叫模型；只回目錄內代碼；模型失敗不洩漏主機資訊
+- [x] `cloudflare/read-api/test/assistant.test.mjs`：允許清單外的 Workspace、未登入、外部來源都在呼叫 AI-00 前擋下；目錄外代碼改成 none
+- [x] `tests/landlord-assistant.test.mjs`：按「問助理」顯示 AI 回答與對應功能；AI 回 none 或失敗時改用關鍵字結果
+- [x] AI-01 `qwen3.5-maus:9b` 50 題實測：49 題正確，中位數 1.4 秒（關鍵字比對 35 題）
+- [ ] 正式「更多」頁手機實際問答（`HUMAN_REQUIRED`）

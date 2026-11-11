@@ -3,8 +3,10 @@ import { lineChannels, lineSend } from './line-channels.js';
 import { isReadRoute, readFailure } from './read-routes.js';
 import { createReadHttpHandler } from './read-http.js';
 import { createShadowHttpHandler } from './read-shadow.js';
+import { createAssistantHandler } from './assistant.js';
 const read=createReadHttpHandler();
 const shadow=createShadowHttpHandler();
+const assistant=createAssistantHandler();
 
 function json(body, status = 200, headers = {}) {
   return Response.json(body, {
@@ -20,6 +22,7 @@ export default {
     if (new URL(request.url).pathname === '/internal/line-channels') return lineChannels(request,env);
     if (new URL(request.url).pathname === '/internal/line-send') return lineSend(request,env);
     if (new URL(request.url).pathname === '/v1/shadow-report') return shadow(request,env);
+    if (new URL(request.url).pathname === '/v1/assistant') return assistant(request,env);
     if (isReadRoute(new URL(request.url).pathname)) {
       if(!env.LINE_LOGIN_CHANNEL_ID||!env.READ_REPLICA_SYNC_SECRET) return readFailure('READ_AUTH_NOT_READY');
       return read(request,env,ctx);

@@ -300,14 +300,41 @@
     }).join('');
   }
 
+  function renderAiAnswer(answer, query) {
+    const item = CATALOG.find(function (entry) { return entry.id === answer.id; });
+    const said = answer.reply ? '<div class="assistant-ai-reply">' + escapeHtml(answer.reply) + '</div>' : '';
+    if (!item) return said + renderResults(search(query), query);
+    return said + renderResults([item], query);
+  }
+
+  // 按「問」或鍵盤的搜尋鍵時問 AI；AI 忙碌或連不上就改用關鍵字結果。
+  async function ask(question) {
+    const api = window.CMWebsLandlordApi;
+    const query = String(question || '').trim();
+    if (!query) return renderResults([], query);
+    if (!api || typeof api.askAssistant !== 'function') return renderResults(search(query), query);
+    try {
+      return renderAiAnswer(await api.askAssistant(query, CATALOG), query);
+    } catch (error) {
+      return renderResults(search(query), query);
+    }
+  }
+
   function mount(rootId) {
     const root = document.getElementById(rootId);
     if (!root) return;
     const input = root.querySelector('.assistant-input');
     const results = root.querySelector('.assistant-results');
-    const update = function () { results.innerHTML = renderResults(search(input.value), input.value); };
+    let asking = 0;
+    const update = function () { asking++; results.innerHTML = renderResults(search(input.value), input.value); };
     input.addEventListener('input', update);
-    root.addEventListener('submit', function (event) { event.preventDefault(); update(); });
+    root.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const turn = ++asking;
+      results.innerHTML = '<div class="assistant-hint">助理思考中…</div>';
+      const html = await ask(input.value);
+      if (turn === asking) results.innerHTML = html;
+    });
     results.addEventListener('click', function (event) {
       const button = event.target.closest('.assistant-go');
       if (!button) return;
@@ -322,6 +349,7 @@
     catalog: CATALOG,
     search: search,
     renderResults: renderResults,
+    ask: ask,
     mount: mount
   };
 })();
