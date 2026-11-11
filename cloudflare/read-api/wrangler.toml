@@ -14,9 +14,17 @@ migrations_dir = "migrations"
 # LINE Login channel that owns the landlord LIFF apps (public value).
 [vars]
 LINE_LOGIN_CHANNEL_ID = "2010314940"
+# Landlord assistant: Workspaces allowed to ask the AI-00 model (comma separated).
+ASSISTANT_AI_WORKSPACES = "W000001"
 
 # Run next to the D1 primary (APAC, Tokyo): one user round trip, then each of the
 # many sequential D1 queries stays inside the region.
 [placement]
 mode = "smart"
 hint = "apac"
+
+# Landlord assistant bridge on AI-00 (loopback port 18760), reached through the
+# existing ai-00-office tunnel. Only this one port is exposed to the Worker.
+[[vpc_services]]
+binding = "ASSISTANT_BRIDGE"
+service_id = "01a1cb1f-e5de-7c20-b8b0-f9685f1d8293"

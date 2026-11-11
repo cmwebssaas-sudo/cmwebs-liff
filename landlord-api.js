@@ -715,6 +715,29 @@
       const target = replicaRequest(config || {}, getAuthParams());
       return Boolean(target && target.mode === 'on');
     },
+    // Landlord assistant: send a question and the function catalog to the read
+    // service, which asks the AI-00 model to pick one catalog id. No data reads.
+    askAssistant: async function (question, catalog) {
+      const auth = getAuthParams();
+      const credential = auth.landlord_session_token ? 'Session ' + auth.landlord_session_token
+        : auth.id_token ? 'LIFF ' + auth.id_token : '';
+      if (!credential || typeof global.fetch !== 'function' || typeof global.AbortController !== 'function') throw Error('ASSISTANT_UNAVAILABLE');
+      const base = new URL(String(global.CMWEBS_READ_API_URL || ''));
+      if (base.protocol !== 'https:') throw Error('ASSISTANT_UNAVAILABLE');
+      base.pathname = base.pathname.replace(/\/$/, '') + '/v1/assistant';
+      const controller = new global.AbortController();
+      const timer = setTimeout(function () { controller.abort(); }, 30000);
+      try {
+        const response = await global.fetch(base.href, {method: 'POST', signal: controller.signal,
+          headers: {Authorization: credential, 'Content-Type': 'application/json'},
+          body: JSON.stringify({question: String(question || ''), catalog: (catalog || []).map(function (item) {
+            return {id: item.id, title: item.title, keywords: item.keywords};
+          })})});
+        const result = await response.json().catch(function () { return null; });
+        if (!response.ok || !result || result.success !== true || !result.data) throw Error(result && result.code || 'ASSISTANT_UNAVAILABLE');
+        return result.data;
+      } finally { clearTimeout(timer); }
+    },
     snapshot: snapshot,
     prefetch: prefetch,
     clearSnapshots: clearSnapshots,

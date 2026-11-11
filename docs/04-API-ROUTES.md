@@ -1469,3 +1469,20 @@ empty rather than pointing at another LIFF app.
 The read Worker's generated calculator takes `lineTenantLiffUrl_` as a runtime
 adapter that returns the existing link. Its `/v1/home` summary drops invite
 links, so no Worker response changes.
+
+## Landlord assistant (Worker)
+
+`POST /v1/assistant` on the read Worker. Body `{question, catalog:[{id,title,keywords}]}`:
+question at most 200 characters, at most 80 catalog items, ids `[a-z0-9_]`.
+Credential is the same `LIFF` or `Session` Authorization header as reads, verified
+against the D1 replica. Only Workspaces in `ASSISTANT_AI_WORKSPACES` are served
+(`403 ASSISTANT_NOT_ENABLED` otherwise). The Worker forwards to the AI-00 bridge
+through the `ASSISTANT_BRIDGE` Workers VPC binding with the `CMWEBS_ASSISTANT_TOKEN`
+secret. Response `{success,data:{id,reply}}`; any id outside the sent catalog
+becomes `none`. Failures: `ASSISTANT_BUSY`, `ASSISTANT_UNAVAILABLE`,
+`ASSISTANT_NOT_READY` (503). No landlord data is read or sent, and questions are
+not logged. CORS is the exact Pages origin, POST only.
+
+The AI-00 bridge (`ai-bridge/cmwebs_assistant_bridge.py`, user unit
+`cmwebs-assistant-bridge.service`) listens on 127.0.0.1:18760, checks the bearer
+token, asks the AI-01 Ollama model once at a time (20s), and returns only a catalog id.

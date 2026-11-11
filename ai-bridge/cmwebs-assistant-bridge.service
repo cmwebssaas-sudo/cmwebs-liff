@@ -1,0 +1,18 @@
+[Unit]
+Description=CMWebs landlord assistant bridge (loopback only)
+After=network-online.target
+
+[Service]
+Environment=CMWEBS_ASSISTANT_TOKEN_FILE=%h/.config/cmwebs-assistant/token
+Environment=CMWEBS_ASSISTANT_PORT=18760
+# The AI-01 model address stays on AI-00 only.
+EnvironmentFile=%h/.config/cmwebs-assistant/bridge.env
+Environment=CMWEBS_ASSISTANT_MODEL=qwen3.5-maus:9b
+Environment=CMWEBS_ASSISTANT_TIMEOUT=20
+ExecStart=/usr/bin/python3 %h/cmwebs-assistant-bridge/cmwebs_assistant_bridge.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
