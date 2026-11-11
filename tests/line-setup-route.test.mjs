@@ -118,7 +118,7 @@ test('activating clears the cached login channel and LIFF lookups', () => {
 
 test('the POST dispatcher sends only setup actions to the wizard handler', () => {
   const main = readFileSync(new URL('程式碼.js', dir), 'utf8');
-  assert.match(main, /if \(lineSetupIsAction_\(action\)\) \{\s*const setupResult=lineSetupHandle_\(action,request\);/);
+  assert.match(main, /if \(typeof lineSetupIsAction_ === 'function' && lineSetupIsAction_\(action\)\) \{\s*const setupResult=lineSetupHandle_\(action,request\);/);
   const { ctx } = setup();
   assert.equal(ctx.lineSetupIsAction_('landlord_line_setup_save'), true);
   assert.equal(ctx.lineSetupIsAction_('landlord_team_init'), false);

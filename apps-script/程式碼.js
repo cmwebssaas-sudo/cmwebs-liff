@@ -2827,7 +2827,7 @@ function dispatchV2Post_(e) {
           return ContentService.createTextOutput(JSON.stringify(webhookResult)).setMimeType(ContentService.MimeType.JSON);
         }
 
-        if (lineSetupIsAction_(action)) {
+        if (typeof lineSetupIsAction_ === 'function' && lineSetupIsAction_(action)) {
           const setupResult=lineSetupHandle_(action,request);
           runtimeSnapshotFinish_();
           return useBridge
