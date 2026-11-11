@@ -2827,6 +2827,14 @@ function dispatchV2Post_(e) {
           return ContentService.createTextOutput(JSON.stringify(webhookResult)).setMimeType(ContentService.MimeType.JSON);
         }
 
+        if (lineSetupIsAction_(action)) {
+          const setupResult=lineSetupHandle_(action,request);
+          runtimeSnapshotFinish_();
+          return useBridge
+            ? htmlBridgeOutput_(setupResult,request.request_id||'')
+            : ContentService.createTextOutput(JSON.stringify(setupResult)).setMimeType(ContentService.MimeType.JSON);
+        }
+
         if (action === 'read_replica_authorize') {
           const confirmation=readAuthorizationConfirm_(request);
           runtimeSnapshotFinish_();

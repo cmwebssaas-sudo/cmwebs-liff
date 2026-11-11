@@ -1,4 +1,5 @@
 import { boundedBody, verifySignature } from './sync.js';
+import { checkProvider, prepareLiff, setWebhook, verifyChannel } from './line-setup.js';
 
 const encoder = new TextEncoder();
 const secretFields = ['messaging_channel_secret','messaging_access_token','line_login_channel_secret'];
@@ -44,7 +45,9 @@ function validUpsert(input) {
 function publicRecord(row) {
   return { workspace_id:row.workspace_id, line_login_channel_id:row.line_login_channel_id, liff_id:row.liff_id,
     messaging_channel_id:row.messaging_channel_id, webhook_key:row.webhook_key, status:row.status,
-    has_secrets:Boolean(row.encrypted_secrets), verified_at:row.verified_at, updated_at:row.updated_at };
+    has_secrets:Boolean(row.encrypted_secrets), verified_at:row.verified_at, updated_at:row.updated_at,
+    webhook_verified_at:row.webhook_verified_at ?? null, provider_checked_at:row.provider_checked_at ?? null,
+    previous_webhook_endpoint:row.previous_webhook_endpoint ?? null };
 }
 async function commit(db, nonce, statement) {
   try {
@@ -63,23 +66,50 @@ async function upsert(db, nonce, input, env) {
   await commit(db,nonce,db.prepare(`INSERT INTO line_channels(workspace_id,line_login_channel_id,liff_id,messaging_channel_id,
       webhook_key,status,encrypted_secrets,verified_at,updated_at) VALUES (?,?,?,?,?,'draft',?,NULL,?)
     ON CONFLICT(workspace_id) DO UPDATE SET line_login_channel_id=excluded.line_login_channel_id,liff_id=excluded.liff_id,
-      messaging_channel_id=excluded.messaging_channel_id,bot_user_id=NULL,status='draft',encrypted_secrets=excluded.encrypted_secrets,
+      previous_webhook_endpoint=CASE WHEN line_channels.messaging_channel_id=excluded.messaging_channel_id
+        THEN line_channels.previous_webhook_endpoint END,
+      messaging_channel_id=excluded.messaging_channel_id,bot_user_id=NULL,webhook_verified_at=NULL,provider_checked_at=NULL,status='draft',encrypted_secrets=excluded.encrypted_secrets,
       verified_at=NULL,updated_at=excluded.updated_at`).bind(input.workspace_id,input.line_login_channel_id,input.liff_id,
     input.messaging_channel_id,crypto.randomUUID().replaceAll('-',''),encrypted,now));
 }
 async function setStatus(db, nonce, input) {
   if (Object.keys(input).sort().join() !== 'action,status,workspace_id' || !validWorkspace(input.workspace_id) ||
       !Object.hasOwn(transitions,input.status)) stop('INVALID_LINE_CHANNEL');
-  const row = await db.prepare('SELECT status,encrypted_secrets FROM line_channels WHERE workspace_id=?').bind(input.workspace_id).first();
+  const row = await db.prepare('SELECT status,encrypted_secrets,bot_user_id,webhook_verified_at,provider_checked_at FROM line_channels WHERE workspace_id=?').bind(input.workspace_id).first();
   if (!row) stop('LINE_CHANNEL_NOT_FOUND',404);
   if (!transitions[row.status].includes(input.status)) stop('LINE_CHANNEL_INVALID_STATUS',409);
+  // The setup wizard's evidence: the token named the OA, LINE's webhook test
+  // reached CMWebs, and the OA and Login channel share a provider.
+  if (input.status === 'active' && (!row.bot_user_id || !row.webhook_verified_at || !row.provider_checked_at)) stop('LINE_CHANNEL_NOT_VERIFIED',409);
   const now = new Date().toISOString();
   await commit(db,nonce,db.prepare(`UPDATE line_channels SET status=?,encrypted_secrets=?,verified_at=?,updated_at=? WHERE workspace_id=? AND status=?`)
     .bind(input.status,input.status === 'revoked' ? null : row.encrypted_secrets,input.status === 'active' ? now : null,now,input.workspace_id,row.status));
 }
 // Apps Script signs each call after it has checked the caller's Workspace,
 // role and permission. Responses never include secrets.
-export async function lineChannels(request, env) {
+const setupActions = {
+  verify:{ keys:'action,workspace_id', statuses:['draft','verifying','active','suspended'] },
+  set_webhook:{ keys:'action,replace_existing,workspace_id', statuses:['verifying'] },
+  check_provider:{ keys:'action,id_token,workspace_id', statuses:['verifying','active'] }
+};
+async function setupAction(db, input, env, origin, fetcher) {
+  const spec = setupActions[input.action];
+  if (Object.keys(input).sort().join() !== spec.keys || !validWorkspace(input.workspace_id) ||
+      (input.action === 'set_webhook' && typeof input.replace_existing !== 'boolean')) stop('INVALID_LINE_CHANNEL');
+  const row = await db.prepare('SELECT * FROM line_channels WHERE workspace_id=?').bind(input.workspace_id).first();
+  if (!row || !row.encrypted_secrets) stop('LINE_CHANNEL_NOT_FOUND',404);
+  if (!spec.statuses.includes(row.status)) stop('LINE_CHANNEL_INVALID_STATUS',409);
+  const secrets = await decryptChannelSecrets(row.encrypted_secrets,env.LINE_CHANNEL_SECRET_KEY,row.workspace_id);
+  if (input.action === 'verify') return verifyChannel(db,row,secrets,origin,fetcher);
+  if (input.action === 'set_webhook') return setWebhook(db,row,secrets,input,origin,fetcher);
+  return checkProvider(db,row,secrets,input,fetcher);
+}
+function validPrepareLiff(input) {
+  if (Object.keys(input).sort().join() !== 'action,line_login_channel_id,line_login_channel_secret' ||
+      !/^\d{10}$/.test(input.line_login_channel_id) || typeof input.line_login_channel_secret !== 'string' ||
+      !input.line_login_channel_secret || input.line_login_channel_secret.length > 2048) stop('INVALID_LINE_CHANNEL');
+}
+export async function lineChannels(request, env, fetcher = fetch) {
   if (request.method !== 'POST') return failure('METHOD_NOT_ALLOWED',405);
   if (!env.DB || !env.LINE_REGISTRY_SIGNING_SECRET || !env.LINE_CHANNEL_SECRET_KEY) return failure('LINE_CHANNEL_NOT_CONFIGURED',503);
   try {
@@ -89,6 +119,17 @@ export async function lineChannels(request, env) {
     let input; try { input = JSON.parse(body); } catch { stop('INVALID_LINE_CHANNEL'); }
     if (!input || typeof input !== 'object' || Array.isArray(input)) stop('INVALID_LINE_CHANNEL');
     const db = env.DB.withSession ? env.DB.withSession('first-primary') : env.DB;
+    if (input.action === 'prepare_liff') {
+      validPrepareLiff(input);
+      await commit(db,nonce);
+      return reply({ success:true, code:'OK', message:'LIFF ready', data:await prepareLiff(input,fetcher) });
+    }
+    if (Object.hasOwn(setupActions,input.action)) {
+      await commit(db,nonce);
+      const data = await setupAction(db,input,env,new URL(request.url).origin,fetcher);
+      const row = await db.prepare('SELECT * FROM line_channels WHERE workspace_id=?').bind(input.workspace_id).first();
+      return reply({ success:true, code:'OK', message:'LINE channel checked', data:{ ...data, channel:publicRecord(row) } });
+    }
     if (input.action === 'upsert') await upsert(db,nonce,input,env);
     else if (input.action === 'set_status') await setStatus(db,nonce,input);
     else if (input.action === 'get') {
