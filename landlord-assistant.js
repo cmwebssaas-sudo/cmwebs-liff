@@ -300,56 +300,178 @@
     }).join('');
   }
 
-  function renderAiAnswer(answer, query) {
-    const item = CATALOG.find(function (entry) { return entry.id === answer.id; });
-    const said = answer.reply ? '<div class="assistant-ai-reply">' + escapeHtml(answer.reply) + '</div>' : '';
-    if (!item) return said + renderResults(search(query), query);
-    return said + renderResults([item], query);
+  // ===== 對話視窗：每頁右下角的 AI 小圓鈕 =====
+  // 對話只存在這支手機（localStorage），一天後或登出時清掉；按「前往」後回來可以接著問。
+  const CHAT_KEY = 'cmwebs_landlord_assistant_chat_v1';
+  const CHAT_TTL_MS = 24 * 60 * 60 * 1000;
+  const CHAT_MAX = 30;
+
+  function loadChat(now) {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(CHAT_KEY) || 'null');
+      if (saved && Array.isArray(saved.messages) && now - Number(saved.savedAt || 0) < CHAT_TTL_MS) {
+        return { open: saved.open === true, messages: saved.messages.slice(-CHAT_MAX) };
+      }
+    } catch (error) { /* 私密模式或存取被擋時，就從空白開始 */ }
+    return { open: false, messages: [] };
   }
 
-  // 按「問」或鍵盤的搜尋鍵時問 AI；AI 忙碌或連不上就改用關鍵字結果。
-  async function ask(question) {
-    const api = window.CMWebsLandlordApi;
-    const query = String(question || '').trim();
-    if (!query) return renderResults([], query);
-    if (!api || typeof api.askAssistant !== 'function') return renderResults(search(query), query);
+  function saveChat(chat, now) {
     try {
-      return renderAiAnswer(await api.askAssistant(query, CATALOG), query);
+      window.localStorage.setItem(CHAT_KEY, JSON.stringify({
+        savedAt: now, open: chat.open, messages: chat.messages.slice(-CHAT_MAX)
+      }));
+    } catch (error) { /* 存不了也不影響這一頁使用 */ }
+  }
+
+  function clearChat() {
+    try { window.localStorage.removeItem(CHAT_KEY); } catch (error) { /* 忽略 */ }
+  }
+
+  function itemCard(item) {
+    return '<article class="cma-card">' +
+      '<div class="cma-card-title">' + escapeHtml(item.title) + '</div>' +
+      '<ol class="cma-steps">' + item.steps.map(function (step) {
+        return '<li>' + escapeHtml(step) + '</li>';
+      }).join('') + '</ol>' +
+      '<button class="cma-go" type="button" data-page="' + escapeHtml(item.link.page) + '">' +
+      escapeHtml(item.link.label) + ' ›</button>' +
+      '</article>';
+  }
+
+  function renderMessage(message) {
+    if (message.role === 'user') {
+      return '<div class="cma-row cma-me"><div class="cma-bubble">' + escapeHtml(message.text) + '</div></div>';
+    }
+    if (message.pending) {
+      return '<div class="cma-row"><div class="cma-bubble cma-wait">助理思考中…</div></div>';
+    }
+    const items = (message.ids || []).map(function (id) {
+      return CATALOG.find(function (entry) { return entry.id === id; });
+    }).filter(Boolean);
+    const text = message.reply || (items.length ? '可以這樣做：' : '我找不到相符的功能，可以換個說法再問一次，或到「更多」看全部功能。');
+    return '<div class="cma-row"><div class="cma-bubble">' + escapeHtml(text) + '</div></div>' +
+      items.map(itemCard).join('');
+  }
+
+  // 問一題：AI 選到目錄內功能就用 AI 的回答；AI 回 none、忙碌或連不上就改用關鍵字結果。
+  async function answer(question) {
+    const api = window.CMWebsLandlordApi;
+    const keywordIds = search(question, 2).map(function (item) { return item.id; });
+    if (!api || typeof api.askAssistant !== 'function') return { role: 'assistant', reply: '', ids: keywordIds };
+    try {
+      const result = await api.askAssistant(question, CATALOG);
+      const chosen = CATALOG.some(function (entry) { return entry.id === result.id; }) ? [result.id] : keywordIds;
+      return { role: 'assistant', reply: String(result.reply || '').slice(0, 200), ids: chosen };
     } catch (error) {
-      return renderResults(search(query), query);
+      return { role: 'assistant', reply: '', ids: keywordIds };
     }
   }
 
-  function mount(rootId) {
-    const root = document.getElementById(rootId);
-    if (!root) return;
-    const input = root.querySelector('.assistant-input');
-    const results = root.querySelector('.assistant-results');
-    let asking = 0;
-    const update = function () { asking++; results.innerHTML = renderResults(search(input.value), input.value); };
-    input.addEventListener('input', update);
-    root.addEventListener('submit', async function (event) {
-      event.preventDefault();
-      const turn = ++asking;
-      results.innerHTML = '<div class="assistant-hint">助理思考中…</div>';
-      const html = await ask(input.value);
-      if (turn === asking) results.innerHTML = html;
+  function openChat() {
+    if (window.CMWEBS_LANDLORD_ASSISTANT_CHAT) window.CMWEBS_LANDLORD_ASSISTANT_CHAT.open();
+  }
+
+  function mountChat(doc, clock) {
+    const now = clock || Date.now;
+    if (!doc.body || doc.getElementById('cmaFab')) return null;
+    const chat = loadChat(now());
+    const fab = doc.createElement('button');
+    fab.id = 'cmaFab';
+    fab.className = 'cma-fab';
+    fab.type = 'button';
+    fab.setAttribute('aria-label', '打開 AI 助理');
+    fab.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="9" width="20" height="16" rx="6"/>' +
+      '<circle cx="12.5" cy="17" r="2.2"/><circle cx="19.5" cy="17" r="2.2"/><path d="M13 21.5h6"/>' +
+      '<path d="M16 9V5.5"/><circle cx="16" cy="4.5" r="1.6"/><path d="M6 15H4M26 15h2"/></svg>';
+    const panel = doc.createElement('section');
+    panel.id = 'cmaPanel';
+    panel.className = 'cma-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'AI 助理');
+    panel.innerHTML =
+      '<header class="cma-head"><strong>AI 助理</strong>' +
+      '<button class="cma-clear" type="button">清除對話</button>' +
+      '<button class="cma-close" type="button" aria-label="收起">✕</button></header>' +
+      '<div class="cma-log" aria-live="polite"></div>' +
+      '<form class="cma-form"><input class="cma-input" type="text" enterkeyhint="send" autocomplete="off" ' +
+      'maxlength="200" placeholder="想做什麼？例如：房客要退房" aria-label="想問助理的問題" />' +
+      '<button class="cma-send" type="submit">問</button></form>';
+    doc.body.appendChild(fab);
+    doc.body.appendChild(panel);
+    const log = panel.querySelector('.cma-log');
+    const input = panel.querySelector('.cma-input');
+    const greeting = '<div class="cma-row"><div class="cma-bubble">你好！想做什麼直接問我，例如「怎麼新增房客」「房客要退房」「誰還沒繳」。按「前往」去操作後，再點右下角的機器人就能回到這裡接著問。</div></div>';
+
+    function render() {
+      log.innerHTML = greeting + chat.messages.map(renderMessage).join('');
+      log.scrollTop = log.scrollHeight;
+      panel.classList.toggle('is-open', chat.open);
+      fab.classList.toggle('is-hidden', chat.open);
+    }
+    function persist() {
+      saveChat({ open: chat.open, messages: chat.messages.filter(function (m) { return !m.pending; }) }, now());
+    }
+    function setOpen(open) {
+      chat.open = open;
+      persist();
+      render();
+      if (open) setTimeout(function () { input.focus(); }, 50);
+    }
+
+    fab.addEventListener('click', function () { setOpen(true); });
+    panel.querySelector('.cma-close').addEventListener('click', function () { setOpen(false); });
+    panel.querySelector('.cma-clear').addEventListener('click', function () {
+      chat.messages = [];
+      persist();
+      render();
     });
-    results.addEventListener('click', function (event) {
-      const button = event.target.closest('.assistant-go');
+    panel.querySelector('.cma-form').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const question = String(input.value || '').trim();
+      if (!question || chat.messages.some(function (m) { return m.pending; })) return;
+      input.value = '';
+      chat.messages.push({ role: 'user', text: question.slice(0, 200) });
+      const pending = { role: 'assistant', pending: true };
+      chat.messages.push(pending);
+      render();
+      const reply = await answer(question);
+      chat.messages[chat.messages.indexOf(pending)] = reply;
+      persist();
+      render();
+    });
+    log.addEventListener('click', function (event) {
+      const button = event.target.closest('.cma-go');
       if (!button) return;
+      // 前往操作頁時先收起，對話留著；回來點 AI 就能接著問。
+      chat.open = false;
+      persist();
       const page = button.getAttribute('data-page');
       if (typeof window.goPage === 'function') window.goPage(page);
       else window.location.href = page;
     });
-    update();
+    render();
+    const controller = { open: function () { setOpen(true); }, close: function () { setOpen(false); }, panel: panel, fab: fab };
+    window.CMWEBS_LANDLORD_ASSISTANT_CHAT = controller;
+    return controller;
+  }
+
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    const start = function () { mountChat(document); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
   }
 
   window.CMWEBS_LANDLORD_ASSISTANT = {
     catalog: CATALOG,
     search: search,
     renderResults: renderResults,
-    ask: ask,
-    mount: mount
+    answer: answer,
+    renderMessage: renderMessage,
+    mountChat: mountChat,
+    loadChat: loadChat,
+    saveChat: saveChat,
+    openChat: openChat,
+    clearChat: clearChat
   };
 })();
