@@ -2821,6 +2821,12 @@ function dispatchV2Post_(e) {
             .trim() === 'bridge';
         let result = null;
 
+        if (action === 'line_worker_webhook') {
+          const webhookResult=lineWorkerWebhookHandle_(request);
+          runtimeSnapshotFinish_();
+          return ContentService.createTextOutput(JSON.stringify(webhookResult)).setMimeType(ContentService.MimeType.JSON);
+        }
+
         if (action === 'read_replica_authorize') {
           const confirmation=readAuthorizationConfirm_(request);
           runtimeSnapshotFinish_();

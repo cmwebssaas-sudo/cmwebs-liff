@@ -1486,3 +1486,31 @@ not logged. CORS is the exact Pages origin, POST only.
 The AI-00 bridge (`ai-bridge/cmwebs_assistant_bridge.py`, user unit
 `cmwebs-assistant-bridge.service`) listens on 127.0.0.1:18760, checks the bearer
 token, asks the AI-01 Ollama model once at a time (20s), and returns only a catalog id.
+
+## 2026-11-12 V3 per-channel LINE webhook (stage 5, undeployed)
+
+`POST /line/webhook/<webhook_key>` on the read Worker receives LINE webhooks for a
+landlord's own channel. `webhook_key` is the 32-hex value from `line_channels`;
+it only picks the channel and is not a secret.
+
+- The Worker checks `x-line-signature` over the raw body with that channel's
+  secret. A bad signature returns 401; an unknown key, or a channel that is not
+  `verifying` or `active`, returns 404.
+- Once the channel's `bot_user_id` is recorded, the body's `destination` must
+  match it (400 otherwise).
+- An empty `events` list (the console's Verify button) and any event for a
+  `verifying` channel return 200 without forwarding.
+- Each `webhookEventId` is forwarded once. Only a successful forward counts as a
+  duplicate, so LINE's redelivery of a failed event is forwarded again.
+- The Worker answers LINE first, then posts to `APPS_SCRIPT_WEBHOOK_URL` with one
+  retry. Returns 503 `LINE_WEBHOOK_NOT_CONFIGURED` until that variable and both
+  registry secrets exist.
+
+Apps Script receives the forward as the JSON action `line_worker_webhook` with
+`timestamp`, `nonce`, `payload` and `signature` (hex HMAC-SHA256 of
+`cmwebs-line-webhook-v1\n<timestamp>\n<nonce>\n<payload>` with
+`LINE_REGISTRY_SIGNING_SECRET`). It refuses stale (over five minutes), replayed
+or unsigned requests, and Workspaces not in `CMWEBS_LINE_WORKER_WORKSPACES`
+(`LINE_WEBHOOK_WORKSPACE_NOT_ENABLED`). Events match only tenants of the verified
+Workspace. The existing channel's webhook (no action, `handleLineWebhook_`) is
+unchanged. See `docs/V3-BYO-LINE-OA-SPEC.md` section 4.4.

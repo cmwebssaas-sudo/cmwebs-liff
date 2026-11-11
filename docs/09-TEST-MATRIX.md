@@ -5162,3 +5162,12 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/landlord-assistant.test.mjs`：按「問助理」顯示 AI 回答與對應功能；AI 回 none 或失敗時改用關鍵字結果
 - [x] AI-01 `qwen3.5-maus:9b` 50 題實測：49 題正確，中位數 1.4 秒（關鍵字比對 35 題）
 - [ ] 正式「更多」頁手機實際問答（`HUMAN_REQUIRED`）
+
+## 2026-11-12 V3 依頻道接收 LINE Webhook（階段 5）
+
+- [x] `cloudflare/read-api/test/line-webhook.test.mjs`：簽章正確才轉交，轉交內容帶已驗證的 Workspace 與 Worker 簽章，不含機密
+- [x] `cloudflare/read-api/test/line-webhook.test.mjs`：簽章錯誤、未知路徑、暫停頻道、官方帳號 ID 不符、事件格式錯誤都不轉交
+- [x] `cloudflare/read-api/test/line-webhook.test.mjs`：LINE 後台 Verify 與驗證中頻道回 200 不轉交；同一事件只轉交一次；轉交失敗重試一次，LINE 重送時再轉交
+- [x] `tests/line-worker-webhook.test.mjs`：Apps Script 只比對該 Workspace 的房客；簽章錯誤、過期、重放、清單外 Workspace 一律拒絕；清單空時全部拒絕
+- [x] `tests/line-worker-webhook.test.mjs`：原有 Webhook 仍跨 Workspace 比對，分派程式保留原路徑
+- [ ] 真實 OA 收訊（`HUMAN_REQUIRED`，第 8 階段）
