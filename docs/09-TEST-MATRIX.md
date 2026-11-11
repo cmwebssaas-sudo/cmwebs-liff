@@ -5162,3 +5162,12 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/landlord-assistant.test.mjs`：按「問助理」顯示 AI 回答與對應功能；AI 回 none 或失敗時改用關鍵字結果
 - [x] AI-01 `qwen3.5-maus:9b` 50 題實測：49 題正確，中位數 1.4 秒（關鍵字比對 35 題）
 - [ ] 正式「更多」頁手機實際問答（`HUMAN_REQUIRED`）
+
+## 2026-11-12 房東 AI 助理對話視窗
+
+- [x] `tests/landlord-assistant.test.mjs`：AI 選到目錄功能時顯示該功能；AI 回 none、失敗或頁面沒有 API 時改用關鍵字
+- [x] `tests/landlord-assistant.test.mjs`：對話泡泡、步驟、前往按鈕會跳脫 HTML
+- [x] `tests/landlord-assistant.test.mjs`：對話只存在本機，一天後過期、最多 30 則、登出時清除
+- [x] `tests/landlord-assistant.test.mjs`：有下方工具列的房東頁面都載入機器人按鈕，按鈕在工具列與安全區上方
+- [x] 手機尺寸實看：右下角機器人按鈕、對話視窗、重新整理後對話保留
+- [ ] 正式 LINE 手機實際問答與「前往」後回來接續（`HUMAN_REQUIRED`）
