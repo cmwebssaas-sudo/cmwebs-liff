@@ -4833,7 +4833,7 @@ function handleLineWebhook_(postBody) {
 /**
  * 處理單一 LINE webhook event
  */
-function processLineWebhookEvent_(event) {
+function processLineWebhookEvent_(event, findTenant) {
   try {
     if (!event) {
       return {
@@ -4856,7 +4856,7 @@ function processLineWebhookEvent_(event) {
       };
     }
 
-    const tenant = findTenantByTenantLineUserId_(tenantLineUserId);
+    const tenant = (findTenant || findTenantByTenantLineUserId_)(tenantLineUserId);
 
     // 只先處理使用者傳來的 message event
     if (eventType !== 'message') {

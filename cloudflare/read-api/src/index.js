@@ -1,5 +1,6 @@
 import { sync, heartbeat } from './sync.js';
 import { lineChannels, lineSend } from './line-channels.js';
+import { lineWebhook, lineWebhookKey } from './line-webhook.js';
 import { isReadRoute, readFailure } from './read-routes.js';
 import { createReadHttpHandler } from './read-http.js';
 import { createShadowHttpHandler } from './read-shadow.js';
@@ -21,6 +22,7 @@ export default {
     if (new URL(request.url).pathname === '/sync/heartbeat') return heartbeat(request,env);
     if (new URL(request.url).pathname === '/internal/line-channels') return lineChannels(request,env);
     if (new URL(request.url).pathname === '/internal/line-send') return lineSend(request,env);
+    if (lineWebhookKey(new URL(request.url).pathname)) return lineWebhook(request,env,ctx);
     if (new URL(request.url).pathname === '/v1/shadow-report') return shadow(request,env);
     if (new URL(request.url).pathname === '/v1/assistant') return assistant(request,env);
     if (isReadRoute(new URL(request.url).pathname)) {

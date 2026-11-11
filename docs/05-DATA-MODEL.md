@@ -581,3 +581,13 @@ webhook key are unique. Status is `draft`, `verifying`, `active`, `suspended` or
 `revoked`; revoking removes the ciphertext. Secrets use AES-GCM with the Worker
 secret `LINE_CHANNEL_SECRET_KEY`, bound to the Workspace ID. Not applied to
 Production yet. This table is not synced from Google Sheets.
+
+## 2026-11-12 V3 LINE webhook events (Cloudflare D1)
+
+Migration `0011_line_webhook_events.sql` adds `line_channels.bot_user_id` (the
+Official Account's user ID, set when the channel is verified and cleared on
+`upsert`) and the table `line_webhook_events`: `webhook_event_id` (primary key),
+`workspace_id`, `status` (`pending`, `forwarded`, `failed`), `received_at` and
+`updated_at` in milliseconds. It stores no message content. Rows older than seven
+days are deleted as new webhooks arrive. Apply it before deploying the Worker
+that uses it. Not applied to Production yet.

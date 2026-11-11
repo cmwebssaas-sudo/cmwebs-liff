@@ -63,7 +63,7 @@ async function upsert(db, nonce, input, env) {
   await commit(db,nonce,db.prepare(`INSERT INTO line_channels(workspace_id,line_login_channel_id,liff_id,messaging_channel_id,
       webhook_key,status,encrypted_secrets,verified_at,updated_at) VALUES (?,?,?,?,?,'draft',?,NULL,?)
     ON CONFLICT(workspace_id) DO UPDATE SET line_login_channel_id=excluded.line_login_channel_id,liff_id=excluded.liff_id,
-      messaging_channel_id=excluded.messaging_channel_id,status='draft',encrypted_secrets=excluded.encrypted_secrets,
+      messaging_channel_id=excluded.messaging_channel_id,bot_user_id=NULL,status='draft',encrypted_secrets=excluded.encrypted_secrets,
       verified_at=NULL,updated_at=excluded.updated_at`).bind(input.workspace_id,input.line_login_channel_id,input.liff_id,
     input.messaging_channel_id,crypto.randomUUID().replaceAll('-',''),encrypted,now));
 }

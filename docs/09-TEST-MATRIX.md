@@ -5171,3 +5171,12 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/landlord-assistant.test.mjs`：有下方工具列的房東頁面都載入機器人按鈕，按鈕在工具列與安全區上方
 - [x] 手機尺寸實看：右下角機器人按鈕、對話視窗、重新整理後對話保留
 - [ ] 正式 LINE 手機實際問答與「前往」後回來接續（`HUMAN_REQUIRED`）
+
+## 2026-11-12 V3 依頻道接收 LINE Webhook（階段 5）
+
+- [x] `cloudflare/read-api/test/line-webhook.test.mjs`：簽章正確才轉交，轉交內容帶已驗證的 Workspace 與 Worker 簽章，不含機密
+- [x] `cloudflare/read-api/test/line-webhook.test.mjs`：簽章錯誤、未知路徑、暫停頻道、官方帳號 ID 不符、事件格式錯誤都不轉交
+- [x] `cloudflare/read-api/test/line-webhook.test.mjs`：LINE 後台 Verify 與驗證中頻道回 200 不轉交；同一事件只轉交一次；轉交失敗重試一次，LINE 重送時再轉交
+- [x] `tests/line-worker-webhook.test.mjs`：Apps Script 只比對該 Workspace 的房客；簽章錯誤、過期、重放、清單外 Workspace 一律拒絕；清單空時全部拒絕
+- [x] `tests/line-worker-webhook.test.mjs`：原有 Webhook 仍跨 Workspace 比對，分派程式保留原路徑
+- [ ] 真實 OA 收訊（`HUMAN_REQUIRED`，第 8 階段）
