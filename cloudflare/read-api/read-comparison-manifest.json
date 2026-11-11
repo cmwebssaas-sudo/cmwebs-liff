@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-1569268f6eede14fd54bab3b69598672f8e4f4a610f590b2e1d2235163d1a2ce",
+  "comparison_version": "read-f5c817e07a294e485ada20e17a46373fc25c6bb2b019197895f231b3666c6d6a",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -76,7 +76,7 @@
     "apps-script/V3_PLATFORM_CORE_ROOM_CAPACITY.js": "786974fcc806b30417f1a43fcda60e1ef613228f5531391bf3e5b525324755d4",
     "apps-script/V3_PLATFORM_CORE_SUBSCRIPTIONS.js": "110e813cbeca165d88b5fa62a8e3da29695877e643c5cbb72a0f82156b7ddb9a",
     "apps-script/appsscript.json": "a297d03a523919915989eecade9fbb536aef1476a7ce517607c9c85139872326",
-    "apps-script/程式碼.js": "a9d07db682f7d81dbcfb633c357201a7582cfa643404dbebe7d364e818166502",
+    "apps-script/程式碼.js": "6f70b5612711b5d881e9d8ddbe2cdeb163631d9bcf69af458980e7bbc68ceef9",
     "assets/css/cmwebs-asset-valuation.css": "da2e966962b2981abf640e1e2187b07e5ec83451d8a1c6bcf8fac78603d1045c",
     "assets/js/cmwebs-asset-valuation.js": "af46c7a315f14b801a22541224cade55c09253d92168a1dcd843457aaf00f479",
     "assets/js/cmwebs-billing-transport.js": "1f45700735b6360c14410931f878475d5aaccce65fc71e116b27e59a36cc8258",

@@ -154,7 +154,7 @@ test('the existing channel never touches rich menus', () => {
     assert.equal(calls.length, 0);
   }
   const main = readFileSync(new URL('程式碼.js', dir), 'utf8');
-  assert.match(main, /lineUserId = identity\.data\.sub;\s*if \(\/\^landlord_\/\.test\(v2Action\)\) lineMenuSyncLandlord_\(lineUserId\);/);
+  assert.match(main, /lineUserId = identity\.data\.sub;\s*if \(\/\^landlord_\/\.test\(v2Action\) && typeof lineMenuSyncLandlord_ === 'function'\) lineMenuSyncLandlord_\(lineUserId\);/);
 });
 
 test('an unpublished menu is retried after ten minutes and errors never break the request', () => {
