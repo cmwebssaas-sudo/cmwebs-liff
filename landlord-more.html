@@ -9,13 +9,13 @@
   <title>CMWebs 更多功能</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261111-assistant-ai-v1"></script>
-  <script src="liff-config.js?v=20261111-assistant-ai-v1"></script>
-  <script src="liff-request-auth.js?v=20261111-assistant-ai-v1"></script>
-  <script src="landlord-api.js?v=20261111-assistant-ai-v1"></script>
-  <script src="landlord-auth.js?v=20261111-assistant-ai-v1"></script>
-  <script src="platform-core-subscription.js?v=20261111-assistant-ai-v1"></script>
-  <script src="landlord-assistant.js?v=20261111-assistant-ai-v1"></script>
+<script src="frontend-release.js?v=20261112-assistant-chat-v1"></script>
+  <script src="liff-config.js?v=20261112-assistant-chat-v1"></script>
+  <script src="liff-request-auth.js?v=20261112-assistant-chat-v1"></script>
+  <script src="landlord-api.js?v=20261112-assistant-chat-v1"></script>
+  <script src="landlord-auth.js?v=20261112-assistant-chat-v1"></script>
+  <script src="platform-core-subscription.js?v=20261112-assistant-chat-v1"></script>
+  <script src="landlord-assistant.js?v=20261112-assistant-chat-v1"></script>
 
   <style>
     :root {
@@ -737,19 +737,14 @@
     }
   
     .assistant-panel { display:block; }
-    .assistant-input { width:100%; box-sizing:border-box; margin-top:10px; padding:12px 14px; font-size:16px; border-radius:12px; border:1px solid rgba(15,23,42,.15); background:rgba(255,255,255,.9); }
     .assistant-hint { margin-top:10px; font-size:14px; color:#64748b; line-height:1.6; }
-    .assistant-result { margin-top:12px; padding:12px 14px; border-radius:14px; background:rgba(248,250,252,.95); border:1px solid rgba(15,23,42,.08); }
-    .assistant-result-title { font-weight:700; font-size:16px; }
-    .assistant-steps { margin:8px 0 10px; padding-left:20px; font-size:14px; line-height:1.7; color:#334155; }
     .assistant-ask { margin-top:8px; width:100%; padding:10px 14px; border:0; border-radius:12px; background:#0f172a; color:#fff; font-size:15px; font-weight:700; }
-    .assistant-ai-reply { margin-top:12px; padding:12px 14px; border-radius:14px; background:rgba(22,163,74,.08); color:#14532d; font-size:15px; line-height:1.6; }
-    .assistant-go { width:100%; padding:11px 14px; border:0; border-radius:12px; background:#16a34a; color:#fff; font-size:15px; font-weight:700; }
 </style>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261111-assistant-ai-v1" />
-  <script src="landlord-glass-nav.js?v=20261111-assistant-ai-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261111-assistant-ai-v1" defer></script>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261111-assistant-ai-v1" />
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261112-assistant-chat-v1" />
+  <script src="landlord-glass-nav.js?v=20261112-assistant-chat-v1" defer></script>
+  <link rel="stylesheet" href="landlord-assistant.css?v=20261112-assistant-chat-v1" />
+  <script src="landlord-glass-shell.js?v=20261112-assistant-chat-v1" defer></script>
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261112-assistant-chat-v1" />
 </head>
 
 <body>
@@ -861,23 +856,14 @@
         </div>
       </section>
 
-      <form id="assistantPanel" class="card assistant-panel" role="search" aria-label="問助理：找功能">
+      <section class="card assistant-panel">
         <div class="section-title-row">
-          <div class="section-title">問助理</div>
-          <div class="section-hint">說出想做的事，帶你到對的地方</div>
+          <div class="section-title">問 AI 助理</div>
+          <div class="section-hint">像聊天一樣問，帶你到對的地方</div>
         </div>
-        <input
-          class="assistant-input"
-          type="search"
-          inputmode="search"
-          enterkeyhint="search"
-          placeholder="例如：房客要退房怎麼處理？"
-          aria-label="想做什麼事"
-          autocomplete="off"
-        />
-        <button class="assistant-ask" type="submit">問助理</button>
-        <div class="assistant-results" aria-live="polite"></div>
-      </form>
+        <div class="assistant-hint">每一頁右下角都有機器人按鈕，點開就能問。問完按「前往」去操作，回來再點機器人，對話還在。</div>
+        <button class="assistant-ask" type="button" onclick="window.CMWEBS_LANDLORD_ASSISTANT && window.CMWEBS_LANDLORD_ASSISTANT.openChat()">打開 AI 助理</button>
+      </section>
 
       <button
         id="desktopEntryButton"
@@ -2453,11 +2439,6 @@
     }
 
     loadSummary();
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (window.CMWEBS_LANDLORD_ASSISTANT) window.CMWEBS_LANDLORD_ASSISTANT.mount('assistantPanel');
-    });
   </script>
 </body>
 </html>

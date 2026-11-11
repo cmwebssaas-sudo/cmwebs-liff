@@ -1,0 +1,58 @@
+/* 房東 AI 助理：右下角機器人按鈕與對話視窗（高於下方工具列與安全區）。 */
+.cma-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 14px);
+  z-index: 1100;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #22c55e, #15803d);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(21, 128, 61, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.cma-fab svg { width: 32px; height: 32px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cma-fab svg circle { fill: #fff; stroke: none; }
+.cma-fab svg rect { fill: rgba(255, 255, 255, 0.15); }
+.cma-fab.is-hidden { display: none; }
+.cma-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1300;
+  height: min(78vh, calc(var(--app-height, 100vh) - 48px));
+  display: none;
+  flex-direction: column;
+  background: #f8fafc;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.25);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.cma-panel.is-open { display: flex; }
+.cma-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid rgba(15, 23, 42, 0.08); font-size: 17px; }
+.cma-head strong { flex: 1; }
+.cma-clear, .cma-close { border: 0; background: transparent; color: #475569; font-size: 14px; padding: 6px 8px; }
+.cma-close { font-size: 18px; }
+.cma-log { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 14px; }
+.cma-row { display: flex; margin: 8px 0; }
+.cma-me { justify-content: flex-end; }
+.cma-bubble { max-width: 85%; padding: 10px 13px; border-radius: 16px; background: #fff; color: #0f172a; font-size: 15px; line-height: 1.6; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08); white-space: pre-wrap; word-break: break-word; }
+.cma-me .cma-bubble { background: #16a34a; color: #fff; }
+.cma-wait { color: #64748b; }
+.cma-card { margin: 6px 0 12px; padding: 12px 14px; border-radius: 14px; background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); }
+.cma-card-title { font-weight: 700; font-size: 15px; }
+.cma-steps { margin: 6px 0 10px; padding-left: 20px; font-size: 14px; line-height: 1.7; color: #334155; }
+.cma-go { width: 100%; padding: 10px 14px; border: 0; border-radius: 12px; background: #16a34a; color: #fff; font-size: 15px; font-weight: 700; }
+.cma-form { display: flex; gap: 8px; padding: 10px 12px 12px; border-top: 1px solid rgba(15, 23, 42, 0.08); background: #fff; }
+.cma-input { flex: 1; min-width: 0; padding: 11px 13px; font-size: 16px; border-radius: 12px; border: 1px solid rgba(15, 23, 42, 0.15); }
+.cma-send { padding: 0 18px; border: 0; border-radius: 12px; background: #0f172a; color: #fff; font-size: 16px; font-weight: 700; }
+@media (min-width: 1024px) {
+  .cma-fab { bottom: 24px; right: 24px; }
+  .cma-panel { left: auto; right: 24px; bottom: 24px; width: 400px; height: min(640px, calc(100vh - 48px)); border-radius: 20px; }
+}

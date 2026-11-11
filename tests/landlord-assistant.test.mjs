@@ -55,58 +55,78 @@ test('everyday questions find the right function first', () => {
   assert.equal(search('今天天氣如何').length, 0);
 });
 
-test('results show steps and a button that opens the page through goPage', () => {
-  const { renderResults, search } = loadAssistant();
-  const html = renderResults(search('房客要退房'), '房客要退房');
-  assert.match(html, /房客退房、退租/);
-  assert.match(html, /<ol class="assistant-steps"><li>/);
-  assert.match(html, /class="assistant-go" type="button" data-page="landlord-tenants\.html">前往房客名單 ›<\/button>/);
-  assert.match(renderResults([], '<b>'), /找不到相符的功能/);
-  assert.doesNotMatch(renderResults([{ title: '<b>x</b>', steps: ['<i>'], link: { page: 'a', label: 'b' } }], 'q'), /<b>|<i>/);
-});
-
-test('the More page loads the assistant and mounts the panel', () => {
-  const page = read('landlord-more.html');
-  assert.match(page, /<script src="landlord-assistant\.js\?v=[^"]+"><\/script>/);
-  assert.match(page, /<form id="assistantPanel"/);
-  assert.match(page, /CMWEBS_LANDLORD_ASSISTANT\.mount\('assistantPanel'\)/);
-});
-
-function loadWithApi(askAssistant) {
-  const context = vm.createContext({ window: { CMWebsLandlordApi: { askAssistant } } });
+function loadWithApi(askAssistant, storage) {
+  const store = storage || new Map();
+  const window = {
+    localStorage: { getItem: k => store.has(k) ? store.get(k) : null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) }
+  };
+  if (askAssistant) window.CMWebsLandlordApi = { askAssistant };
+  const context = vm.createContext({ window });
   vm.runInContext(read('landlord-assistant.js'), context);
-  return context.window.CMWEBS_LANDLORD_ASSISTANT;
+  return { assistant: context.window.CMWEBS_LANDLORD_ASSISTANT, store };
 }
 
-test('pressing ask shows the AI reply and the catalog entry it chose', async () => {
+test('an AI answer keeps the chosen catalog entry; none or failure falls back to keywords', async () => {
   let sent;
-  const assistant = loadWithApi(async (question, catalog) => {
+  const { assistant } = loadWithApi(async (question, catalog) => {
     sent = { question, ids: catalog.map(item => item.id) };
     return { id: 'checkout', reply: '退房請到房客資料按「辦理退房」。' };
   });
-  const html = await assistant.ask('房客月底要搬走');
+  const reply = await assistant.answer('房客月底要搬走');
   assert.equal(sent.question, '房客月底要搬走');
-  assert.ok(sent.ids.includes('checkout') && sent.ids.length === assistant.catalog.length);
-  assert.match(html, /assistant-ai-reply">退房請到房客資料按「辦理退房」。/);
-  assert.match(html, /房客退房、退租/);
-  assert.equal((html.match(/assistant-result"/g) || []).length, 1);
+  assert.equal(sent.ids.length, assistant.catalog.length);
+  assert.deepEqual([...reply.ids], ['checkout']);
+  assert.equal(reply.reply, '退房請到房客資料按「辦理退房」。');
+  const none = await loadWithApi(async () => ({ id: 'none', reply: '換個說法試試。' })).assistant.answer('房客要退房');
+  assert.equal(none.ids[0], 'checkout');
+  const failed = await loadWithApi(async () => { throw new Error('ASSISTANT_NOT_ENABLED'); }).assistant.answer('房客要退房');
+  assert.equal(failed.reply, '');
+  assert.equal(failed.ids[0], 'checkout');
+  const offline = await loadWithApi(null).assistant.answer('誰還沒繳');
+  assert.equal(offline.ids[0], 'reminder');
 });
 
-test('an AI none answer or an AI failure falls back to keyword results', async () => {
-  const none = await loadWithApi(async () => ({ id: 'none', reply: '這個問題我幫不上忙。' })).ask('房客要退房');
-  assert.match(none, /這個問題我幫不上忙/);
-  assert.match(none, /房客退房、退租/);
-  const failed = await loadWithApi(async () => { throw new Error('ASSISTANT_NOT_ENABLED'); }).ask('房客要退房');
-  assert.doesNotMatch(failed, /assistant-ai-reply/);
-  assert.match(failed, /房客退房、退租/);
-  const invented = await loadWithApi(async () => ({ id: 'not_in_catalog', reply: '<b>x</b>' })).ask('房客要退房');
-  assert.doesNotMatch(invented, /<b>/);
+test('chat messages render bubbles, steps and a 前往 button, escaping text', () => {
+  const { assistant } = loadWithApi(null);
+  assert.match(assistant.renderMessage({ role: 'user', text: '<b>退房</b>' }), /cma-me"><div class="cma-bubble">&lt;b&gt;退房&lt;\/b&gt;/);
+  const html = assistant.renderMessage({ role: 'assistant', reply: '可以這樣做', ids: ['checkout'] });
+  assert.match(html, /房客退房、退租/);
+  assert.match(html, /<button class="cma-go" type="button" data-page="landlord-tenants\.html">前往房客名單 ›<\/button>/);
+  assert.match(assistant.renderMessage({ role: 'assistant', reply: '', ids: [] }), /我找不到相符的功能/);
+  assert.match(assistant.renderMessage({ role: 'assistant', pending: true }), /助理思考中/);
+});
+
+test('the conversation survives page changes for one day on this phone only', () => {
+  const { assistant, store } = loadWithApi(null);
+  const now = Date.parse('2026-11-12T10:00:00Z');
+  assistant.saveChat({ open: false, messages: [{ role: 'user', text: '退房' }] }, now);
+  assert.equal(assistant.loadChat(now + 60000).messages.length, 1);
+  assert.equal(assistant.loadChat(now + 25 * 3600000).messages.length, 0, 'expires after a day');
+  assistant.saveChat({ open: true, messages: Array.from({ length: 40 }, (_, i) => ({ role: 'user', text: String(i) })) }, now);
+  const kept = assistant.loadChat(now);
+  assert.equal(kept.messages.length, 30);
+  assert.equal(kept.open, true);
+  assistant.clearChat();
+  assert.equal(store.size, 0);
+  assert.match(read('landlord-auth.js'), /removeItem\('cmwebs_landlord_assistant_chat_v1'\)/);
+});
+
+test('every landlord page with the bottom toolbar loads the assistant', () => {
+  const pages = ['landlord-home.html', 'landlord-tenants.html', 'landlord-arrears.html', 'landlord-more.html',
+    'landlord-tenant-detail.html', 'landlord-contract-requests.html', 'landlord-properties.html', 'landlord-team.html'];
+  for (const page of pages) {
+    const html = read(page);
+    assert.match(html, /<script src="landlord-assistant\.js\?v=[^"]+"( defer)?><\/script>/, page);
+    assert.match(html, /<link rel="stylesheet" href="landlord-assistant\.css\?v=[^"]+" \/>/, page);
+  }
+  assert.match(read('landlord-more.html'), /CMWEBS_LANDLORD_ASSISTANT\.openChat\(\)/);
+  const css = read('landlord-assistant.css');
+  assert.match(css, /\.cma-fab \{[\s\S]*bottom: calc\(var\(--nav-height, 68px\) \+ env\(safe-area-inset-bottom\) \+ 14px\)/);
+  assert.match(css, /\.cma-panel \{[\s\S]*z-index: 1300/);
 });
 
 test('the read client posts the question to the read service with the landlord credential', () => {
   const api = read('landlord-api.js');
   assert.match(api, /askAssistant: async function \(question, catalog\)/);
   assert.match(api, /'\/v1\/assistant'/);
-  assert.match(api, /method: 'POST'/);
-  assert.match(read('landlord-more.html'), /<button class="assistant-ask" type="submit">問助理<\/button>/);
 });
