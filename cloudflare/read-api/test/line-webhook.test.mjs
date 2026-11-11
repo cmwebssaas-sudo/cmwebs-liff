@@ -104,6 +104,8 @@ test('Verify requests and channels still being verified answer 200 without forwa
     const { calls, fetcher } = appsScriptStub();
     assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[] }),env(db),null,fetcher)).status,200);
     assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[event('E1')] }),env(db),null,fetcher)).status,200);
+    assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[{ type:'test' }] }),env(db),null,fetcher)).status,200);
+    assert.equal((await lineWebhook(lineRequest({ destination:bot, events:[] },{ secret:'wrong-secret' }),env(db),null,fetcher)).status,401);
     assert.equal(calls.length,0);
   });
 });

@@ -93,11 +93,13 @@ export async function lineWebhook(request, env, ctx, fetcher = fetch) {
     if (!await validLineSignature(body,request.headers.get('x-line-signature') || '',secrets.messaging_channel_secret)) {
       return reply('LINE_SIGNATURE_INVALID',401);
     }
+    // A signed request to a channel that is still being verified is a setup
+    // test (the console's Verify button or the webhook test API): accept it
+    // whatever its events look like, and forward nothing.
+    if (row.status !== 'active') return reply('OK');
     const parsed = validEvents(body);
     if (!parsed || (row.bot_user_id && parsed.destination !== row.bot_user_id)) return reply('LINE_WEBHOOK_INVALID',400);
-    // The console's Verify button and setup tests stop here: nothing to forward
-    // until the channel is active.
-    if (!parsed.events.length || row.status !== 'active') return reply('OK');
+    if (!parsed.events.length) return reply('OK');
     const events = await claimEvents(db,row.workspace_id,parsed.events,Date.now());
     if (!events.length) return reply('OK');
     const work = forward(db,env,row.workspace_id,parsed.destination,events,fetcher).catch(() => {});

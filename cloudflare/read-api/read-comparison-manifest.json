@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-995d3bc598f02a0cd5dc7f8630b49f020e9dc6b7322114b57c7bb20d46dcf8fb",
+  "comparison_version": "read-64241b429a4415a3c173fb097f6b5ac6129bef7f79531f0ae45b3c8a1be2e3df",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -109,7 +109,7 @@
     "cloudflare/read-api/src/assistant.js": "18c0eb2e062490ff5cab55ce1861200eec6ac90fd1975ad110a9eab2d73754e4",
     "cloudflare/read-api/src/index.js": "83b90018ac9b5568698fe0ee2db10bd640fa52e3a7cb6fe6c4015f7070ec3735",
     "cloudflare/read-api/src/line-channels.js": "3d0bb55526708370d8d964c50ff6442f1e0a99a643e3ccc263a3d1301f90d909",
-    "cloudflare/read-api/src/line-webhook.js": "9f7894c9aa1fc7fab24a914fb1d4c2d919db0f1a65bfd3db34861711ebef6305",
+    "cloudflare/read-api/src/line-webhook.js": "29dc5ec6ae1cf9663ff1534ebe2e06ccb1c13720e105fcdc7dff223119072729",
     "cloudflare/read-api/src/public-room-resources.js": "9715b0d320162ed2d88050320e1aeb34f4db86bd8e9099ff0229d696e03ed961",
     "cloudflare/read-api/src/read-access.js": "a53451d58e8d044fcf872afba01ed1662830429e6c6e2ce67813198fe8e0a9de",
     "cloudflare/read-api/src/read-calculator.js": "3544edeeb5d50b2a86bd4b32120c6ab2fb572880e5531970bb69d8095169d0fc",
