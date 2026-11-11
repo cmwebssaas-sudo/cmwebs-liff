@@ -7,7 +7,7 @@
  */
 const LINE_SETUP_ACTIONS_ = [
   'landlord_line_setup_status', 'landlord_line_setup_save', 'landlord_line_setup_verify',
-  'landlord_line_setup_webhook', 'landlord_line_setup_provider_link', 'landlord_line_setup_activate',
+  'landlord_line_setup_webhook', 'landlord_line_setup_webhook_restore', 'landlord_line_setup_provider_link', 'landlord_line_setup_activate',
   'line_setup_provider_check'
 ];
 
@@ -28,6 +28,8 @@ const LINE_SETUP_MESSAGES_ = {
   LINE_ID_TOKEN_INVALID: 'LINE 登入已失效，請重新開啟連結',
   LINE_SETUP_CODE_INVALID: '連結已失效，請回到電腦重新產生',
   LINE_UNREACHABLE: '暫時連不到 LINE，請稍後再試',
+  LINE_CHANNEL_RESERVED: '這是 CMWebs 目前使用的登入頻道，不能在精靈中設定',
+  LINE_WEBHOOK_PROTECTED: '這個官方帳號的 Webhook 正由 CMWebs 現有系統使用，不能在精靈中更換',
   LINE_CHANNEL_UNAVAILABLE: '暫時無法處理，請稍後再試'
 };
 
@@ -187,6 +189,8 @@ function lineSetupHandle_(action, request) {
       result = lineSetupFromWorker_(lineSetupWorker_({
         action: 'set_webhook', workspace_id: owner.workspace_id, replace_existing: String(request.replace_existing) === 'true'
       }));
+    } else if (action === 'landlord_line_setup_webhook_restore') {
+      result = lineSetupFromWorker_(lineSetupWorker_({ action: 'restore_webhook', workspace_id: owner.workspace_id }));
     } else if (action === 'landlord_line_setup_provider_link') return lineSetupProviderLink_(owner.workspace_id);
     else if (action === 'landlord_line_setup_activate') result = lineSetupActivate_(owner.workspace_id);
     else return lineSetupResult_(false, 'INVALID_LINE_SETUP');

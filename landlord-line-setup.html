@@ -39,7 +39,9 @@
 <div id="webhook-box" hidden><h3>Webhook</h3><p>目前網址：<span class="code" id="webhook-current"></span></p>
 <label class="check" id="replace-wrap" hidden><input type="checkbox" id="replace"><span>我確認以 CMWebs 取代目前的 Webhook 網址。</span></label>
 <p>設定後請到 LINE 後台確認「使用 Webhook」已開啟。</p>
-<button type="button" id="webhook">設定 Webhook 並測試</button></div>
+<button type="button" id="webhook">設定 Webhook 並測試</button>
+<p id="webhook-previous" hidden>CMWebs 取代前的網址：<span class="code" id="webhook-previous-url"></span></p>
+<button type="button" class="secondary" id="webhook-restore">改回原本的 Webhook</button></div>
 <div id="provider-box" hidden><h3>同一個 Provider</h3>
 <p>請用手機開啟下面的連結：先加入您的官方帳號為好友，再完成登入。系統查得到您的資料，才代表兩個頻道在同一個 Provider。連結 10 分鐘內有效。</p>
 <button type="button" id="provider-link">產生手機連結</button><span class="code" id="provider-url" hidden></span>
@@ -90,6 +92,8 @@
     const current=data.webhook.current;
     $('webhook-current').textContent=current||'（尚未設定）';
     $('replace-wrap').hidden=!current||current===data.webhook.expected;
+    const previous=channel&&channel.previous_webhook_endpoint;
+    $('webhook-previous').hidden=!previous;$('webhook-previous-url').textContent=previous||'';
     $('activate').disabled=!Object.keys(labels).every(key=>data.checks[key]===true)||(channel&&channel.status==='active');
     render();
   }
@@ -136,6 +140,12 @@
     say('設定 Webhook 並請 LINE 送測試訊息…');
     const data=await call('landlord_line_setup_webhook',{replace_existing:$('replace').checked?'true':'false'});
     say(data.test.success?(data.active?'Webhook 測試成功。':'Webhook 測試成功。請到 LINE 後台開啟「使用 Webhook」。'):'Webhook 測試失敗（'+data.test.reason+'），請確認 Channel secret 是否正確。');
+    showChecks(await call('landlord_line_setup_verify'));
+  }));
+  $('webhook-restore').addEventListener('click',()=>run($('webhook-restore'),async()=>{
+    if(!confirm('確定把 Webhook 改回 CMWebs 設定前的網址？之後 CMWebs 不會再收到這個官方帳號的訊息。'))return;
+    const data=await call('landlord_line_setup_webhook_restore');
+    say(data.restored?'已改回原本的網址。':'沒有原本的網址。請到 LINE 後台關閉「使用 Webhook」。');
     showChecks(await call('landlord_line_setup_verify'));
   }));
   $('provider-link').addEventListener('click',()=>run($('provider-link'),async()=>{

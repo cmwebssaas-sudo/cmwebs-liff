@@ -49,7 +49,7 @@ function fakeLine({ apps = [], endpoint = '', active = true, friends = [landlord
   return state;
 }
 
-async function withRegistry(run) {
+async function withRegistry(run, extraEnv = {}) {
   const mf = new Miniflare(convertV4MiniflareOptions({ modules:true, script:'export default { fetch() { return new Response(null); } }',
     compatibilityDate:'2026-10-06', d1Databases:{ DB:randomUUID() } }));
   try {
@@ -59,7 +59,7 @@ async function withRegistry(run) {
       const statements = sql.replace(/^--.*$/gm,'').split(';').map(s => s.trim()).filter(Boolean);
       if (statements.length) await db.batch(statements.map(s => db.prepare(s)));
     }
-    const env = { DB:db, LINE_REGISTRY_SIGNING_SECRET:signing, LINE_CHANNEL_SECRET_KEY:key };
+    const env = { DB:db, LINE_REGISTRY_SIGNING_SECRET:signing, LINE_CHANNEL_SECRET_KEY:key, ...extraEnv };
     const send = async (payload, line) => {
       const body = JSON.stringify(payload), timestamp = String(Math.floor(Date.now()/1000)), nonce = randomUUID();
       const signature = createHmac('sha256',signing).update(timestamp+'\n'+nonce+'\n'+body).digest('hex');
@@ -183,5 +183,59 @@ test('setup actions reject unknown fields, missing channels and LINE outages', a
     }
     const down = { fetch:async () => { throw new Error('down'); } };
     assert.equal((await send({ action:'verify', workspace_id:'W_A' },down)).body.code,'LINE_UNREACHABLE');
+  });
+});
+
+test('LIFF apps the wizard did not make are never rewritten', async () => {
+  await withRegistry(async (db, send) => {
+    const existing = { liffId:login+'-TenantAp', view:{ type:'full', url:'https://cmwebssaas-sudo.github.io/cmwebs-liff/tenant-bind.html' } };
+    const line = fakeLine({ apps:[existing] });
+    const result = await send({ action:'prepare_liff', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    assert.equal(result.body.data.liff_id,login+'-NewApp01');
+    assert.equal(existing.view.url,'https://cmwebssaas-sudo.github.io/cmwebs-liff/tenant-bind.html');
+    assert.ok(!line.calls.includes('PUT /liff/v1/apps/'+login+'-TenantAp'));
+  });
+});
+
+test('the existing CMWebs Login channel cannot be set up through the wizard', async () => {
+  await withRegistry(async (db, send) => {
+    const line = fakeLine();
+    const prepared = await send({ action:'prepare_liff', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    assert.equal(prepared.status,409); assert.equal(prepared.body.code,'LINE_CHANNEL_RESERVED');
+    assert.equal((await saved(send,line,login+'-AbCdEfGh')).body.code,'LINE_CHANNEL_RESERVED');
+    assert.equal(line.calls.length,0);
+  },{ LINE_LOGIN_CHANNEL_ID:login });
+});
+
+test('a webhook that points at Apps Script is never replaced', async () => {
+  await withRegistry(async (db, send) => {
+    const live = 'https://script.google.com/macros/s/LIVE_DEPLOYMENT/exec';
+    const line = fakeLine({ endpoint:live });
+    await saved(send,line,login+'-AbCdEfGh');
+    await setStatus(send,line,'verifying');
+    const refused = await send({ action:'set_webhook', workspace_id:'W_A', replace_existing:true },line);
+    assert.equal(refused.status,409); assert.equal(refused.body.code,'LINE_WEBHOOK_PROTECTED');
+    assert.equal(line.endpoint,live);
+  });
+});
+
+test('restoring the webhook puts the replaced URL back', async () => {
+  await withRegistry(async (db, send) => {
+    const line = fakeLine({ endpoint:'https://other-bot.example/hook' });
+    await saved(send,line,login+'-AbCdEfGh');
+    await setStatus(send,line,'verifying');
+    await send({ action:'set_webhook', workspace_id:'W_A', replace_existing:true },line);
+    const restored = await send({ action:'restore_webhook', workspace_id:'W_A' },line);
+    assert.equal(restored.body.data.restored,true);
+    assert.equal(line.endpoint,'https://other-bot.example/hook');
+    assert.equal(restored.body.data.channel.webhook_verified_at,null);
+  });
+  await withRegistry(async (db, send) => {
+    const line = fakeLine();
+    await saved(send,line,login+'-AbCdEfGh');
+    await setStatus(send,line,'verifying');
+    await send({ action:'set_webhook', workspace_id:'W_A', replace_existing:false },line);
+    const none = await send({ action:'restore_webhook', workspace_id:'W_A' },line);
+    assert.equal(none.body.data.restored,false);
   });
 });

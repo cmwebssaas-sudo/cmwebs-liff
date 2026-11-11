@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261111-assistant-ai-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-49486aa1495f0e24b20d0fbe150581f91ca0567872a23c87669f3c732e9fc97e";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-7b74b7bad7dff08932e0fe6085687c5f80d3388cc809cc57fe906d6af4639571";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';

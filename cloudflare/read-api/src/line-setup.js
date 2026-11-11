@@ -36,13 +36,15 @@ async function liffApps(fetcher, token) {
   return Array.isArray(result.data.apps) ? result.data.apps : [];
 }
 
-// Reuses the CMWebs LIFF app on this channel when there is one, so running the
-// wizard again never adds another. A new app gets the site root first, then
-// its own ID once LINE has assigned it.
+// Reuses a LIFF app this wizard made on the channel, so running it again never
+// adds another; any other app on the channel, CMWebs's own included, is left
+// alone. A new app gets the site root first, then its own ID once LINE has
+// assigned it.
 export async function prepareLiff(input, fetcher) {
   const token = await loginToken(fetcher,input.line_login_channel_id,input.line_login_channel_secret);
   if (!token) stop('LINE_LOGIN_SECRET_INVALID');
-  let app = (await liffApps(fetcher,token)).find(item => String(item?.view?.url || '').startsWith(LIFF_ENDPOINT_BASE));
+  let app = (await liffApps(fetcher,token)).find(item => item?.view?.url === LIFF_ENDPOINT_BASE ||
+    (item?.liffId && item?.view?.url === liffEndpoint(item.liffId)));
   let liffId = app?.liffId;
   if (!liffId) {
     const created = await call(fetcher,'POST',api+'/liff/v1/apps',{ token,
@@ -103,6 +105,8 @@ export async function setWebhook(db, row, secrets, input, origin, fetcher) {
   const token = secrets.messaging_access_token;
   const expected = webhookUrl(origin,row);
   const current = await webhookEndpoint(fetcher,token);
+  // The existing channel's webhook goes straight to Apps Script; never take it over.
+  if (/^https:\/\/script\.google\.com\/macros\/s\//.test(current.endpoint)) stop('LINE_WEBHOOK_PROTECTED',409);
   const replacing = current.endpoint && current.endpoint !== expected;
   if (replacing && input.replace_existing !== true) stop('LINE_WEBHOOK_REPLACE_CONFIRM_REQUIRED',409);
   const previous = row.previous_webhook_endpoint || (replacing ? current.endpoint : null);
@@ -120,6 +124,19 @@ export async function setWebhook(db, row, secrets, input, origin, fetcher) {
   }
   return { test:{ success:passed, reason:String(test.data.reason || ''), status_code:Number(test.data.statusCode) || 0 },
     active:current.active, previous_endpoint:previous || '' };
+}
+
+// Rollback: points the OA back at the URL CMWebs replaced. With none saved,
+// the landlord turns webhooks off in the LINE console instead.
+export async function restoreWebhook(db, row, secrets, fetcher) {
+  const previous = row.previous_webhook_endpoint || '';
+  if (previous) {
+    const set = await call(fetcher,'PUT',api+'/v2/bot/channel/webhook/endpoint',{ token:secrets.messaging_access_token, json:{ endpoint:previous } });
+    if (set.status !== 200) stop('LINE_WEBHOOK_SET_FAILED',502);
+  }
+  await db.prepare('UPDATE line_channels SET webhook_verified_at=NULL,updated_at=? WHERE workspace_id=?')
+    .bind(new Date().toISOString(),row.workspace_id).run();
+  return { restored:Boolean(previous), endpoint:previous };
 }
 
 // User IDs match only under one provider. If the OA can see the profile of

@@ -1535,6 +1535,7 @@ Property `CMWEBS_LINE_SETUP_WORKSPACES`, otherwise `LINE_SETUP_OWNER_REQUIRED` o
 | `landlord_line_setup_save` | Five channel fields → Worker `prepare_liff`, then `upsert` (status `draft`) |
 | `landlord_line_setup_verify` | Moves `draft` to `verifying`, then Worker `verify` |
 | `landlord_line_setup_webhook` | Worker `set_webhook`; `replace_existing=true` is required to replace another URL |
+| `landlord_line_setup_webhook_restore` | Worker `restore_webhook`: puts the replaced URL back |
 | `landlord_line_setup_provider_link` | One-time 10-minute link `https://liff.line.me/<LIFF ID>/landlord-line-setup.html?setup_code=…` |
 | `line_setup_provider_check` | From that link on the phone: `setup_code` + `id_token` → Worker `check_provider` |
 | `landlord_line_setup_activate` | Worker `set_status` `active`; clears the cached login-channel and LIFF lookups |
@@ -1559,6 +1560,15 @@ values.
 - `check_provider` (`workspace_id`, `id_token`): verifies the ID token against the
   channel's Login channel, then asks the OA for that user's profile. Found sets
   `provider_checked_at`; not found returns `provider_match: false`.
+- `restore_webhook` (`workspace_id`): puts `previous_webhook_endpoint` back and
+  clears `webhook_verified_at`. With no saved URL it returns `restored: false`;
+  the landlord then turns webhooks off in the LINE console.
+- `prepare_liff` reuses only an app whose endpoint is the Pages root or its own
+  `?cmwebs_liff=` URL; other apps on the channel are never changed. `prepare_liff`
+  and `upsert` refuse the existing CMWebs Login channel (`LINE_LOGIN_CHANNEL_ID`)
+  with `LINE_CHANNEL_RESERVED`.
+- `set_webhook` refuses with `LINE_WEBHOOK_PROTECTED`, even when confirmed, if the
+  current URL is an Apps Script Web App (the existing channel's webhook).
 - `set_status` to `active` now requires `bot_user_id`, `webhook_verified_at` and
   `provider_checked_at` (`LINE_CHANNEL_NOT_VERIFIED` otherwise).
 - `upsert` clears the three verification fields; it keeps

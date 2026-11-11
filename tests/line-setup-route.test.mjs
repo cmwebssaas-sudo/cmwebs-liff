@@ -123,3 +123,11 @@ test('the POST dispatcher sends only setup actions to the wizard handler', () =>
   assert.equal(ctx.lineSetupIsAction_('landlord_line_setup_save'), true);
   assert.equal(ctx.lineSetupIsAction_('landlord_team_init'), false);
 });
+
+test('restoring the webhook is an owner action', () => {
+  const { ctx, calls, audits } = setup();
+  ctx.lineSetupHandle_('landlord_line_setup_webhook_restore', { id_token: 'landlord' });
+  assert.equal(calls[0].action, 'restore_webhook');
+  assert.equal(audits[0].action, 'landlord_line_setup_webhook_restore');
+  assert.match(setup().ctx.lineSetupResult_(false, 'LINE_WEBHOOK_PROTECTED').message, /不能在精靈中更換/);
+});

@@ -1,5 +1,5 @@
 import { boundedBody, verifySignature } from './sync.js';
-import { checkProvider, prepareLiff, setWebhook, verifyChannel } from './line-setup.js';
+import { checkProvider, prepareLiff, restoreWebhook, setWebhook, verifyChannel } from './line-setup.js';
 
 const encoder = new TextEncoder();
 const secretFields = ['messaging_channel_secret','messaging_access_token','line_login_channel_secret'];
@@ -59,8 +59,14 @@ async function commit(db, nonce, statement) {
     stop('NONCE_REPLAY',409);
   }
 }
+// The existing CMWebs Login channel and its LIFF apps stay out of the wizard
+// until moving W000001 onto its own OA is designed.
+function reservedLoginChannel(channelId, env) {
+  if (env.LINE_LOGIN_CHANNEL_ID && channelId === env.LINE_LOGIN_CHANNEL_ID) stop('LINE_CHANNEL_RESERVED',409);
+}
 async function upsert(db, nonce, input, env) {
   validUpsert(input);
+  reservedLoginChannel(input.line_login_channel_id,env);
   const now = new Date().toISOString();
   const encrypted = await encryptChannelSecrets(input.secrets,env.LINE_CHANNEL_SECRET_KEY,input.workspace_id);
   await commit(db,nonce,db.prepare(`INSERT INTO line_channels(workspace_id,line_login_channel_id,liff_id,messaging_channel_id,
@@ -90,7 +96,8 @@ async function setStatus(db, nonce, input) {
 const setupActions = {
   verify:{ keys:'action,workspace_id', statuses:['draft','verifying','active','suspended'] },
   set_webhook:{ keys:'action,replace_existing,workspace_id', statuses:['verifying'] },
-  check_provider:{ keys:'action,id_token,workspace_id', statuses:['verifying','active'] }
+  check_provider:{ keys:'action,id_token,workspace_id', statuses:['verifying','active'] },
+  restore_webhook:{ keys:'action,workspace_id', statuses:['verifying','active','suspended'] }
 };
 async function setupAction(db, input, env, origin, fetcher) {
   const spec = setupActions[input.action];
@@ -102,6 +109,7 @@ async function setupAction(db, input, env, origin, fetcher) {
   const secrets = await decryptChannelSecrets(row.encrypted_secrets,env.LINE_CHANNEL_SECRET_KEY,row.workspace_id);
   if (input.action === 'verify') return verifyChannel(db,row,secrets,origin,fetcher);
   if (input.action === 'set_webhook') return setWebhook(db,row,secrets,input,origin,fetcher);
+  if (input.action === 'restore_webhook') return restoreWebhook(db,row,secrets,fetcher);
   return checkProvider(db,row,secrets,input,fetcher);
 }
 function validPrepareLiff(input) {
@@ -121,6 +129,7 @@ export async function lineChannels(request, env, fetcher = fetch) {
     const db = env.DB.withSession ? env.DB.withSession('first-primary') : env.DB;
     if (input.action === 'prepare_liff') {
       validPrepareLiff(input);
+      reservedLoginChannel(input.line_login_channel_id,env);
       await commit(db,nonce);
       return reply({ success:true, code:'OK', message:'LIFF ready', data:await prepareLiff(input,fetcher) });
     }

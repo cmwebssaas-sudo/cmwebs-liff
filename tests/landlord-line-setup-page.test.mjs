@@ -35,3 +35,8 @@ test('LIFF ID comes from the shared config, loaded before the page scripts', () 
   assert.ok(page.indexOf('liff-config.js') < page.indexOf('landlord-auth.js'));
   assert.doesNotMatch(page, /\d{10}-[A-Za-z0-9]{8}/);
 });
+
+test('the replaced webhook URL is shown and can be restored after a confirmation', () => {
+  assert.match(page, /CMWebs 取代前的網址/);
+  assert.match(script, /if\(!confirm\('確定把 Webhook 改回[^']*'\)\)return;\s*const data=await call\('landlord_line_setup_webhook_restore'\)/);
+});

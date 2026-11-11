@@ -5176,6 +5176,7 @@ sign-out was not run; the preview used stubs.
 
 - [x] `cloudflare/read-api/test/line-setup.test.mjs`：自動建立 LIFF 且重跑不重複建立；token、Login secret、LIFF、Webhook、Provider 五項檢查；全部通過才可啟用
 - [x] `cloudflare/read-api/test/line-setup.test.mjs`：已有其他 Webhook 時須確認才取代，並保存原網址；Webhook 測試失敗不算通過；非好友或不同 Provider、偽造 ID Token 都不通過；回應不含機密
+- [x] `cloudflare/read-api/test/line-setup.test.mjs`：不改動精靈以外建立的 LIFF；拒絕 CMWebs 現有登入頻道；指向 Apps Script 的 Webhook 一律不取代；可改回原本的 Webhook
 - [x] `cloudflare/read-api/test/line-channels.test.mjs`：缺少驗證紀錄時不能改為 `active`
 - [x] `tests/line-setup-route.test.mjs`：只有開通清單內 Workspace 的房東本人可用；格式錯誤在呼叫 Worker 前拒絕；手機連結一次性；啟用後清除快取
 - [x] `tests/landlord-line-setup-page.test.mjs`：機密只走 POST、輸入框為密碼欄位、Provider 警告在前、取代 Webhook 須勾選
