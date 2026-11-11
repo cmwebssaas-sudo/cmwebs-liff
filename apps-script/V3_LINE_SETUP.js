@@ -165,7 +165,10 @@ function lineSetupProviderCheck_(request) {
   const idToken = lineSetupText_(request.id_token);
   if (!idToken) return lineSetupResult_(false, 'LINE_ID_TOKEN_INVALID');
   const result = lineSetupFromWorker_(lineSetupWorker_({ action: 'check_provider', workspace_id: workspaceId, id_token: idToken }));
-  return result.success ? lineSetupResult_(true, 'OK', { provider_match: result.data.provider_match === true }) : result;
+  return result.success ? lineSetupResult_(true, 'OK', {
+    provider_match: result.data.provider_match === true,
+    channel_active: !!result.data.channel && result.data.channel.status === 'active'
+  }) : result;
 }
 
 // The same link lets whoever opened it try a menu on their own LINE only.

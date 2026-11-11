@@ -94,6 +94,7 @@ test('the phone link carries a short-lived code tied to the Workspace', () => {
   assert.equal(cache.get('v3_line_setup_code:0123abcd0123456789ab0123456789ab'), 'W_TEST');
   const result = ctx.lineSetupHandle_('line_setup_provider_check', { setup_code: '0123abcd0123456789ab0123456789ab', id_token: 'phone-token' });
   assert.equal(result.data.provider_match, true);
+  assert.equal(result.data.channel_active, false);
   assert.equal(JSON.stringify(calls.at(-1)), JSON.stringify({ action: 'check_provider', workspace_id: 'W_TEST', id_token: 'phone-token' }));
   assert.equal(ctx.lineSetupHandle_('line_setup_provider_check', { setup_code: 'bad', id_token: 'x' }).code, 'LINE_SETUP_CODE_INVALID');
   assert.equal(ctx.lineSetupHandle_('line_setup_provider_check', { setup_code: 'f'.repeat(32), id_token: 'x' }).code, 'LINE_SETUP_CODE_INVALID');

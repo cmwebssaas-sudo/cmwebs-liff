@@ -46,4 +46,5 @@ test('the default menu changes only after publishing, trying and an explicit con
   assert.match(script, /enable\('step-menu',ack&&!!channel&&channel\.status==='active'\)/);
   assert.match(page, /發布選單（還不會換掉房客的選單）/);
   for (const palette of ['forest', 'ocean', 'terracotta', 'charcoal']) assert.match(page, new RegExp('value="' + palette + '"'));
+  assert.match(script, /\$\('phone-preview'\)\.hidden=!\(data\.provider_match&&data\.channel_active\)/);
 });

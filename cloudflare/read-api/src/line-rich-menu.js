@@ -140,13 +140,20 @@ export async function setDefaultMenu(db, channel, secrets, input, fetcher) {
   return { menus:publicMenus(await menuRow(db,channel.workspace_id)) };
 }
 
-// Rollback: give back the earlier default, then delete CMWebs's menus, which
-// also removes them from every user they were linked to.
+// Rollback: give back the earlier default, unlink everyone CMWebs linked (a
+// deleted menu would otherwise linger until the chat is reopened), then
+// delete CMWebs's menus.
 export async function restoreMenus(db, channel, secrets, fetcher) {
   const row = await menuRow(db,channel.workspace_id);
   if (!row) return { restored_previous:false, menus:null };
   const token = secrets.messaging_access_token;
   const restored = await restoreDefault(db,row,token,fetcher);
+  const users = ((await db.prepare('SELECT line_user_id FROM line_rich_menu_users WHERE workspace_id=?').bind(channel.workspace_id).all()).results || [])
+    .map(user => user.line_user_id);
+  for (let start = 0; start < users.length; start += 500) {
+    const unlinked = await call(fetcher,'POST',api+'/v2/bot/richmenu/bulk/unlink',{ token, json:{ userIds:users.slice(start,start+500) } });
+    if (unlinked.status !== 200 && unlinked.status !== 202) stop('LINE_RICH_MENU_FAILED',502);
+  }
   for (const menuId of [row.tenant_menu_id,row.landlord_menu_id]) {
     const removed = await call(fetcher,'DELETE',api+'/v2/bot/richmenu/'+menuId,{ token });
     if (removed.status !== 200 && removed.status !== 404) stop('LINE_RICH_MENU_FAILED',502);

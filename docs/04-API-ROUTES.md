@@ -1599,6 +1599,9 @@ Workspace, `none` otherwise. Tokens from the existing channel never touch menus.
 - `set_default_menu` (`enabled`): on keeps a default the landlord had set by API
   in `previous_default_menu_id`; off restores it, or clears CMWebs's default so
   the OA Manager menu shows again. A `suspended` channel can only switch it off.
-- `restore_menus`: switches the default off, deletes both CMWebs menus (which
-  unlinks them from every user) and removes the records; also for `verifying`
-  and `suspended`.
+- `restore_menus`: switches the default off, bulk-unlinks every tracked user,
+  deletes both CMWebs menus and removes the records; also for `verifying` and
+  `suspended`.
+
+`line_setup_provider_check` also returns `channel_active`; the phone page offers
+the menu preview only when it is true.

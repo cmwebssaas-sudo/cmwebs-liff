@@ -134,8 +134,8 @@
     const idToken=liff.getIDToken();
     try{
       const data=await call('line_setup_provider_check',{setup_code:code,id_token:idToken});
-      $('phone-preview').hidden=!data.provider_match;
-      $('phone-text').textContent=data.provider_match?'確認完成：兩個頻道在同一個 Provider。請回到電腦按「執行檢查」。':'查不到您的資料。請先把官方帳號加入好友後重新開啟連結；若已是好友，代表 LINE Login 頻道不在同一個 Provider，需要在正確的 Provider 重建。';
+      $('phone-preview').hidden=!(data.provider_match&&data.channel_active);
+      $('phone-text').textContent=data.provider_match?(data.channel_active?'確認完成。發布選單後，可以在下方試看。':'確認完成：兩個頻道在同一個 Provider。請回到電腦按「執行檢查」。啟用並發布選單後，可以再開一次這個連結試看選單。'):'查不到您的資料。請先把官方帳號加入好友後重新開啟連結；若已是好友，代表 LINE Login 頻道不在同一個 Provider，需要在正確的 Provider 重建。';
     }catch(error){$('phone-text').textContent=error.message;}
   }
 

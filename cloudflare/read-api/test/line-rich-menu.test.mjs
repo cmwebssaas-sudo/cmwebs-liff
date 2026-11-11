@@ -24,7 +24,7 @@ test('committed menu images match the hashes the Worker checks', async () => {
 });
 
 function fakeLine({ apiDefault = '', tamper = false } = {}) {
-  const state = { menus:new Map(), defaultMenu:apiDefault, links:new Map(), calls:[], next:1 };
+  const state = { menus:new Map(), defaultMenu:apiDefault, links:new Map(), unlinked:[], calls:[], next:1 };
   const json = (body, status = 200) => Response.json(body,{ status });
   state.fetch = async (url, init = {}) => {
     const parsed = new URL(url);
@@ -52,6 +52,9 @@ function fakeLine({ apiDefault = '', tamper = false } = {}) {
       for (const [user, menu] of state.links) if (menu === match[1]) state.links.delete(user);
       if (state.defaultMenu === match[1]) state.defaultMenu = '';
       return json({});
+    }
+    if (path === '/v2/bot/richmenu/bulk/unlink') {
+      JSON.parse(init.body).userIds.forEach(user => { state.links.delete(user); state.unlinked.push(user); }); return json({},202);
     }
     if (path === '/v2/bot/richmenu/bulk/link') {
       const body = JSON.parse(init.body); body.userIds.forEach(user => state.links.set(user,body.richMenuId)); return json({},202);
@@ -198,6 +201,7 @@ test('restore removes CMWebs menus everywhere and gives back the earlier default
     assert.equal(restored.body.data.restored_previous,true);
     assert.equal(line.menus.size,0);
     assert.equal(line.links.size,0);
+    assert.deepEqual(line.unlinked,[member]);
     assert.equal(line.defaultMenu,'landlord-own-menu');
     assert.equal((await db.prepare('SELECT count(*) AS n FROM line_rich_menus').first()).n,0);
     assert.equal((await db.prepare('SELECT count(*) AS n FROM line_rich_menu_users').first()).n,0);
