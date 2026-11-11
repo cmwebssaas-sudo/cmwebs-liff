@@ -103,6 +103,8 @@ test('status follows the allowed path and revoking removes secrets', async () =>
     const status = value => send({ action:'set_status', workspace_id:'W_A', status:value });
     assert.equal(code(await status('active')),'LINE_CHANNEL_INVALID_STATUS');
     assert.equal(JSON.parse((await status('verifying')).text).data.status,'verifying');
+    assert.equal(code(await status('active')),'LINE_CHANNEL_NOT_VERIFIED');
+    await db.prepare("UPDATE line_channels SET bot_user_id=?,webhook_verified_at='t',provider_checked_at='t'").bind('U'+'b'.repeat(32)).run();
     const active = JSON.parse((await status('active')).text).data;
     assert.equal(active.status,'active'); assert(active.verified_at);
     assert.equal(JSON.parse((await status('suspended')).text).data.status,'suspended');

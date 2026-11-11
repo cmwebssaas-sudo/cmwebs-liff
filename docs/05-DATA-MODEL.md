@@ -591,3 +591,11 @@ Official Account's user ID, set when the channel is verified and cleared on
 `updated_at` in milliseconds. It stores no message content. Rows older than seven
 days are deleted as new webhooks arrive. Apply it before deploying the Worker
 that uses it. Not applied to Production yet.
+
+## 2026-11-12 V3 LINE channel setup evidence (Cloudflare D1)
+
+Migration `0012_line_channel_setup.sql` adds three nullable columns to
+`line_channels`: `previous_webhook_endpoint` (the webhook URL CMWebs replaced,
+kept for rollback), `webhook_verified_at` and `provider_checked_at`. A channel can
+become `active` only when both timestamps and `bot_user_id` are set. Not applied
+to Production yet.

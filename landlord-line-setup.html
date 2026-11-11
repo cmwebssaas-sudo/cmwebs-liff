@@ -1,0 +1,159 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#24513e"><title>LINE 官方帳號設定｜CMWebs</title><script src="frontend-release.js?v=20261112-assistant-chat-v1"></script>
+  <script src="liff-config.js?v=20261112-assistant-chat-v1"></script>
+  <script src="liff-request-auth.js?v=20261112-assistant-chat-v1"></script><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script src="landlord-auth.js?v=20261112-assistant-chat-v1"></script><style>
+:root{font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#21352e;background:#f4f6f3}*{box-sizing:border-box}body{margin:0}main{max-width:820px;margin:auto;padding:24px max(18px,env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}header{padding-bottom:18px;border-bottom:1px solid #cbd8ce;margin-bottom:12px}header a{color:#24513e}header h1{margin:16px 0 8px;font-size:28px}header p{color:#586b5e;margin:0}section{padding:20px;background:#fff;border:1px solid #d7e1d8;border-radius:12px;margin:16px 0}section h2{margin:0 0 10px;font-size:20px}section[aria-disabled=true]{opacity:.55}ol,ul{padding-left:22px;line-height:1.7}.warn{background:#fff6e5;border:1px solid #e6c98f;border-radius:9px;padding:14px;color:#6a4a10}.ok{color:#1f6b45;font-weight:600}.bad{color:#9b2c2c;font-weight:600}label{display:flex;flex-direction:column;gap:6px;margin:12px 0}label.check{flex-direction:row;align-items:flex-start;gap:10px}input[type=text],input[type=password]{font:inherit;width:100%;min-height:44px;border:1px solid #afc3b2;border-radius:7px;padding:10px;background:#fff;color:#21352e}input[type=checkbox]{width:22px;height:22px;flex:none;margin-top:2px}button{font:inherit;min-height:44px;padding:10px 16px;margin:8px 8px 0 0;border:1px solid #b5cbb7;background:#24513e;color:#fff;border-radius:8px;cursor:pointer}button.secondary{background:#fff;color:#24513e}button:disabled{opacity:.5;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #41906a;outline-offset:3px}.checks{list-style:none;padding:0}.checks li{padding:8px 0;border-bottom:1px solid #eef2ee}.code{font-family:ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere;background:#f1f5ed;border-radius:6px;padding:8px;display:block}#status{min-height:24px;color:#765322;margin:8px 0}.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #d8e1d8;display:flex;justify-content:space-around;padding:10px 8px calc(10px + env(safe-area-inset-bottom))}.bottom-nav a{min-height:40px;display:flex;align-items:center;color:#526e5b;text-decoration:none;font-size:14px}.bottom-nav a[aria-current=page]{color:#24513e;font-weight:700}@media(max-width:600px){header h1{font-size:25px}section{padding:16px}}
+</style></head><body><main><header><a href="landlord-more.html">← 返回租管</a><h1>LINE 官方帳號設定</h1><p>把租管功能接到您自己的 LINE 官方帳號，房客不用再加別的帳號。</p></header>
+<div id="status" role="status" aria-live="polite">正在確認登入…</div>
+<div id="root" hidden>
+<section id="step-warn"><h2>1. 開始前請先確認</h2>
+<div class="warn"><ul>
+<li><strong>Provider 選了就不能改。</strong>官方帳號開通 Messaging API 時要選一個 Provider（提供者），之後無法變更或取消。下一步的 LINE Login 頻道必須建在同一個 Provider，否則系統無法傳訊息給登入的人。</li>
+<li>訊息會用您的官方帳號發送，費用算在您的方案。台灣方案（2026/11/1 起，未稅）：輕用量 0 元、每月 200 則；中用量 1,000 元、3,000 則；高用量 1,400 元、6,000 則，可加購。</li>
+<li>CMWebs 會把官方帳號的 Webhook 接到系統。如果您已經接了其他聊天機器人，會被取代；系統會記下原本的網址，停用時可以改回。</li>
+<li>您原本的自動回覆與聊天設定不會被更動。</li>
+</ul></div>
+<label class="check"><input type="checkbox" id="ack"><span>我已了解以上說明，Provider 一旦選定無法更改。</span></label>
+</section>
+<section id="step-console" aria-disabled="true"><h2>2. 在 LINE 後台準備兩個頻道</h2>
+<ol>
+<li>到 LINE 官方帳號管理後台 → 設定 → Messaging API，按「啟用」並選擇 Provider。</li>
+<li>到 LINE Developers 後台，在<strong>同一個 Provider</strong> 下開啟 Messaging API 頻道：記下 Channel ID、Channel secret，並在「Messaging API」頁簽發長效的 Channel access token。</li>
+<li>在同一個 Provider 新增一個 <strong>LINE Login</strong> 頻道，記下 Channel ID 與 Channel secret，並把頻道狀態切成「已發布（Published）」，否則房客無法登入。</li>
+<li>LIFF 不用自己建，CMWebs 會在 LINE Login 頻道自動建立。</li>
+</ol>
+</section>
+<section id="step-form" aria-disabled="true"><h2>3. 貼上頻道資料</h2>
+<p id="saved-note"></p>
+<form id="channel-form" autocomplete="off">
+<label>Messaging API Channel ID<input type="text" name="messaging_channel_id" inputmode="numeric" pattern="\d{10}" required></label>
+<label>Messaging API Channel secret<input type="password" name="messaging_channel_secret" required></label>
+<label>Channel access token（長效）<input type="password" name="messaging_access_token" required></label>
+<label>LINE Login Channel ID<input type="text" name="line_login_channel_id" inputmode="numeric" pattern="\d{10}" required></label>
+<label>LINE Login Channel secret<input type="password" name="line_login_channel_secret" required></label>
+<button type="submit">儲存並建立 LIFF</button>
+</form>
+</section>
+<section id="step-verify" aria-disabled="true"><h2>4. 檢查設定</h2>
+<button type="button" id="verify">執行檢查</button>
+<ul class="checks" id="checks"></ul>
+<div id="webhook-box" hidden><h3>Webhook</h3><p>目前網址：<span class="code" id="webhook-current"></span></p>
+<label class="check" id="replace-wrap" hidden><input type="checkbox" id="replace"><span>我確認以 CMWebs 取代目前的 Webhook 網址。</span></label>
+<p>設定後請到 LINE 後台確認「使用 Webhook」已開啟。</p>
+<button type="button" id="webhook">設定 Webhook 並測試</button>
+<p id="webhook-previous" hidden>CMWebs 取代前的網址：<span class="code" id="webhook-previous-url"></span></p>
+<button type="button" class="secondary" id="webhook-restore">改回原本的 Webhook</button></div>
+<div id="provider-box" hidden><h3>同一個 Provider</h3>
+<p>請用手機開啟下面的連結：先加入您的官方帳號為好友，再完成登入。系統查得到您的資料，才代表兩個頻道在同一個 Provider。連結 10 分鐘內有效。</p>
+<button type="button" id="provider-link">產生手機連結</button><span class="code" id="provider-url" hidden></span>
+<button type="button" class="secondary" id="provider-copy" hidden>複製連結</button></div>
+</section>
+<section id="step-activate" aria-disabled="true"><h2>5. 啟用</h2>
+<p>全部檢查通過後才能啟用。啟用後，通知改用您的官方帳號發送前，仍需 CMWebs 另外開通。</p>
+<button type="button" id="activate" disabled>啟用 LINE 官方帳號</button>
+</section>
+</div>
+<div id="phone" hidden><section><h2>確認 Provider</h2><p id="phone-text">正在確認…</p></section></div>
+</main><nav class="bottom-nav" aria-label="租管導覽"><a href="landlord-home.html">首頁</a><a href="landlord-arrears.html">帳款</a><a href="landlord-tenants.html">房客</a><a href="landlord-rooms.html">房源</a><a href="landlord-more.html" aria-current="page">更多</a></nav><script>
+(function(){
+  const API_URL='https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
+  const LIFF_ID=CMWebsLiffConfig.liffId('landlord');
+  const $=id=>document.getElementById(id);
+  const status=$('status');
+  const auth=CMWebsLandlordAuth.init({apiUrl:API_URL,liffId:LIFF_ID,entryPage:'landlord-entry.html',returnTo:'landlord-line-setup.html',testMode:false});
+  const say=text=>{status.textContent=text||'';};
+  const labels={token:'Messaging API token 有效，且屬於填寫的頻道',login:'LINE Login 頻道 ID 與 secret 正確',liff:'LIFF 已建立，網址正確',webhook:'Webhook 已接到 CMWebs 並測試成功',provider:'官方帳號與 LINE Login 在同一個 Provider'};
+  let channel=null;
+
+  async function call(action,params){
+    const result=await auth.requestProtected(action,params||{});
+    if(auth.handleAuthFailure&&auth.handleAuthFailure(result))throw new Error('AUTH');
+    if(!result||result.success!==true)throw Object.assign(new Error((result&&result.message)||'處理失敗，請稍後再試'),{code:result&&result.code});
+    return result.data;
+  }
+  async function ensureLine(){
+    if(auth.getMode()==='email')return true;
+    await liff.init({liffId:LIFF_ID});
+    if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return false;}
+    return true;
+  }
+  function enable(id,on){$(id).setAttribute('aria-disabled',on?'false':'true');$(id).querySelectorAll('input,button').forEach(el=>{if(el.id!=='activate')el.disabled=!on;});}
+  function render(){
+    const ack=$('ack').checked;
+    enable('step-console',ack);enable('step-form',ack);
+    enable('step-verify',ack&&!!channel);enable('step-activate',ack&&!!channel);
+    $('saved-note').textContent=channel?'已儲存（'+new Date(channel.updated_at).toLocaleString('zh-TW')+'）。重新送出會取代原資料，並需要重新檢查。':'';
+    if(channel&&channel.status==='active'){$('activate').disabled=true;$('activate').textContent='已啟用';}
+  }
+  function showChecks(data){
+    channel=data.channel||channel;
+    const list=$('checks');list.textContent='';
+    Object.keys(labels).forEach(key=>{const li=document.createElement('li');const ok=data.checks[key]===true;li.className=ok?'ok':'bad';li.textContent=(ok?'✓ ':'✗ ')+labels[key];list.appendChild(li);});
+    $('webhook-box').hidden=!data.checks.token;$('provider-box').hidden=!data.checks.token;
+    const current=data.webhook.current;
+    $('webhook-current').textContent=current||'（尚未設定）';
+    $('replace-wrap').hidden=!current||current===data.webhook.expected;
+    const previous=channel&&channel.previous_webhook_endpoint;
+    $('webhook-previous').hidden=!previous;$('webhook-previous-url').textContent=previous||'';
+    $('activate').disabled=!Object.keys(labels).every(key=>data.checks[key]===true)||(channel&&channel.status==='active');
+    render();
+  }
+  async function run(button,work){
+    button.disabled=true;
+    try{await work();}catch(error){if(error.message!=='AUTH')say(error.message);}
+    finally{button.disabled=false;render();}
+  }
+
+  async function phoneMode(code){
+    $('phone').hidden=false;say('');
+    if(!await ensureLine())return;
+    const idToken=liff.getIDToken();
+    try{
+      const data=await call('line_setup_provider_check',{setup_code:code,id_token:idToken});
+      $('phone-text').textContent=data.provider_match?'確認完成：兩個頻道在同一個 Provider。請回到電腦按「執行檢查」。':'查不到您的資料。請先把官方帳號加入好友後重新開啟連結；若已是好友，代表 LINE Login 頻道不在同一個 Provider，需要在正確的 Provider 重建。';
+    }catch(error){$('phone-text').textContent=error.message;}
+  }
+
+  async function start(){
+    const code=new URLSearchParams(location.search).get('setup_code');
+    if(code&&/^[a-f0-9]{32}$/.test(code))return phoneMode(code);
+    if(!await ensureLine())return;
+    try{channel=await call('landlord_line_setup_status');}
+    catch(error){say(error.message);return;}
+    say('');$('root').hidden=false;
+    if(channel)$('ack').checked=true;
+    render();
+  }
+
+  $('ack').addEventListener('change',render);
+  $('channel-form').addEventListener('submit',event=>{
+    event.preventDefault();
+    const form=event.target,button=form.querySelector('button');
+    run(button,async()=>{
+      say('儲存中，並在 LINE Login 頻道建立 LIFF…');
+      const fields=Object.fromEntries(new FormData(form).entries());
+      channel=await call('landlord_line_setup_save',fields);
+      form.reset();say('已儲存。請執行檢查。');
+    });
+  });
+  $('verify').addEventListener('click',()=>run($('verify'),async()=>{say('檢查中…');showChecks(await call('landlord_line_setup_verify'));say('');}));
+  $('webhook').addEventListener('click',()=>run($('webhook'),async()=>{
+    say('設定 Webhook 並請 LINE 送測試訊息…');
+    const data=await call('landlord_line_setup_webhook',{replace_existing:$('replace').checked?'true':'false'});
+    say(data.test.success?(data.active?'Webhook 測試成功。':'Webhook 測試成功。請到 LINE 後台開啟「使用 Webhook」。'):'Webhook 測試失敗（'+data.test.reason+'），請確認 Channel secret 是否正確。');
+    showChecks(await call('landlord_line_setup_verify'));
+  }));
+  $('webhook-restore').addEventListener('click',()=>run($('webhook-restore'),async()=>{
+    if(!confirm('確定把 Webhook 改回 CMWebs 設定前的網址？之後 CMWebs 不會再收到這個官方帳號的訊息。'))return;
+    const data=await call('landlord_line_setup_webhook_restore');
+    say(data.restored?'已改回原本的網址。':'沒有原本的網址。請到 LINE 後台關閉「使用 Webhook」。');
+    showChecks(await call('landlord_line_setup_verify'));
+  }));
+  $('provider-link').addEventListener('click',()=>run($('provider-link'),async()=>{
+    const data=await call('landlord_line_setup_provider_link');
+    $('provider-url').textContent=data.url;$('provider-url').hidden=false;$('provider-copy').hidden=false;
+  }));
+  $('provider-copy').addEventListener('click',()=>{navigator.clipboard&&navigator.clipboard.writeText($('provider-url').textContent).then(()=>say('已複製連結'),()=>say('請手動複製連結'));});
+  $('activate').addEventListener('click',()=>run($('activate'),async()=>{channel=await call('landlord_line_setup_activate');say('已啟用。');}));
+  start().catch(()=>say('頁面載入失敗，請重新整理。'));
+})();
+</script></body></html>
