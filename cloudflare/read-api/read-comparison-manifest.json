@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-266ab4010da20483e7619af961d12d948edd9c07fbfa5d214fdcc5f288e0c3f9",
+  "comparison_version": "read-3b926c7a7515a70bb202e2763031dee5f53eb6464cfa91fad2673f421b3d2e21",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -129,6 +129,7 @@
     "landlord-announcements.html": "2fabf7b4daa69afadbbc4550544455ec2c1537a7491d66279dbaf580235e5aa0",
     "landlord-api.js": "1f2a3934664e80dc8f5832d9b63365981032f936bb347ee6c9500892d6b22956",
     "landlord-arrears.html": "50102b19da1cb01e8be153c0b48ff98bec851e4f3c3cd4218e47408063867419",
+    "landlord-assistant.js": "5cd105671e24d355ccc0865a31ee94a021fc2d7146af6d86a3270ba3e6a83296",
     "landlord-auth.js": "1c448cf4f645c2337bb9f5fe30dea9c2da3556d7db5373210ca62a292f79782e",
     "landlord-bill-notifications.html": "46303c347c5437bd763589ababee543d8a6f734f2203e1592d08bdbad7355ec9",
     "landlord-billing.html": "e8c7274ec1f2e31a9f9d944de3a9270b5872d519618db8c095cce2754de3952f",
@@ -144,7 +145,7 @@
     "landlord-join.html": "fa1b63f6bf7528dc164b7adc656b857da47e3e2d99bc1220a244e08175918746",
     "landlord-line-logs.html": "56983b8b8fcea8d6882e5bc678af337776bd6fc9416e4eff1143f257fff7ee86",
     "landlord-messages.html": "85a1f3c576d6d1aa9591a7087644119123a86fb60df7d5957640881af6dec88b",
-    "landlord-more.html": "0d08ed4abd9e868edcff85797b3de08ccad1bb67b299ed838bdc37f470add9c4",
+    "landlord-more.html": "5226251d91a47039623efcd89c96dc55273a4ee142b7d4503d85787c9b6858de",
     "landlord-notifications.html": "2fc099798da44e88812eba85c1be92083d6349c518ee3b32f858aabc2f9f7251",
     "landlord-onboarding.html": "ba21b0b8ff460dceb8a22acfe27864234996784af17a47dd00f13fa18ecc75d8",
     "landlord-paid-bills.html": "f10ff25fdb0eec6f756c417f17434fdeefb2f816015d27ee48183373a71c2cb7",
