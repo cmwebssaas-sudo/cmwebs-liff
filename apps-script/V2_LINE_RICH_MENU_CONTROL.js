@@ -4,6 +4,9 @@
  * Rich Menu presentation is owned exclusively by LINE Official Account
  * Manager.  V2 must never assign a menu to an individual user because that
  * would override the currently published OA Manager experience.
+ *
+ * V3 Workspaces that use their own LINE channel are the one exception; their
+ * menus are published through the Worker (see V3_LINE_SETUP.js).
  */
 const RICH_MENU_MODE = 'OA_MANAGER_DEFAULT_ONLY';
 

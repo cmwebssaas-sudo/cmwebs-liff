@@ -1,5 +1,6 @@
 import { boundedBody, verifySignature } from './sync.js';
 import { checkProvider, prepareLiff, restoreWebhook, setWebhook, verifyChannel } from './line-setup.js';
+import { linkMenu, menuStatus, previewMenu, publishMenus, restoreMenus, setDefaultMenu } from './line-rich-menu.js';
 
 const encoder = new TextEncoder();
 const secretFields = ['messaging_channel_secret','messaging_access_token','line_login_channel_secret'];
@@ -93,24 +94,35 @@ async function setStatus(db, nonce, input) {
 }
 // Apps Script signs each call after it has checked the caller's Workspace,
 // role and permission. Responses never include secrets.
+const anyLive = ['verifying','active','suspended'];
+// Every action gets (db, channel row, decrypted secrets, input, fetcher, origin).
 const setupActions = {
-  verify:{ keys:'action,workspace_id', statuses:['draft','verifying','active','suspended'] },
-  set_webhook:{ keys:'action,replace_existing,workspace_id', statuses:['verifying'] },
-  check_provider:{ keys:'action,id_token,workspace_id', statuses:['verifying','active'] },
-  restore_webhook:{ keys:'action,workspace_id', statuses:['verifying','active','suspended'] }
+  verify:{ keys:'action,workspace_id', statuses:['draft','verifying','active','suspended'],
+    run:(db,row,secrets,input,fetcher,origin) => verifyChannel(db,row,secrets,origin,fetcher) },
+  set_webhook:{ keys:'action,replace_existing,workspace_id', statuses:['verifying'],
+    valid:input => typeof input.replace_existing === 'boolean',
+    run:(db,row,secrets,input,fetcher,origin) => setWebhook(db,row,secrets,input,origin,fetcher) },
+  restore_webhook:{ keys:'action,workspace_id', statuses:anyLive, run:(db,row,secrets,input,fetcher) => restoreWebhook(db,row,secrets,fetcher) },
+  check_provider:{ keys:'action,id_token,workspace_id', statuses:['verifying','active'], run:checkProvider },
+  menu_status:{ keys:'action,workspace_id', statuses:anyLive, run:(db,row) => menuStatus(db,row) },
+  publish_menus:{ keys:'action,palette,workspace_id', statuses:['active'], run:publishMenus },
+  link_menu:{ keys:'action,line_user_id,menu,workspace_id', statuses:['active'], run:linkMenu,
+    valid:input => /^U[0-9a-f]{32}$/.test(input.line_user_id) && ['landlord','tenant','none'].includes(input.menu) },
+  preview_menu:{ keys:'action,id_token,menu,workspace_id', statuses:['active'], run:previewMenu,
+    valid:input => ['landlord','tenant','none'].includes(input.menu) },
+  // A suspended channel may only switch its default menu off.
+  set_default_menu:{ keys:'action,enabled,workspace_id', statuses:['active','suspended'], run:setDefaultMenu,
+    valid:input => typeof input.enabled === 'boolean', allowed:(input,row) => !input.enabled || row.status === 'active' },
+  restore_menus:{ keys:'action,workspace_id', statuses:anyLive, run:(db,row,secrets,input,fetcher) => restoreMenus(db,row,secrets,fetcher) }
 };
 async function setupAction(db, input, env, origin, fetcher) {
   const spec = setupActions[input.action];
-  if (Object.keys(input).sort().join() !== spec.keys || !validWorkspace(input.workspace_id) ||
-      (input.action === 'set_webhook' && typeof input.replace_existing !== 'boolean')) stop('INVALID_LINE_CHANNEL');
+  if (Object.keys(input).sort().join() !== spec.keys || !validWorkspace(input.workspace_id) || (spec.valid && !spec.valid(input))) stop('INVALID_LINE_CHANNEL');
   const row = await db.prepare('SELECT * FROM line_channels WHERE workspace_id=?').bind(input.workspace_id).first();
   if (!row || !row.encrypted_secrets) stop('LINE_CHANNEL_NOT_FOUND',404);
-  if (!spec.statuses.includes(row.status)) stop('LINE_CHANNEL_INVALID_STATUS',409);
+  if (!spec.statuses.includes(row.status) || (spec.allowed && !spec.allowed(input,row))) stop('LINE_CHANNEL_INVALID_STATUS',409);
   const secrets = await decryptChannelSecrets(row.encrypted_secrets,env.LINE_CHANNEL_SECRET_KEY,row.workspace_id);
-  if (input.action === 'verify') return verifyChannel(db,row,secrets,origin,fetcher);
-  if (input.action === 'set_webhook') return setWebhook(db,row,secrets,input,origin,fetcher);
-  if (input.action === 'restore_webhook') return restoreWebhook(db,row,secrets,fetcher);
-  return checkProvider(db,row,secrets,input,fetcher);
+  return spec.run(db,row,secrets,input,fetcher,origin);
 }
 function validPrepareLiff(input) {
   if (Object.keys(input).sort().join() !== 'action,line_login_channel_id,line_login_channel_secret' ||

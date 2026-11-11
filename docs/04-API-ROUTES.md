@@ -1573,3 +1573,32 @@ values.
   `provider_checked_at` (`LINE_CHANNEL_NOT_VERIFIED` otherwise).
 - `upsert` clears the three verification fields; it keeps
   `previous_webhook_endpoint` only when the Messaging channel is unchanged.
+
+## 2026-11-12 V3 rich menus for a landlord's own channel (stage 6, undeployed)
+
+Apps Script owner actions (same checks as the setup wizard):
+`landlord_line_setup_menu_status`, `landlord_line_setup_menu_publish` (`palette`:
+`forest`, `ocean`, `terracotta` or `charcoal`), `landlord_line_setup_menu_default`
+(`enabled` `true`/`false`) and `landlord_line_setup_menu_restore`. The phone link
+also accepts `line_setup_menu_preview` (`setup_code`, `id_token`, `menu`
+`landlord`/`tenant`/`none`), which changes only the opener's own menu.
+
+Landlord GET actions verified with a token from a landlord's own channel also
+link that person's menu once every six hours: `landlord` for members of that
+Workspace, `none` otherwise. Tokens from the existing channel never touch menus.
+
+`POST /internal/line-channels` gains (channel `active` unless noted):
+
+- `menu_status`: palette, template, default on/off; also for `verifying` and
+  `suspended`.
+- `publish_menus` (`palette`): fetches the two images from Pages and checks their
+  SHA-256, creates the tenant and landlord menus (six links to the landlord's
+  LIFF), relinks tracked users, moves the default if it was on, then deletes the
+  old pair. It does not set the default.
+- `link_menu` (`line_user_id`, `menu`) and `preview_menu` (`id_token`, `menu`).
+- `set_default_menu` (`enabled`): on keeps a default the landlord had set by API
+  in `previous_default_menu_id`; off restores it, or clears CMWebs's default so
+  the OA Manager menu shows again. A `suspended` channel can only switch it off.
+- `restore_menus`: switches the default off, deletes both CMWebs menus (which
+  unlinks them from every user) and removes the records; also for `verifying`
+  and `suspended`.

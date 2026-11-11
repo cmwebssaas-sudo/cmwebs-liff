@@ -8,8 +8,10 @@
 const LINE_SETUP_ACTIONS_ = [
   'landlord_line_setup_status', 'landlord_line_setup_save', 'landlord_line_setup_verify',
   'landlord_line_setup_webhook', 'landlord_line_setup_webhook_restore', 'landlord_line_setup_provider_link', 'landlord_line_setup_activate',
-  'line_setup_provider_check'
+  'landlord_line_setup_menu_status', 'landlord_line_setup_menu_publish', 'landlord_line_setup_menu_default',
+  'landlord_line_setup_menu_restore', 'line_setup_provider_check', 'line_setup_menu_preview'
 ];
+const LINE_SETUP_PALETTES_ = ['forest', 'ocean', 'terracotta', 'charcoal'];
 
 const LINE_SETUP_MESSAGES_ = {
   LINE_SETUP_NOT_ENABLED: '這個管理團隊尚未開放設定自己的 LINE 官方帳號',
@@ -30,6 +32,10 @@ const LINE_SETUP_MESSAGES_ = {
   LINE_UNREACHABLE: '暫時連不到 LINE，請稍後再試',
   LINE_CHANNEL_RESERVED: '這是 CMWebs 目前使用的登入頻道，不能在精靈中設定',
   LINE_WEBHOOK_PROTECTED: '這個官方帳號的 Webhook 正由 CMWebs 現有系統使用，不能在精靈中更換',
+  LINE_RICH_MENU_NOT_PUBLISHED: '尚未發布圖文選單',
+  LINE_RICH_MENU_FAILED: '圖文選單更新失敗，請稍後再試',
+  LINE_RICH_MENU_IMAGE_INVALID: '選單圖片讀取失敗，請稍後再試',
+  LINE_USER_NOT_FOUND: '請先把官方帳號加入好友',
   LINE_CHANNEL_UNAVAILABLE: '暫時無法處理，請稍後再試'
 };
 
@@ -159,8 +165,39 @@ function lineSetupProviderCheck_(request) {
   const idToken = lineSetupText_(request.id_token);
   if (!idToken) return lineSetupResult_(false, 'LINE_ID_TOKEN_INVALID');
   const result = lineSetupFromWorker_(lineSetupWorker_({ action: 'check_provider', workspace_id: workspaceId, id_token: idToken }));
-  if (result.success && result.data.provider_match) cache.remove('v3_line_setup_code:' + code);
   return result.success ? lineSetupResult_(true, 'OK', { provider_match: result.data.provider_match === true }) : result;
+}
+
+// The same link lets whoever opened it try a menu on their own LINE only.
+function lineSetupMenuPreview_(request) {
+  const code = lineSetupText_(request.setup_code, /^[a-f0-9]{32}$/);
+  const workspaceId = code ? CacheService.getScriptCache().get('v3_line_setup_code:' + code) : '';
+  if (!workspaceId) return lineSetupResult_(false, 'LINE_SETUP_CODE_INVALID');
+  const idToken = lineSetupText_(request.id_token);
+  const menu = String(request.menu || '');
+  if (!idToken || ['landlord', 'tenant', 'none'].indexOf(menu) < 0) return lineSetupResult_(false, 'INVALID_LINE_SETUP');
+  return lineSetupFromWorker_(lineSetupWorker_({ action: 'preview_menu', workspace_id: workspaceId, id_token: idToken, menu: menu }));
+}
+
+// Landlords and team members who open their landlord's own LIFF get the
+// landlord menu; anyone else who opens a landlord page there loses it. Runs
+// once per person every six hours, and never for the existing channel.
+function lineMenuSyncLandlord_(lineUserId) {
+  try {
+    const scope = lineRequestChannelScope_();
+    const workspaceId = scope && scope.workspace_id;
+    const sub = String(lineUserId || '').trim();
+    if (!workspaceId || !/^U[0-9a-f]{32}$/.test(sub)) return;
+    const cache = CacheService.getScriptCache();
+    const key = 'v3_line_menu:' + workspaceId + ':' + sub;
+    if (cache.get(key)) return;
+    const access = workspaceLandlordResolveAccess_(sub, { skip_schema_ensure: true, skip_legacy_context_creation: true });
+    const member = !!access && access.success === true && access.workspace &&
+      String(access.workspace.workspace_id || '').trim().toUpperCase() === workspaceId;
+    const answer = lineSetupWorker_({ action: 'link_menu', workspace_id: workspaceId, line_user_id: sub, menu: member ? 'landlord' : 'none' });
+    if (answer.status === 200) cache.put(key, member ? 'landlord' : 'none', 21600);
+    else if (answer.body.code === 'LINE_RICH_MENU_NOT_PUBLISHED') cache.put(key, 'unpublished', 600);
+  } catch (_) {}
 }
 
 function lineSetupActivate_(workspaceId) {
@@ -176,6 +213,7 @@ function lineSetupActivate_(workspaceId) {
 function lineSetupHandle_(action, request) {
   try {
     if (action === 'line_setup_provider_check') return lineSetupProviderCheck_(request || {});
+    if (action === 'line_setup_menu_preview') return lineSetupMenuPreview_(request || {});
     const owner = lineSetupOwner_(request || {});
     if (owner.denied) return owner.denied;
     let result;
@@ -193,6 +231,19 @@ function lineSetupHandle_(action, request) {
       result = lineSetupFromWorker_(lineSetupWorker_({ action: 'restore_webhook', workspace_id: owner.workspace_id }));
     } else if (action === 'landlord_line_setup_provider_link') return lineSetupProviderLink_(owner.workspace_id);
     else if (action === 'landlord_line_setup_activate') result = lineSetupActivate_(owner.workspace_id);
+    else if (action === 'landlord_line_setup_menu_status') {
+      return lineSetupFromWorker_(lineSetupWorker_({ action: 'menu_status', workspace_id: owner.workspace_id }));
+    } else if (action === 'landlord_line_setup_menu_publish') {
+      const palette = String(request.palette || '');
+      if (LINE_SETUP_PALETTES_.indexOf(palette) < 0) return lineSetupResult_(false, 'INVALID_LINE_SETUP');
+      result = lineSetupFromWorker_(lineSetupWorker_({ action: 'publish_menus', workspace_id: owner.workspace_id, palette: palette }));
+    } else if (action === 'landlord_line_setup_menu_default') {
+      result = lineSetupFromWorker_(lineSetupWorker_({
+        action: 'set_default_menu', workspace_id: owner.workspace_id, enabled: String(request.enabled) === 'true'
+      }));
+    } else if (action === 'landlord_line_setup_menu_restore') {
+      result = lineSetupFromWorker_(lineSetupWorker_({ action: 'restore_menus', workspace_id: owner.workspace_id }));
+    }
     else return lineSetupResult_(false, 'INVALID_LINE_SETUP');
     lineSetupAudit_(owner.access, action, result);
     return result;
