@@ -49,7 +49,7 @@ test('the default menu changes only after publishing, trying and an explicit con
   assert.match(script, /\$\('phone-preview'\)\.hidden=!\(data\.provider_match&&data\.channel_active\)/);
 });
 
-test('the move check is read-only and shows counts only', () => {
+test('the move check is read-only and names only who still has to add the OA', () => {
   assert.match(page, /id="audience">查看好友與額度<\/button>/);
   assert.match(page, /call\('landlord_line_setup_audience'\)/);
   assert.doesNotMatch(page.slice(page.indexOf('function showAudience'), page.indexOf("$('audience')")), /innerHTML|line_user_id/);

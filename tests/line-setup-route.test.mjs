@@ -215,19 +215,20 @@ test('the move check counts friends, shared accounts and quota without returning
   const id = n => 'U' + String(n).padStart(32, '0');
   const sheets = {
     V2_tenants: [
-      ...Array.from({ length: 45 }, (_, n) => ({ workspace_id: 'w_test', tenant_line_user_id: id(n) })),
+      ...Array.from({ length: 45 }, (_, n) => ({ workspace_id: 'w_test', tenant_line_user_id: id(n), tenant_name: n === 4 ? '王小明' : '' })),
       { workspace_id: 'W_TEST', tenant_line_user_id: id(1) },
       { workspace_id: 'W_TEST', line_user_id: '' },
       { workspace_id: 'W_TEST', tenant_line_user_id: id(700), status: 'moved_out' },
       { workspace_id: 'W_TEST', tenant_line_user_id: id(701), account_status: 'inactive', status: 'active' },
       { workspace_id: 'W_OTHER', tenant_line_user_id: id(2) },
       { workspace_id: 'W_OTHER', tenant_line_user_id: id(900) }],
-    V2_users: [{ user_id: 'u1', line_user_id: id(500) }, { user_id: 'u2', line_user_id: id(501) }, { user_id: 'u3', line_user_id: id(502) }],
+    V2_users: [{ user_id: 'u1', line_user_id: id(500), display_name: '合成同事' }, { user_id: 'u2', line_user_id: id(501) }, { user_id: 'u3', line_user_id: id(502) }],
     V2_workspace_members: [{ workspace_id: 'W_TEST', user_id: 'u1', member_status: 'active' },
       { workspace_id: 'W_TEST', user_id: 'u2', member_status: 'removed' }, { workspace_id: 'W_OTHER', user_id: 'u3', member_status: 'active' }]
   };
-  const friends = new Set([id(0), id(3), id(500)]);
+  const friends = new Set([id(0), id(3), ...Array.from({ length: 41 }, (_, n) => id(n + 5))]);
   const { ctx, calls } = setup({ answers: { audience_check: fields => ({ status: 200, body: { success: true, data: {
+    not_friend_ids: fields.line_user_ids.filter(value => !friends.has(value)),
     friends: fields.line_user_ids.filter(value => friends.has(value)).length,
     not_friends: fields.line_user_ids.filter(value => !friends.has(value)).length, unknown: 0,
     quota_type: 'limited', quota_limit: 200, quota_used: 3 } } }) } });
@@ -236,7 +237,8 @@ test('the move check counts friends, shared accounts and quota without returning
   const result = ctx.lineSetupHandle_('landlord_line_setup_audience', { id_token: 'landlord' });
   assert.equal(result.success, true);
   assert.deepEqual(JSON.parse(JSON.stringify(result.data)), {
-    tenants: { total: 45, friends: 2, not_friends: 43, unknown: 0 }, team: { total: 1, friends: 1, not_friends: 0, unknown: 0 },
+    tenants: { total: 45, friends: 42, not_friends: 3, unknown: 0, not_friend_names: ['（未填姓名）', '（未填姓名）', '王小明'] },
+    team: { total: 1, friends: 0, not_friends: 1, unknown: 0, not_friend_names: ['合成同事'] },
     former_tenants: 2, shared_with_other_workspaces: 1, quota_type: 'limited', quota_limit: 200, quota_used: 3 });
   assert.deepEqual(calls.filter(call => call.action === 'audience_check').map(call => call.line_user_ids.length), [40, 5, 1]);
   assert.doesNotMatch(JSON.stringify(result), /U0{20}/);

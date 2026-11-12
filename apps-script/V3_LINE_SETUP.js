@@ -236,27 +236,39 @@ function lineSetupAudienceIds_(workspaceId, legacyRows) {
     const status = String(row.account_status || row.tenant_account_status || row.status || 'active').trim().toLowerCase();
     return ['active', 'enabled', 'valid', 'current', '啟用', '有效'].indexOf(status) >= 0;
   };
+  // The owner sees who still has to add the OA: tenant names, team names.
+  const names = {};
+  const text = function (value) { return String(value || '').trim(); };
   const tenants = {}, former = {}, elsewhere = {};
   getSheetObjects_(V2_SHEETS.tenants).forEach(function (row) {
-    lineOf(row).forEach(function (id) { (!inWorkspace(row) ? elsewhere : current(row) ? tenants : former)[id] = true; });
+    lineOf(row).forEach(function (id) {
+      (!inWorkspace(row) ? elsewhere : current(row) ? tenants : former)[id] = true;
+      if (inWorkspace(row) && current(row) && !names[id]) names[id] = text(row.tenant_name) || text(row.name) || text(row.tenant_id);
+    });
   });
-  const userLine = {};
+  const userLine = {}, userName = {};
   getSheetObjects_('V2_users').forEach(function (user) {
-    const id = String(user.line_user_id || '').trim();
-    if (/^U[0-9a-f]{32}$/.test(id)) userLine[String(user.user_id || '').trim()] = id;
+    const id = text(user.line_user_id);
+    if (!/^U[0-9a-f]{32}$/.test(id)) return;
+    userLine[text(user.user_id)] = id;
+    userName[id] = text(user.display_name) || text(user.name) || text(user.email) || text(user.user_id);
   });
   const team = {};
   getSheetObjects_('V2_workspace_members').forEach(function (member) {
     const status = String(member.member_status || member.status || 'active').trim().toLowerCase();
-    const id = userLine[String(member.user_id || '').trim()];
-    if (inWorkspace(member) && status === 'active' && id) team[id] = true;
+    const id = userLine[text(member.user_id)];
+    if (inWorkspace(member) && status === 'active' && id) {
+      team[id] = true;
+      names['team:' + id] = text(member.display_name) || text(member.member_name) || userName[id] || '';
+    }
   });
   const tenantIds = Object.keys(tenants);
   return {
     tenants: tenantIds,
     former: Object.keys(former).filter(function (id) { return !tenants[id]; }).length,
     team: Object.keys(team),
-    shared: tenantIds.filter(function (id) { return elsewhere[id]; }).length
+    shared: tenantIds.filter(function (id) { return elsewhere[id]; }).length,
+    name: function (group, id) { return (group === 'team' ? names['team:' + id] : names[id]) || '（未填姓名）'; }
   };
 }
 
@@ -265,8 +277,10 @@ function lineSetupAudience_(workspaceId) {
   if (!current.success) return current;
   const legacyChannelId = PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID');
   const ids = lineSetupAudienceIds_(workspaceId, !!legacyChannelId && current.data.line_login_channel_id === legacyChannelId);
-  const result = { tenants: { total: ids.tenants.length, friends: 0, not_friends: 0, unknown: 0 },
-    team: { total: ids.team.length, friends: 0, not_friends: 0, unknown: 0 },
+  // not_friend_names: who still has to add the OA, for the owner only; LINE
+  // IDs never leave Apps Script.
+  const result = { tenants: { total: ids.tenants.length, friends: 0, not_friends: 0, unknown: 0, not_friend_names: [] },
+    team: { total: ids.team.length, friends: 0, not_friends: 0, unknown: 0, not_friend_names: [] },
     former_tenants: ids.former, shared_with_other_workspaces: ids.shared, quota_type: '', quota_limit: null, quota_used: null };
   // Batches of 40; one empty batch still reads the quota.
   const batches = [];
@@ -279,7 +293,9 @@ function lineSetupAudience_(workspaceId) {
       action: 'audience_check', workspace_id: workspaceId, line_user_ids: batches[i][1]
     }));
     if (!answer.success) return answer;
-    ['friends', 'not_friends', 'unknown'].forEach(function (name) { result[batches[i][0]][name] += answer.data[name]; });
+    const group = result[batches[i][0]];
+    ['friends', 'not_friends', 'unknown'].forEach(function (name) { group[name] += answer.data[name]; });
+    (answer.data.not_friend_ids || []).forEach(function (id) { group.not_friend_names.push(ids.name(batches[i][0], id)); });
     result.quota_type = answer.data.quota_type;
     result.quota_limit = answer.data.quota_limit;
     result.quota_used = answer.data.quota_used;

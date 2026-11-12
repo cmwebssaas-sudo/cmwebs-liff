@@ -166,22 +166,25 @@ export async function checkProvider(db, row, secrets, input, fetcher) {
 }
 
 // Read-only friend and quota check before a Workspace moves onto this OA.
-// The profile API answers 404 for anyone who has not added the OA. Results
-// are counts; no profile field leaves this function.
+// The profile API answers 404 for anyone who has not added the OA. Returns
+// counts and the given IDs that are not friends, so Apps Script can name them
+// to the owner; no profile field leaves this function.
 export async function audienceCheck(secrets, userIds, fetcher) {
   const token = secrets.messaging_access_token;
-  const counts = { friends:0, not_friends:0, unknown:0 };
+  const counts = { friends:0, not_friends:0, unknown:0 }, notFriendIds = [];
   for (let start = 0; start < userIds.length; start += 10) {
-    const statuses = await Promise.all(userIds.slice(start,start+10).map(id =>
+    const batch = userIds.slice(start,start+10);
+    const statuses = await Promise.all(batch.map(id =>
       call(fetcher,'GET',api+'/v2/bot/profile/'+id,{ token }).then(result => result.status,() => 0)));
-    for (const status of statuses) {
+    statuses.forEach((status, index) => {
       if (status === 401) stop('LINE_TOKEN_INVALID',409);
       counts[status === 200 ? 'friends' : status === 404 ? 'not_friends' : 'unknown'] += 1;
-    }
+      if (status === 404) notFriendIds.push(batch[index]);
+    });
   }
   const [quota,used] = await Promise.all([call(fetcher,'GET',api+'/v2/bot/message/quota',{ token }),
     call(fetcher,'GET',api+'/v2/bot/message/quota/consumption',{ token })]);
-  return { ...counts,
+  return { ...counts, not_friend_ids:notFriendIds,
     quota_type:quota.status === 200 ? String(quota.data.type || '') : '',
     quota_limit:quota.status === 200 && Number.isSafeInteger(quota.data.value) ? quota.data.value : null,
     quota_used:used.status === 200 && Number.isSafeInteger(used.data.totalUsage) ? used.data.totalUsage : null };
