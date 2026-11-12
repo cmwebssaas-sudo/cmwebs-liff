@@ -5210,4 +5210,5 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/line-setup-route.test.mjs`：建立 LIFF 時帶 Workspace；原本頻道只替 W000001 自己的成員掛房東選單；搬家前檢查分批、只回人數；啟用時清除快取
 - [x] `tests/landlord-line-setup-page.test.mjs`：搬家前檢查按鈕只顯示人數
 - [x] `cloudflare/read-api/test/line-rich-menu.test.mjs`：選單 v2 版型（負責人 11/12 格式）：兩個 1250×300 分頁、3×2 按鈕 833/833/834 × 693、預設展開；上傳後從 LINE 讀回圖片比對，尺寸不符就刪除選單
+- [x] `tests/line-multi-login.test.mjs`、`tests/line-worker-webhook.test.mjs`：沒有 workspace_id 的早期房客，在 W000001 搬家後也由森の苑發送、收訊息也對得到房客；其他管理團隊不會認領
 - [ ] 真實 Provider、好友數與額度、切換與回退（`HUMAN_REQUIRED`）

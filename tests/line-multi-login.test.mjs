@@ -198,6 +198,17 @@ test('修改單 D: the home Workspace keeps the existing channel after it joins 
   assert.equal(cold.context.lineRequestChannelDenied_('W000001').code, 'WORKSPACE_FORBIDDEN');
 });
 
+test('修改單 D: rows without workspace_id send through the home Workspace once it has moved', () => {
+  const moved = gas({ registry: { [legacy]: { workspace_id: 'W000001', status: 'active' } }, workspaces: 'W000001' });
+  assert.deepEqual({ ...moved.context.lineSendRoute_('') }, { transport: 'worker', workspace_id: 'W000001' });
+  assert.equal(moved.context.lineSendRoute_('W000001').transport, 'worker');
+  const notYet = gas({ registry: { [legacy]: { workspace_id: 'W000001', status: 'verifying' } }, workspaces: 'W000001' });
+  assert.deepEqual({ ...notYet.context.lineSendRoute_('') }, { transport: 'legacy', workspace_id: '' });
+  const off = gas({ registry: { [legacy]: { workspace_id: 'W000001', status: 'active' } }, workspaces: '' });
+  assert.deepEqual({ ...off.context.lineSendRoute_('') }, { transport: 'legacy', workspace_id: '' });
+  assert.deepEqual(off.state.registryCalls, []);
+});
+
 test('修改單 D rollback: taking W000001 off the Worker list sends through @cmwebs again', () => {
   const back = gas({ registry: { [legacy]: { workspace_id: 'W000001', status: 'active' } }, workspaces: '' });
   back.context.verifyLandlordLineIdToken_(jwt({ aud: legacy }));

@@ -60,9 +60,13 @@ function lineWorkspaceTenantFinder_(workspaceId) {
   return function (lineUserId) {
     const sub = String(lineUserId || '').trim();
     if (!sub) return null;
+    // Rows without workspace_id predate Workspaces and belong to the home
+    // Workspace of the existing Login channel (修改單 D).
+    const home = typeof lineLegacyHomeWorkspace_ === 'function' ? lineLegacyHomeWorkspace_() : '';
     return getSheetObjects_(V2_SHEETS.landlordTenantListView).find(function (row) {
+      const rowWorkspace = String(row.workspace_id || '').trim().toUpperCase();
       return String(row.tenant_line_user_id || '').trim() === sub &&
-        String(row.workspace_id || '').trim().toUpperCase() === workspaceId;
+        (rowWorkspace === workspaceId || (!rowWorkspace && !!home && home === workspaceId));
     }) || null;
   };
 }

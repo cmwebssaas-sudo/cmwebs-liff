@@ -1656,3 +1656,9 @@ After uploading each image, `publish_menus` reads it back from
 (same bytes) or `re-encoded` (a JPEG, or a PNG of the menu size). An unreadable
 image or a PNG of another size deletes the new menu and answers
 `LINE_RICH_MENU_IMAGE_INVALID`.
+
+Rows without `workspace_id` (tenants created before Workspaces) belong to the
+home Workspace of 修改單 D. Once that Workspace is active and on
+`CMWEBS_LINE_WORKER_WORKSPACES`, `lineSendRoute_('')` sends through its OA, and
+forwarded webhooks for it also match those rows. No other Workspace claims them,
+and nothing changes while the list is empty.
