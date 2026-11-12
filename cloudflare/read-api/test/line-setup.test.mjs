@@ -248,8 +248,8 @@ test('the audience check answers friend counts and quota, never profiles', async
     const counted = await send({ action:'audience_check', workspace_id:'W_A', line_user_ids:[landlord,other,third] },line);
     assert.equal(counted.status,200);
     const { channel, ...data } = counted.body.data;
-    assert.deepEqual(data,{ friends:2, not_friends:1, unknown:0, quota_type:'limited', quota_limit:200, quota_used:17 });
-    assert.doesNotMatch(JSON.stringify(counted.body),/U[ef]{32}|合成房東/);
+    assert.deepEqual(data,{ friends:2, not_friends:1, unknown:0, not_friend_ids:[third], quota_type:'limited', quota_limit:200, quota_used:17 });
+    assert.doesNotMatch(JSON.stringify(counted.body),/Ue{32}|合成房東/, 'friends and profile fields never leave the Worker');
     for (const ids of [[landlord,landlord],['bad'],Array.from({ length:41 },(_,i) => 'U'+i.toString(16).padStart(32,'0'))]) {
       assert.equal((await send({ action:'audience_check', workspace_id:'W_A', line_user_ids:ids },line)).body.code,'INVALID_LINE_CHANNEL');
     }

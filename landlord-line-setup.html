@@ -47,7 +47,7 @@
 <button type="button" id="provider-link">產生手機連結</button><span class="code" id="provider-url" hidden></span>
 <button type="button" class="secondary" id="provider-copy" hidden>複製連結</button></div>
 <div id="audience-box" hidden><h3>搬家前檢查（只看不改）</h3>
-<p>查看已綁定的房客與管理團隊，有幾位已經加入這個官方帳號為好友，以及本月訊息額度。只顯示人數，不顯示名字。</p>
+<p>查看已綁定的房客與管理團隊，有幾位已經加入這個官方帳號為好友，並列出還沒加好友的人，以及本月訊息額度。只有房東本人看得到。</p>
 <button type="button" class="secondary" id="audience">查看好友與額度</button>
 <ul class="checks" id="audience-result"></ul></div>
 </section>
@@ -187,7 +187,8 @@
   function showAudience(data){
     const list=$('audience-result');list.textContent='';
     const line=(ok,text)=>{const li=document.createElement('li');li.className=ok?'ok':'bad';li.textContent=(ok?'✓ ':'! ')+text;list.appendChild(li);};
-    const group=(name,g)=>line(g.not_friends===0&&g.unknown===0,name+'：'+g.total+' 位已綁定，'+g.friends+' 位是好友，'+g.not_friends+' 位還沒加好友'+(g.unknown?'，'+g.unknown+' 位查不到':''));
+    const group=(name,g)=>{line(g.not_friends===0&&g.unknown===0,name+'：'+g.total+' 位已綁定，'+g.friends+' 位是好友，'+g.not_friends+' 位還沒加好友'+(g.unknown?'，'+g.unknown+' 位查不到':''));
+      if((g.not_friend_names||[]).length)line(false,'　還沒加好友：'+g.not_friend_names.join('、'));};
     group('目前房客',data.tenants);group('管理團隊',data.team);
     if(data.former_tenants)line(true,'另有 '+data.former_tenants+' 位已退租的房客，不列入檢查');
     line(data.shared_with_other_workspaces===0,data.shared_with_other_workspaces+' 位房客的 LINE 也綁在其他管理團隊');

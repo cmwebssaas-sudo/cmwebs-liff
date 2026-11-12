@@ -1662,3 +1662,6 @@ home Workspace of 修改單 D. Once that Workspace is active and on
 `CMWEBS_LINE_WORKER_WORKSPACES`, `lineSendRoute_('')` sends through its OA, and
 forwarded webhooks for it also match those rows. No other Workspace claims them,
 and nothing changes while the list is empty.
+The Worker `audience_check` also returns `not_friend_ids` to Apps Script, which
+turns them into `not_friend_names` (tenant or member names) per group for the
+owner. LINE IDs never reach the page.
