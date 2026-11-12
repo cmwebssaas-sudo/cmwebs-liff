@@ -4494,8 +4494,14 @@ function lineWorkerRouteConfig_() {
   return LINE_WORKER_ROUTE_CONFIG_;
 }
 
+// Rows from before Workspaces existed carry no workspace_id. They belong to
+// the Workspace that took the existing CMWebs Login channel as its own
+// (修改單 D), so once it has moved they send through its OA too.
 function lineSendRoute_(workspaceId) {
-  const id = String(workspaceId || '').trim();
+  let id = String(workspaceId || '').trim();
+  if (!id && lineWorkerRouteConfig_().workspaces.length && typeof lineLegacyHomeWorkspace_ === 'function') {
+    id = lineLegacyHomeWorkspace_();
+  }
   return {
     transport: id && lineWorkerRouteConfig_().workspaces.indexOf(id) >= 0 ? 'worker' : 'legacy',
     workspace_id: id

@@ -19,7 +19,8 @@ function fn(source, name) {
 // Same tenant LINE user in two Workspaces, as happens under one provider.
 const listRows = [
   { tenant_id: 'T_OLD', workspace_id: 'W000001', tenant_line_user_id: tenantUser, tenant_name: '舊房客', line_user_id: 'U_LANDLORD_OLD', room_list: '101' },
-  { tenant_id: 'T_NEW', workspace_id: 'W_TEST', tenant_line_user_id: tenantUser, tenant_name: '新房客', line_user_id: 'U_LANDLORD_NEW', room_list: '201' }
+  { tenant_id: 'T_NEW', workspace_id: 'W_TEST', tenant_line_user_id: tenantUser, tenant_name: '新房客', line_user_id: 'U_LANDLORD_NEW', room_list: '201' },
+  { tenant_id: 'T_LEGACY', workspace_id: '', tenant_line_user_id: 'U' + 'e'.repeat(32), tenant_name: '早期房客', line_user_id: 'U_LANDLORD_OLD', room_list: '301' }
 ];
 
 function context(workspaces = 'W_TEST') {
@@ -75,6 +76,18 @@ test('an unknown tenant in the verified Workspace is logged as unmatched, never 
   ctx.lineWorkerWebhookHandle_(envelope({ workspace_id: 'W_OTHER', destination: 'U' + 'b'.repeat(32), events: [message('2')] }));
   assert.equal(logs[0].tenant_id, '');
   assert.equal(logs[0].status, 'unmatched');
+});
+
+test('修改單 D: rows without workspace_id match only for the home Workspace of the existing channel', () => {
+  const legacyMessage = { ...message('9'), source: { type: 'user', userId: 'U' + 'e'.repeat(32) } };
+  const home = context('W000001');
+  home.ctx.lineLegacyHomeWorkspace_ = () => 'W000001';
+  home.ctx.lineWorkerWebhookHandle_(envelope({ workspace_id: 'W000001', destination: 'U' + 'b'.repeat(32), events: [legacyMessage] }));
+  assert.equal(home.logs[0].tenant_id, 'T_LEGACY');
+  const other = context('W_TEST');
+  other.ctx.lineLegacyHomeWorkspace_ = () => 'W000001';
+  other.ctx.lineWorkerWebhookHandle_(envelope({ workspace_id: 'W_TEST', destination: 'U' + 'b'.repeat(32), events: [{ ...legacyMessage, webhookEventId: 'E10', message: { ...legacyMessage.message, id: '10' } }] }));
+  assert.equal(other.logs[0].tenant_id, '', 'another Workspace never claims rows without workspace_id');
 });
 
 test('bad signatures, replays, stale requests and Workspaces off the list are refused', () => {
