@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-1349f7ce0097f3fb5e1dee852a4b672c64fd9a89ba11842b6571c0530f9ed0f8",
+  "comparison_version": "read-fd1d8b597136e14d557bed51b15f642a0fefb30c9192d49b9455943b98bb87ed",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -67,7 +67,7 @@
     "apps-script/V2_WORKSPACE_NOTIFICATIONS.js": "ebffffd1182df5fec359c1a71f45cca6d6d30139a7cee5f622d39c9c09af9394",
     "apps-script/V2_WORKSPACE_OPERATION_AUDIT.js": "83270892d86a2cf01e87d4f6fe0722b5903f7beeab004d2757d3c82f8a9f4cba",
     "apps-script/V3_LANDLORD_REGISTRATION.js": "c1eb37708fb6df92fc82b528ea2024aa15a8123c1edc5a681aa9ae33e884b290",
-    "apps-script/V3_LINE_SETUP.js": "1caa448240004c5ccf8f51c69cf524d32f6552d0445594142935c8ca9a72bb14",
+    "apps-script/V3_LINE_SETUP.js": "953258f987fdaf14120cd5f01d67622e7267f5fa7531dcc078f8d85a42b9ba17",
     "apps-script/V3_LINE_WEBHOOK.js": "c992ca7fec5e77ca1e91b63b091840976b38dc5943cc4d52184252dc0c135c81",
     "apps-script/V3_PLATFORM_CORE_BILLING.js": "ea6b0c4d37a12da268d88bdf699d338d96d847a7e6527b51c2ed86f0b3c8ae21",
     "apps-script/V3_PLATFORM_CORE_BILLING_CONTRACT.js": "4b760ab4062a77aee23d43fa3a04fe1de9caff8acec5dc180928c23791fede00",

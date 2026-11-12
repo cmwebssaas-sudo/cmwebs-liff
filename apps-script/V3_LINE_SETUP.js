@@ -218,13 +218,18 @@ function lineMenuSyncLandlord_(lineUserId) {
 // many bound tenants and team members are friends of the new OA, how many
 // tenant LINE accounts are also bound in another Workspace, and the OA's
 // monthly quota. Counts only; no LINE ID or name leaves this function.
-function lineSetupAudienceIds_(workspaceId) {
+// legacyRows: the Workspace registered the existing CMWebs Login channel
+// (修改單 D), so tenant rows without workspace_id are its own.
+function lineSetupAudienceIds_(workspaceId, legacyRows) {
   const lineOf = function (row) {
     return ['tenant_line_user_id', 'line_user_id', 'tenant_line_uid'].map(function (name) {
       return String(row[name] || '').trim();
     }).filter(function (value) { return /^U[0-9a-f]{32}$/.test(value); });
   };
-  const inWorkspace = function (row) { return String(row.workspace_id || '').trim().toUpperCase() === workspaceId; };
+  const inWorkspace = function (row) {
+    const id = String(row.workspace_id || '').trim().toUpperCase();
+    return id === workspaceId || (!id && !!legacyRows);
+  };
   // Current tenants, read the same way tenant binding does; people who moved
   // out are counted apart and never checked.
   const current = function (row) {
@@ -256,7 +261,10 @@ function lineSetupAudienceIds_(workspaceId) {
 }
 
 function lineSetupAudience_(workspaceId) {
-  const ids = lineSetupAudienceIds_(workspaceId);
+  const current = lineSetupFromWorker_(lineSetupWorker_({ action: 'get', workspace_id: workspaceId }));
+  if (!current.success) return current;
+  const legacyChannelId = PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID');
+  const ids = lineSetupAudienceIds_(workspaceId, !!legacyChannelId && current.data.line_login_channel_id === legacyChannelId);
   const result = { tenants: { total: ids.tenants.length, friends: 0, not_friends: 0, unknown: 0 },
     team: { total: ids.team.length, friends: 0, not_friends: 0, unknown: 0 },
     former_tenants: ids.former, shared_with_other_workspaces: ids.shared, quota_type: '', quota_limit: null, quota_used: null };

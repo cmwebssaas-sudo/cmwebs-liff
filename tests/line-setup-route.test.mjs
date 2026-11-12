@@ -12,7 +12,8 @@ function setup({ role = 'owner', workspace = 'w_test', setupList = 'W_TEST', ans
   const calls = [], audits = [], cache = new Map();
   const ctx = {
     JSON, String, Object, Array,
-    PropertiesService: { getScriptProperties: () => ({ getProperty: key => key === 'CMWEBS_LINE_SETUP_WORKSPACES' ? setupList : null }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => key === 'CMWEBS_LINE_SETUP_WORKSPACES' ? setupList :
+      key === 'CMWEBS_LINE_LOGIN_CHANNEL_ID' ? '1999999999' : null }) },
     CacheService: { getScriptCache: () => ({ get: key => cache.get(key) ?? null, put: (key, value) => cache.set(key, value), remove: key => cache.delete(key) }) },
     Utilities: { getUuid: () => '0123abcd-0123-4567-89ab-0123456789ab' },
     resolveLandlordPrincipal_: request => request.id_token === 'landlord'
@@ -237,11 +238,23 @@ test('the move check counts friends, shared accounts and quota without returning
   assert.deepEqual(JSON.parse(JSON.stringify(result.data)), {
     tenants: { total: 45, friends: 2, not_friends: 43, unknown: 0 }, team: { total: 1, friends: 1, not_friends: 0, unknown: 0 },
     former_tenants: 2, shared_with_other_workspaces: 1, quota_type: 'limited', quota_limit: 200, quota_used: 3 });
-  assert.deepEqual(calls.map(call => call.line_user_ids.length), [40, 5, 1]);
+  assert.deepEqual(calls.filter(call => call.action === 'audience_check').map(call => call.line_user_ids.length), [40, 5, 1]);
   assert.doesNotMatch(JSON.stringify(result), /U0{20}/);
   const empty = setup();
   empty.ctx.V2_SHEETS = { tenants: 'V2_tenants' };
   empty.ctx.getSheetObjects_ = () => [];
   empty.ctx.lineSetupHandle_('landlord_line_setup_audience', { id_token: 'landlord' });
-  assert.deepEqual(empty.calls.map(call => call.line_user_ids.length), [0], 'one empty batch still reads the quota');
+  assert.deepEqual(empty.calls.filter(call => call.action === 'audience_check').map(call => call.line_user_ids.length), [0], 'one empty batch still reads the quota');
+  // 修改單 D: on the existing Login channel, rows without workspace_id count as the Workspace's own.
+  const home = setup({ answers: { get: { status: 200, body: { success: true, data: record({ line_login_channel_id: '1999999999' }) } },
+    audience_check: fields => ({ status: 200, body: { success: true, data: { friends: 0, not_friends: fields.line_user_ids.length, unknown: 0,
+      quota_type: 'limited', quota_limit: 200, quota_used: 0 } } }) } });
+  home.ctx.V2_SHEETS = { tenants: 'V2_tenants' };
+  home.ctx.getSheetObjects_ = name => name === 'V2_tenants'
+    ? [{ workspace_id: 'W_TEST', tenant_line_user_id: id(1) }, { workspace_id: '', tenant_line_user_id: id(2) }, { workspace_id: 'W_OTHER', tenant_line_user_id: id(3) }] : [];
+  assert.equal(home.ctx.lineSetupHandle_('landlord_line_setup_audience', { id_token: 'landlord' }).data.tenants.total, 2);
+  const elsewhere = setup();
+  elsewhere.ctx.V2_SHEETS = { tenants: 'V2_tenants' };
+  elsewhere.ctx.getSheetObjects_ = home.ctx.getSheetObjects_;
+  assert.equal(elsewhere.ctx.lineSetupHandle_('landlord_line_setup_audience', { id_token: 'landlord' }).data.tenants.total, 1);
 });

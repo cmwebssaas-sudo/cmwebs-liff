@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261112-assistant-chat-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-1349f7ce0097f3fb5e1dee852a4b672c64fd9a89ba11842b6571c0530f9ed0f8";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-fd1d8b597136e14d557bed51b15f642a0fefb30c9192d49b9455943b98bb87ed";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';
