@@ -59,12 +59,12 @@
 <p>所有房東使用同一套選單，您只能選配色。選單上方有「房客服務」「房東管理」兩個分頁，點一下就能切換。房客與還沒綁定的人打開時是「房客服務」；您與團隊成員用自己的 LIFF 開啟租管頁後，打開時會是「房東管理」。</p>
 <p id="menu-state"></p>
 <div role="radiogroup" aria-label="選單配色" id="palettes">
-<label class="check"><input type="radio" name="palette" value="forest" checked><span>森林綠</span></label>
-<label class="check"><input type="radio" name="palette" value="ocean"><span>海洋藍</span></label>
+<label class="check"><input type="radio" name="palette" value="ocean" checked><span>海洋藍（標準）</span></label>
+<label class="check"><input type="radio" name="palette" value="forest"><span>森林綠</span></label>
 <label class="check"><input type="radio" name="palette" value="terracotta"><span>陶土紅</span></label>
 <label class="check"><input type="radio" name="palette" value="charcoal"><span>炭灰</span></label>
 </div>
-<p><img id="menu-preview" alt="租屋服務選單預覽" src="assets/line-rich-menu/tenant-forest.png" style="width:100%;border-radius:8px"></p>
+<p><img id="menu-preview" alt="租屋服務選單預覽" src="assets/line-rich-menu/tenant-ocean.png" style="width:100%;border-radius:8px"></p>
 <button type="button" id="menu-publish">發布選單（還不會換掉房客的選單）</button>
 <p>發布後，可以先用手機開啟第 4 步的連結，只在自己的 LINE 試看。確認沒問題再設為所有人的預設選單。</p>
 <label class="check"><input type="checkbox" id="menu-confirm"><span>我已試看過，同意把這套選單設為官方帳號所有好友的預設選單（打開時是「房客服務」）。</span></label>
@@ -198,7 +198,8 @@
   $('activate').addEventListener('click',()=>run($('activate'),async()=>{channel=await call('landlord_line_setup_activate');say('已啟用。');}));
   document.querySelectorAll('input[name=palette]').forEach(input=>input.addEventListener('change',()=>{$('menu-preview').src='assets/line-rich-menu/tenant-'+input.value+'.png';}));
   $('menu-publish').addEventListener('click',()=>run($('menu-publish'),async()=>{
-    say('發布中…');showMenus(await call('landlord_line_setup_menu_publish',{palette:document.querySelector('input[name=palette]:checked').value}));say('選單已發布。');
+    say('發布中…');const published=await call('landlord_line_setup_menu_publish',{palette:document.querySelector('input[name=palette]:checked').value});showMenus(published);
+    const check=published.image_check||{};say('選單已發布。'+(check.tenant==='identical'&&check.landlord==='identical'?'已從 LINE 讀回圖片，和預覽完全相同。':'已從 LINE 讀回圖片，尺寸正確。'));
   }));
   $('menu-default-on').addEventListener('click',()=>run($('menu-default-on'),async()=>{
     if(!$('menu-confirm').checked){say('請先勾選確認。');return;}

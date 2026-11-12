@@ -23,7 +23,7 @@ test('committed menu images match the hashes the Worker checks', async () => {
   }
 });
 
-function fakeLine({ apiDefault = '', tamper = false } = {}) {
+function fakeLine({ apiDefault = '', tamper = false, stored = bytes => bytes } = {}) {
   const state = { menus:new Map(), aliases:new Map(), defaultMenu:apiDefault, links:new Map(), unlinked:[], calls:[], next:1 };
   const json = (body, status = 200) => Response.json(body,{ status });
   state.fetch = async (url, init = {}) => {
@@ -45,7 +45,9 @@ function fakeLine({ apiDefault = '', tamper = false } = {}) {
     }
     let match;
     if ((match = /^\/v2\/bot\/richmenu\/(richmenu-[^/]+)\/content$/.exec(path))) {
-      state.menus.get(match[1]).image = init.headers['content-type']; return json({});
+      const menu = state.menus.get(match[1]);
+      if (method === 'GET') return new Response(stored(menu.bytes));
+      menu.image = init.headers['content-type']; menu.bytes = Buffer.from(await new Response(init.body).arrayBuffer()); return json({});
     }
     if ((match = /^\/v2\/bot\/richmenu\/(richmenu-[^/]+)$/.exec(path)) && method === 'DELETE') {
       if (!state.menus.delete(match[1])) return json({},404);
@@ -118,13 +120,19 @@ test('publishing creates both menus pointing at the landlord LIFF without touchi
     const line = fakeLine({ apiDefault:'' });
     const result = await send({ action:'publish_menus', palette:'forest' },line);
     assert.equal(result.status,200);
-    assert.deepEqual({ ...result.body.data.menus, updated_at:null },{ palette:'forest', template:'v1', default_enabled:false, has_previous_default:false, updated_at:null });
+    assert.deepEqual({ ...result.body.data.menus, updated_at:null },{ palette:'forest', template:'v2', default_enabled:false, has_previous_default:false, updated_at:null });
     assert.equal(line.menus.size,2);
+    assert.deepEqual(result.body.data.image_check,{ tenant:'identical', landlord:'identical' }, 'images were read back from LINE');
     const [tenant, landlord] = ids(line);
     for (const { body, image } of line.menus.values()) {
       assert.equal(image,'image/png');
       assert.deepEqual(body.size,{ width:2500, height:1686 });
       assert.equal(body.areas.length,8);
+      assert.equal(body.selected,true);
+      // Owner's format: two 1250×300 tabs, then 3×2 buttons of 833/833/834 × 693.
+      assert.deepEqual(body.areas.map(area => Object.values(area.bounds).join(',')),
+        ['0,0,1250,300','1250,0,1250,300','0,300,833,693','833,300,833,693','1666,300,834,693',
+          '0,993,833,693','833,993,833,693','1666,993,834,693']);
       assert.deepEqual(body.areas.slice(0,2).map(area => [area.action.type,area.action.richMenuAliasId]),
         [['richmenuswitch','cmwebs-tenant'],['richmenuswitch','cmwebs-landlord']]);
       for (const area of body.areas.slice(2)) assert.match(area.action.uri,new RegExp('^https://liff\\.line\\.me/'+liffId+'/(tenant|landlord)-[a-z-]+\\.html$'));
@@ -133,6 +141,25 @@ test('publishing creates both menus pointing at the landlord LIFF without touchi
     assert.equal(line.aliases.get('cmwebs-landlord'),landlord);
     assert.equal(line.defaultMenu,'');
     assert.ok(!line.calls.some(call => call.includes('/user/all/')));
+  });
+});
+
+test('an image LINE stored differently is accepted only at the menu size', async () => {
+  // A re-encoded PNG keeps the size: published, reported as re-encoded.
+  await withChannel('active', async (db, send) => {
+    const resized = bytes => { const copy = Buffer.concat([bytes,Buffer.from('extra')]); return copy; };
+    const line = fakeLine({ stored:resized });
+    const result = await send({ action:'publish_menus', palette:'ocean' },line);
+    assert.equal(result.status,200);
+    assert.deepEqual(result.body.data.image_check,{ tenant:'re-encoded', landlord:'re-encoded' });
+  });
+  // A PNG of another size or an unreadable image: the menu is deleted.
+  await withChannel('active', async (db, send) => {
+    const wrong = bytes => { const copy = Buffer.from(bytes); copy.writeUInt32BE(1200,16); return copy; };
+    const line = fakeLine({ stored:wrong });
+    const result = await send({ action:'publish_menus', palette:'ocean' },line);
+    assert.equal(result.body.code,'LINE_RICH_MENU_IMAGE_INVALID');
+    assert.equal(line.menus.size,0);
   });
 });
 

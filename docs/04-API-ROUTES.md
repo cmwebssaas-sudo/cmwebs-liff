@@ -1645,3 +1645,14 @@ and the message quota and consumption. The answer has counts only:
 `tenants`/`team` `{total, friends, not_friends, unknown}`, `former_tenants`
 (bound tenants whose account status is not active; not checked),
 `shared_with_other_workspaces`, `quota_type`, `quota_limit`, `quota_used`.
+
+Rich menu format v2 (owner, 2026-11-12, replaces the v1 card style): 2500×1686;
+two 1250×300 tabs; 3×2 buttons of 833/833/834 × 693; menus are created with
+`selected: true`. The look is ported from the Libenest platform-tabbed menu
+(`scripts/generate-line-rich-menu-images.mjs`); `ocean` is the reference palette
+and the wizard's default. Menus published as v1 are replaced on the next publish.
+After uploading each image, `publish_menus` reads it back from
+`api-data.line.me/.../content` and returns `image_check` per menu: `identical`
+(same bytes) or `re-encoded` (a JPEG, or a PNG of the menu size). An unreadable
+image or a PNG of another size deletes the new menu and answers
+`LINE_RICH_MENU_IMAGE_INVALID`.

@@ -24,13 +24,33 @@ async function deleteMenu(fetcher, token, menuId) {
 
 async function createMenu(fetcher, token, menu, liffId, image) {
   const created = await call(fetcher,'POST',api+'/v2/bot/richmenu',{ token, json:{
-    size:RICH_MENU_SIZE, selected:false, name:'CMWebs '+menu+' '+RICH_MENU_TEMPLATE,
+    size:RICH_MENU_SIZE, selected:true, name:'CMWebs '+menu+' '+RICH_MENU_TEMPLATE,
     chatBarText:RICH_MENUS[menu].chatBarText, areas:richMenuAreas(menu,liffId) } });
   const menuId = created.status === 200 ? String(created.data.richMenuId || '') : '';
   if (!menuId) stop('LINE_RICH_MENU_FAILED',502);
   const uploaded = await call(fetcher,'POST','https://api-data.line.me/v2/bot/richmenu/'+menuId+'/content',{ token, bytes:image, type:'image/png' });
   if (uploaded.status !== 200) { await deleteMenu(fetcher,token,menuId); stop('LINE_RICH_MENU_FAILED',502); }
-  return menuId;
+  const check = await downloadedImage(fetcher,token,menuId,menu,image);
+  if (!check) { await deleteMenu(fetcher,token,menuId); stop('LINE_RICH_MENU_IMAGE_INVALID',502); }
+  return { menuId, check };
+}
+
+// Reads the image back from LINE: 'identical' when the bytes match what was
+// uploaded, 're-encoded' when LINE stored another PNG of the same size or a
+// JPEG; '' (refused) when it cannot be read or a PNG has another size.
+async function downloadedImage(fetcher, token, menuId, menu, image) {
+  let response;
+  try {
+    response = await fetcher('https://api-data.line.me/v2/bot/richmenu/'+menuId+'/content',
+      { method:'GET', headers:{ Authorization:'Bearer '+token }, redirect:'manual', signal:AbortSignal.timeout(10000) });
+  } catch { return ''; }
+  if (response.status !== 200) return '';
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (hex(await crypto.subtle.digest('SHA-256',bytes)) === hex(await crypto.subtle.digest('SHA-256',image))) return 'identical';
+  const png = bytes.length > 24 && bytes[0] === 0x89 && bytes[1] === 0x50;
+  if (!png) return bytes.length > 2 && bytes[0] === 0xff && bytes[1] === 0xd8 ? 're-encoded' : '';
+  const view = new DataView(bytes.buffer,bytes.byteOffset);
+  return view.getUint32(16) === RICH_MENU_SIZE.width && view.getUint32(20) === RICH_MENU_SIZE.height ? 're-encoded' : '';
 }
 
 // The tabs switch through aliases, so each alias must point at the current menu.
@@ -51,10 +71,13 @@ export async function publishMenus(db, channel, secrets, input, fetcher) {
   if (!Object.hasOwn(RICH_MENU_PALETTES,input.palette)) stop('INVALID_LINE_CHANNEL');
   const token = secrets.messaging_access_token;
   const images = { tenant:await menuImage('tenant',input.palette,fetcher), landlord:await menuImage('landlord',input.palette,fetcher) };
-  const tenant = await createMenu(fetcher,token,'tenant',channel.liff_id,images.tenant);
-  let landlord;
-  try { landlord = await createMenu(fetcher,token,'landlord',channel.liff_id,images.landlord); }
+  const first = await createMenu(fetcher,token,'tenant',channel.liff_id,images.tenant);
+  const tenant = first.menuId;
+  let second;
+  try { second = await createMenu(fetcher,token,'landlord',channel.liff_id,images.landlord); }
   catch (error) { await deleteMenu(fetcher,token,tenant); throw error; }
+  const landlord = second.menuId;
+  const imageCheck = { tenant:first.check, landlord:second.check };
   for (const [menu, menuId] of [['tenant',tenant],['landlord',landlord]]) {
     if (!await pointAlias(fetcher,token,RICH_MENUS[menu].alias,menuId)) {
       await deleteMenu(fetcher,token,tenant); await deleteMenu(fetcher,token,landlord); stop('LINE_RICH_MENU_FAILED',502);
@@ -81,7 +104,7 @@ export async function publishMenus(db, channel, secrets, input, fetcher) {
       landlord_menu_id=excluded.landlord_menu_id,updated_at=excluded.updated_at`)
     .bind(channel.workspace_id,input.palette,RICH_MENU_TEMPLATE,tenant,landlord,now()).run();
   if (old) { await deleteMenu(fetcher,token,old.tenant_menu_id); await deleteMenu(fetcher,token,old.landlord_menu_id); }
-  return { menus:publicMenus(await menuRow(db,channel.workspace_id)) };
+  return { menus:publicMenus(await menuRow(db,channel.workspace_id)), image_check:imageCheck };
 }
 
 async function link(db, channel, token, lineUserId, menu, fetcher) {
