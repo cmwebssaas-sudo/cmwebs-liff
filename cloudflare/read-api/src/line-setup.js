@@ -41,10 +41,13 @@ async function liffApps(fetcher, token) {
 // adds another; any other app on the channel, CMWebs's own included, is left
 // alone. A new app gets the site root first, then its own ID once LINE has
 // assigned it.
-export async function prepareLiff(input, fetcher) {
+// On the existing CMWebs Login channel (strict) a bare-root app may be one of
+// the live production apps, so only an app already at its own ?cmwebs_liff=
+// endpoint is reused; anything else gets a new app.
+export async function prepareLiff(input, fetcher, { strict = false } = {}) {
   const token = await loginToken(fetcher,input.line_login_channel_id,input.line_login_channel_secret);
   if (!token) stop('LINE_LOGIN_SECRET_INVALID');
-  let app = (await liffApps(fetcher,token)).find(item => item?.view?.url === LIFF_ENDPOINT_BASE ||
+  let app = (await liffApps(fetcher,token)).find(item => (!strict && item?.view?.url === LIFF_ENDPOINT_BASE) ||
     (item?.liffId && item?.view?.url === liffEndpoint(item.liffId)));
   let liffId = app?.liffId;
   if (!liffId) {

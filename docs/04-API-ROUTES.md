@@ -1637,10 +1637,11 @@ Login channel and 森の苑's Messaging API channel (same provider) as its OA.
   refused, so also restore the webhook or suspend the row.
 
 Read-only move check: Apps Script owner action `landlord_line_setup_audience`
-(same checks as the wizard) collects the Workspace's bound tenant LINE IDs and
+(same checks as the wizard) collects the Workspace's current tenants' LINE IDs and
 active members' LINE IDs, and calls the Worker `audience_check`
 (`workspace_id`, `line_user_ids` up to 40, channel `verifying`, `active` or
 `suspended`) in batches. The Worker asks LINE's profile API (404 = not a friend)
 and the message quota and consumption. The answer has counts only:
-`tenants`/`team` `{total, friends, not_friends, unknown}`,
+`tenants`/`team` `{total, friends, not_friends, unknown}`, `former_tenants`
+(bound tenants whose account status is not active; not checked),
 `shared_with_other_workspaces`, `quota_type`, `quota_limit`, `quota_used`.

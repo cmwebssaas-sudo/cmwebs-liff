@@ -207,8 +207,10 @@ function lineMenuSyncLandlord_(lineUserId) {
       return;
     }
     const answer = lineSetupWorker_({ action: 'link_menu', workspace_id: workspaceId, line_user_id: sub, menu: member ? 'landlord' : 'none' });
+    // Failures (not published, not a friend, LINE or Worker down) wait ten
+    // minutes, so a landlord page never pays for the same failed call twice.
     if (answer.status === 200) cache.put(key, member ? 'landlord' : 'none', 21600);
-    else if (answer.body.code === 'LINE_RICH_MENU_NOT_PUBLISHED') cache.put(key, 'unpublished', 600);
+    else cache.put(key, answer.body.code === 'LINE_RICH_MENU_NOT_PUBLISHED' ? 'unpublished' : 'failed', 600);
   } catch (_) {}
 }
 
@@ -223,9 +225,15 @@ function lineSetupAudienceIds_(workspaceId) {
     }).filter(function (value) { return /^U[0-9a-f]{32}$/.test(value); });
   };
   const inWorkspace = function (row) { return String(row.workspace_id || '').trim().toUpperCase() === workspaceId; };
-  const tenants = {}, elsewhere = {};
+  // Current tenants, read the same way tenant binding does; people who moved
+  // out are counted apart and never checked.
+  const current = function (row) {
+    const status = String(row.account_status || row.tenant_account_status || row.status || 'active').trim().toLowerCase();
+    return ['active', 'enabled', 'valid', 'current', '啟用', '有效'].indexOf(status) >= 0;
+  };
+  const tenants = {}, former = {}, elsewhere = {};
   getSheetObjects_(V2_SHEETS.tenants).forEach(function (row) {
-    lineOf(row).forEach(function (id) { (inWorkspace(row) ? tenants : elsewhere)[id] = true; });
+    lineOf(row).forEach(function (id) { (!inWorkspace(row) ? elsewhere : current(row) ? tenants : former)[id] = true; });
   });
   const userLine = {};
   getSheetObjects_('V2_users').forEach(function (user) {
@@ -241,6 +249,7 @@ function lineSetupAudienceIds_(workspaceId) {
   const tenantIds = Object.keys(tenants);
   return {
     tenants: tenantIds,
+    former: Object.keys(former).filter(function (id) { return !tenants[id]; }).length,
     team: Object.keys(team),
     shared: tenantIds.filter(function (id) { return elsewhere[id]; }).length
   };
@@ -250,7 +259,7 @@ function lineSetupAudience_(workspaceId) {
   const ids = lineSetupAudienceIds_(workspaceId);
   const result = { tenants: { total: ids.tenants.length, friends: 0, not_friends: 0, unknown: 0 },
     team: { total: ids.team.length, friends: 0, not_friends: 0, unknown: 0 },
-    shared_with_other_workspaces: ids.shared, quota_type: '', quota_limit: null, quota_used: null };
+    former_tenants: ids.former, shared_with_other_workspaces: ids.shared, quota_type: '', quota_limit: null, quota_used: null };
   // Batches of 40; one empty batch still reads the quota.
   const batches = [];
   [['tenants', ids.tenants], ['team', ids.team]].forEach(function (group) {

@@ -219,6 +219,17 @@ test('only the home Workspace may register the existing CMWebs Login channel', a
     await db.prepare("UPDATE line_channels SET line_login_channel_id='1000000002' WHERE workspace_id='W_HOME'").run();
     assert.equal(await loader.workspaceOnOwnChannel('W_HOME',login),true);
   },{ LINE_LOGIN_CHANNEL_ID:login, LINE_LOGIN_HOME_WORKSPACE:'W_HOME' });
+  // A bare-root app on the existing channel may be a live production app: never reused or rewritten.
+  await withRegistry(async (db, send) => {
+    const live = { liffId:login+'-LiveHub1', view:{ type:'full', url:'https://cmwebssaas-sudo.github.io/cmwebs-liff/' } };
+    const line = fakeLine({ apps:[live] });
+    const home = await send({ action:'prepare_liff', workspace_id:'W_HOME', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    assert.equal(home.body.data.liff_id,login+'-NewApp01');
+    assert.equal(live.view.url,'https://cmwebssaas-sudo.github.io/cmwebs-liff/');
+    assert.ok(!line.calls.includes('PUT /liff/v1/apps/'+login+'-LiveHub1'));
+    const again = await send({ action:'prepare_liff', workspace_id:'W_HOME', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    assert.equal(again.body.data.liff_id,login+'-NewApp01', 'its own app is reused on the next save');
+  },{ LINE_LOGIN_CHANNEL_ID:login, LINE_LOGIN_HOME_WORKSPACE:'W_HOME' });
   // Without a named home Workspace nobody may claim it.
   await withRegistry(async (db, send) => {
     const home = await send({ action:'prepare_liff', workspace_id:'W_HOME', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },fakeLine());

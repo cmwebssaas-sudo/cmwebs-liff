@@ -153,7 +153,7 @@ export async function lineChannels(request, env, fetcher = fetch) {
       validPrepareLiff(input);
       reservedLoginChannel(input.line_login_channel_id,env,input.workspace_id);
       await commit(db,nonce);
-      return reply({ success:true, code:'OK', message:'LIFF ready', data:await prepareLiff(input,fetcher) });
+      return reply({ success:true, code:'OK', message:'LIFF ready', data:await prepareLiff(input,fetcher,{ strict:input.line_login_channel_id === env.LINE_LOGIN_CHANNEL_ID }) });
     }
     if (Object.hasOwn(setupActions,input.action)) {
       await commit(db,nonce);

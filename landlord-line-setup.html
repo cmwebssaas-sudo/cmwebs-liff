@@ -188,7 +188,8 @@
     const list=$('audience-result');list.textContent='';
     const line=(ok,text)=>{const li=document.createElement('li');li.className=ok?'ok':'bad';li.textContent=(ok?'✓ ':'! ')+text;list.appendChild(li);};
     const group=(name,g)=>line(g.not_friends===0&&g.unknown===0,name+'：'+g.total+' 位已綁定，'+g.friends+' 位是好友，'+g.not_friends+' 位還沒加好友'+(g.unknown?'，'+g.unknown+' 位查不到':''));
-    group('房客',data.tenants);group('管理團隊',data.team);
+    group('目前房客',data.tenants);group('管理團隊',data.team);
+    if(data.former_tenants)line(true,'另有 '+data.former_tenants+' 位已退租的房客，不列入檢查');
     line(data.shared_with_other_workspaces===0,data.shared_with_other_workspaces+' 位房客的 LINE 也綁在其他管理團隊');
     if(data.quota_limit!==null&&data.quota_used!==null)line(data.quota_used<data.quota_limit*0.8,'本月已用 '+data.quota_used+' / '+data.quota_limit+' 則推播');
     else if(data.quota_type==='none')line(true,'這個方案沒有推播則數上限');

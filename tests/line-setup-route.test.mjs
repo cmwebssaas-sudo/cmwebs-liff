@@ -170,6 +170,13 @@ test('an unpublished menu is retried after ten minutes and errors never break th
   const { ctx, cache } = syncContext({ scope: { workspace_id: 'W_TEST' }, answer: { status: 409, body: { success: false, code: 'LINE_RICH_MENU_NOT_PUBLISHED' } } });
   ctx.lineMenuSyncLandlord_(sub);
   assert.equal(cache.get('v3_line_menu:W_TEST:' + sub), 'unpublished');
+  for (const answer of [{ status: 404, body: { success: false, code: 'LINE_USER_NOT_FOUND' } }, { status: 503, body: { success: false, code: 'LINE_CHANNEL_UNAVAILABLE' } }]) {
+    const failing = syncContext({ scope: { workspace_id: 'W_TEST' }, answer });
+    failing.ctx.lineMenuSyncLandlord_(sub);
+    failing.ctx.lineMenuSyncLandlord_(sub);
+    assert.equal(failing.calls.length, 1, 'a failure is not retried on the next page');
+    assert.equal(failing.cache.get('v3_line_menu:W_TEST:' + sub), 'failed');
+  }
   const broken = syncContext({ scope: { workspace_id: 'W_TEST' } });
   broken.ctx.workspaceLandlordResolveAccess_ = () => { throw new Error('sheet'); };
   assert.doesNotThrow(() => broken.ctx.lineMenuSyncLandlord_(sub));
@@ -210,6 +217,8 @@ test('the move check counts friends, shared accounts and quota without returning
       ...Array.from({ length: 45 }, (_, n) => ({ workspace_id: 'w_test', tenant_line_user_id: id(n) })),
       { workspace_id: 'W_TEST', tenant_line_user_id: id(1) },
       { workspace_id: 'W_TEST', line_user_id: '' },
+      { workspace_id: 'W_TEST', tenant_line_user_id: id(700), status: 'moved_out' },
+      { workspace_id: 'W_TEST', tenant_line_user_id: id(701), account_status: 'inactive', status: 'active' },
       { workspace_id: 'W_OTHER', tenant_line_user_id: id(2) },
       { workspace_id: 'W_OTHER', tenant_line_user_id: id(900) }],
     V2_users: [{ user_id: 'u1', line_user_id: id(500) }, { user_id: 'u2', line_user_id: id(501) }, { user_id: 'u3', line_user_id: id(502) }],
@@ -227,7 +236,7 @@ test('the move check counts friends, shared accounts and quota without returning
   assert.equal(result.success, true);
   assert.deepEqual(JSON.parse(JSON.stringify(result.data)), {
     tenants: { total: 45, friends: 2, not_friends: 43, unknown: 0 }, team: { total: 1, friends: 1, not_friends: 0, unknown: 0 },
-    shared_with_other_workspaces: 1, quota_type: 'limited', quota_limit: 200, quota_used: 3 });
+    former_tenants: 2, shared_with_other_workspaces: 1, quota_type: 'limited', quota_limit: 200, quota_used: 3 });
   assert.deepEqual(calls.map(call => call.line_user_ids.length), [40, 5, 1]);
   assert.doesNotMatch(JSON.stringify(result), /U0{20}/);
   const empty = setup();
