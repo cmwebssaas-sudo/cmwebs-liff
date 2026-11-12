@@ -18,9 +18,10 @@ LINE_LOGIN_CHANNEL_ID = "2010314940"
 LINE_LOGIN_HOME_WORKSPACE = "W000001"
 # Landlord assistant: Workspaces allowed to ask the AI-00 model (comma separated).
 ASSISTANT_AI_WORKSPACES = "W000001"
-# Apps Script Web App that receives verified LINE webhook events (public URL).
-# Empty until the owner approves stage 5; webhooks answer 503 meanwhile.
-APPS_SCRIPT_WEBHOOK_URL = ""
+# Apps Script Web App that receives verified LINE webhook events (public URL,
+# the same Web App the pages call). Only active channels forward; Apps Script
+# accepts a Workspace only while it is in CMWEBS_LINE_WORKER_WORKSPACES.
+APPS_SCRIPT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec"
 
 # Run next to the D1 primary (APAC, Tokyo): one user round trip, then each of the
 # many sequential D1 queries stays inside the region.
