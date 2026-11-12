@@ -5200,3 +5200,14 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/line-setup-route.test.mjs`：選單動作只限房東本人與固定值；手機連結只改開啟者自己的選單；房東自有頻道的成員自動掛房東選單、非成員移除；原有頻道完全不碰選單
 - [x] `tests/landlord-line-setup-page.test.mjs`：須先發布與勾選確認才可設為預設選單
 - [ ] 真實 OA 試看、預設選單與還原（`HUMAN_REQUIRED`，第 8 階段）
+
+## 2026-11-12 W000001 搬到自己的官方帳號（修改單 D）
+
+- [x] `cloudflare/read-api/test/line-setup.test.mjs`：只有 `LINE_LOGIN_HOME_WORKSPACE` 指定的管理團隊可登記 CMWebs 原本的登入頻道，其他一律拒絕；未指定時沒人可用；讀取路線對這筆登記仍接受原本頻道的登入
+- [x] `cloudflare/read-api/test/line-setup.test.mjs`：搬家前檢查只回人數與額度，不回 LINE ID 或名稱；格式錯誤、重複或超過 40 筆拒絕；草稿狀態不能查
+- [x] `tests/line-multi-login.test.mjs`：W000001 加入允許清單且 Registry 啟用後，原本頻道的登入仍可進 W000001；尚未啟用時拒絕；Registry 暫時查不到時沿用上次結果，沒有上次結果時不放行
+- [x] `tests/line-multi-login.test.mjs`：把 W000001 移出允許清單即改回 @cmwebs 發送，登入照常，且不查 Registry
+- [x] `tests/line-setup-route.test.mjs`：建立 LIFF 時帶 Workspace；原本頻道只替 W000001 自己的成員掛房東選單；搬家前檢查分批、只回人數；啟用時清除快取
+- [x] `tests/landlord-line-setup-page.test.mjs`：搬家前檢查按鈕只顯示人數
+- [x] `cloudflare/read-api/test/line-rich-menu.test.mjs`：選單 v2 版型（負責人 11/12 格式）：兩個 1250×300 分頁、3×2 按鈕 833/833/834 × 693、預設展開；上傳後從 LINE 讀回圖片比對，尺寸不符就刪除選單
+- [ ] 真實 Provider、好友數與額度、切換與回退（`HUMAN_REQUIRED`）

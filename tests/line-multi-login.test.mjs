@@ -170,6 +170,43 @@ test('the verified channel decides which Workspaces a landlord can open', () => 
   assert.equal(existing.context.lineRequestChannelDenied_('W_OWN').code, 'WORKSPACE_FORBIDDEN');
 });
 
+test('修改單 D: the home Workspace keeps the existing channel after it joins the Worker list', () => {
+  const home = { [legacy]: { workspace_id: 'w000001', status: 'active' } };
+  const moved = gas({ registry: home, workspaces: 'W000001,W_OWN' });
+  moved.context.verifyLandlordLineIdToken_(jwt({ aud: legacy }));
+  assert.deepEqual(moved.state.verified, [legacy], 'old LIFF links still verify against the existing channel');
+  assert.equal(moved.context.lineRequestChannelDenied_('W000001'), null);
+  assert.equal(moved.context.lineRequestChannelDenied_('W_STILL_LEGACY'), null);
+  assert.equal(moved.context.lineRequestChannelDenied_('W_OWN').code, 'WORKSPACE_FORBIDDEN');
+  moved.context.lineRequestChannelDenied_('W000001');
+  assert.equal(moved.state.registryCalls.length, 1, 'one registry lookup per execution');
+  assert.equal(moved.state.cache.get('v3_line_legacy_home'), 'W000001');
+  assert.equal(moved.context.lineSendRoute_('W000001').transport, 'worker');
+
+  // Not active yet: the move has not happened, so W000001 on the list is refused.
+  const draft = gas({ registry: { [legacy]: { workspace_id: 'W000001', status: 'verifying' } }, workspaces: 'W000001' });
+  draft.context.verifyLandlordLineIdToken_(jwt({ aud: legacy }));
+  assert.equal(draft.context.lineRequestChannelDenied_('W000001').code, 'WORKSPACE_FORBIDDEN');
+
+  // Registry outage: the last answer stands; with none, the move is not assumed.
+  const outage = gas({ registry: home, workspaces: 'W000001', worker: 503 });
+  outage.state.cache.set('v3_line_legacy_home', 'W000001');
+  outage.context.verifyLandlordLineIdToken_(jwt({ aud: legacy }));
+  assert.equal(outage.context.lineRequestChannelDenied_('W000001'), null);
+  const cold = gas({ registry: home, workspaces: 'W000001', worker: 503 });
+  cold.context.verifyLandlordLineIdToken_(jwt({ aud: legacy }));
+  assert.equal(cold.context.lineRequestChannelDenied_('W000001').code, 'WORKSPACE_FORBIDDEN');
+});
+
+test('修改單 D rollback: taking W000001 off the Worker list sends through @cmwebs again', () => {
+  const back = gas({ registry: { [legacy]: { workspace_id: 'W000001', status: 'active' } }, workspaces: '' });
+  back.context.verifyLandlordLineIdToken_(jwt({ aud: legacy }));
+  assert.equal(back.context.lineRequestChannelDenied_('W000001'), null);
+  assert.equal(back.context.lineSendRoute_('W000001').transport, 'legacy');
+  assert.equal(back.context.lineLegacyHomeWorkspace_(), '');
+  assert.deepEqual(back.state.registryCalls, [], 'nothing asks the registry while no Workspace is listed');
+});
+
 test('tenant actions pass the channel gate; other non-landlord actions still refuse own-channel tokens', () => {
   const { context, state } = gas();
   for (const action of ['tenant_home_init', 'tenant_bind_submit', 'landlord_home_init']) {

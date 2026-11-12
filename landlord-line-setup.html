@@ -46,6 +46,10 @@
 <p>請用手機開啟下面的連結：先加入您的官方帳號為好友，再完成登入。系統查得到您的資料，才代表兩個頻道在同一個 Provider。連結 10 分鐘內有效。</p>
 <button type="button" id="provider-link">產生手機連結</button><span class="code" id="provider-url" hidden></span>
 <button type="button" class="secondary" id="provider-copy" hidden>複製連結</button></div>
+<div id="audience-box" hidden><h3>搬家前檢查（只看不改）</h3>
+<p>查看已綁定的房客與管理團隊，有幾位已經加入這個官方帳號為好友，以及本月訊息額度。只顯示人數，不顯示名字。</p>
+<button type="button" class="secondary" id="audience">查看好友與額度</button>
+<ul class="checks" id="audience-result"></ul></div>
 </section>
 <section id="step-activate" aria-disabled="true"><h2>5. 啟用</h2>
 <p>全部檢查通過後才能啟用。啟用後，通知改用您的官方帳號發送前，仍需 CMWebs 另外開通。</p>
@@ -55,12 +59,12 @@
 <p>所有房東使用同一套選單，您只能選配色。選單上方有「房客服務」「房東管理」兩個分頁，點一下就能切換。房客與還沒綁定的人打開時是「房客服務」；您與團隊成員用自己的 LIFF 開啟租管頁後，打開時會是「房東管理」。</p>
 <p id="menu-state"></p>
 <div role="radiogroup" aria-label="選單配色" id="palettes">
-<label class="check"><input type="radio" name="palette" value="forest" checked><span>森林綠</span></label>
-<label class="check"><input type="radio" name="palette" value="ocean"><span>海洋藍</span></label>
+<label class="check"><input type="radio" name="palette" value="ocean" checked><span>海洋藍（標準）</span></label>
+<label class="check"><input type="radio" name="palette" value="forest"><span>森林綠</span></label>
 <label class="check"><input type="radio" name="palette" value="terracotta"><span>陶土紅</span></label>
 <label class="check"><input type="radio" name="palette" value="charcoal"><span>炭灰</span></label>
 </div>
-<p><img id="menu-preview" alt="租屋服務選單預覽" src="assets/line-rich-menu/tenant-forest.png" style="width:100%;border-radius:8px"></p>
+<p><img id="menu-preview" alt="租屋服務選單預覽" src="assets/line-rich-menu/tenant-ocean.png" style="width:100%;border-radius:8px"></p>
 <button type="button" id="menu-publish">發布選單（還不會換掉房客的選單）</button>
 <p>發布後，可以先用手機開啟第 4 步的連結，只在自己的 LINE 試看。確認沒問題再設為所有人的預設選單。</p>
 <label class="check"><input type="checkbox" id="menu-confirm"><span>我已試看過，同意把這套選單設為官方帳號所有好友的預設選單（打開時是「房客服務」）。</span></label>
@@ -109,7 +113,7 @@
     channel=data.channel||channel;
     const list=$('checks');list.textContent='';
     Object.keys(labels).forEach(key=>{const li=document.createElement('li');const ok=data.checks[key]===true;li.className=ok?'ok':'bad';li.textContent=(ok?'✓ ':'✗ ')+labels[key];list.appendChild(li);});
-    $('webhook-box').hidden=!data.checks.token;$('provider-box').hidden=!data.checks.token;
+    $('webhook-box').hidden=!data.checks.token;$('provider-box').hidden=!data.checks.token;$('audience-box').hidden=!data.checks.token;
     const current=data.webhook.current;
     $('webhook-current').textContent=current||'（尚未設定）';
     $('replace-wrap').hidden=!current||current===data.webhook.expected;
@@ -180,10 +184,22 @@
     $('provider-url').textContent=data.url;$('provider-url').hidden=false;$('provider-copy').hidden=false;
   }));
   $('provider-copy').addEventListener('click',()=>{navigator.clipboard&&navigator.clipboard.writeText($('provider-url').textContent).then(()=>say('已複製連結'),()=>say('請手動複製連結'));});
+  function showAudience(data){
+    const list=$('audience-result');list.textContent='';
+    const line=(ok,text)=>{const li=document.createElement('li');li.className=ok?'ok':'bad';li.textContent=(ok?'✓ ':'! ')+text;list.appendChild(li);};
+    const group=(name,g)=>line(g.not_friends===0&&g.unknown===0,name+'：'+g.total+' 位已綁定，'+g.friends+' 位是好友，'+g.not_friends+' 位還沒加好友'+(g.unknown?'，'+g.unknown+' 位查不到':''));
+    group('目前房客',data.tenants);group('管理團隊',data.team);
+    if(data.former_tenants)line(true,'另有 '+data.former_tenants+' 位已退租的房客，不列入檢查');
+    line(data.shared_with_other_workspaces===0,data.shared_with_other_workspaces+' 位房客的 LINE 也綁在其他管理團隊');
+    if(data.quota_limit!==null&&data.quota_used!==null)line(data.quota_used<data.quota_limit*0.8,'本月已用 '+data.quota_used+' / '+data.quota_limit+' 則推播');
+    else if(data.quota_type==='none')line(true,'這個方案沒有推播則數上限');
+  }
+  $('audience').addEventListener('click',()=>run($('audience'),async()=>{say('查詢中…');showAudience(await call('landlord_line_setup_audience'));say('');}));
   $('activate').addEventListener('click',()=>run($('activate'),async()=>{channel=await call('landlord_line_setup_activate');say('已啟用。');}));
   document.querySelectorAll('input[name=palette]').forEach(input=>input.addEventListener('change',()=>{$('menu-preview').src='assets/line-rich-menu/tenant-'+input.value+'.png';}));
   $('menu-publish').addEventListener('click',()=>run($('menu-publish'),async()=>{
-    say('發布中…');showMenus(await call('landlord_line_setup_menu_publish',{palette:document.querySelector('input[name=palette]:checked').value}));say('選單已發布。');
+    say('發布中…');const published=await call('landlord_line_setup_menu_publish',{palette:document.querySelector('input[name=palette]:checked').value});showMenus(published);
+    const check=published.image_check||{};say('選單已發布。'+(check.tenant==='identical'&&check.landlord==='identical'?'已從 LINE 讀回圖片，和預覽完全相同。':'已從 LINE 讀回圖片，尺寸正確。'));
   }));
   $('menu-default-on').addEventListener('click',()=>run($('menu-default-on'),async()=>{
     if(!$('menu-confirm').checked){say('請先勾選確認。');return;}

@@ -14,6 +14,8 @@ migrations_dir = "migrations"
 # LINE Login channel that owns the landlord LIFF apps (public value).
 [vars]
 LINE_LOGIN_CHANNEL_ID = "2010314940"
+# The one Workspace allowed to register that channel as its own (修改單 D).
+LINE_LOGIN_HOME_WORKSPACE = "W000001"
 # Landlord assistant: Workspaces allowed to ask the AI-00 model (comma separated).
 ASSISTANT_AI_WORKSPACES = "W000001"
 # Apps Script Web App that receives verified LINE webhook events (public URL).

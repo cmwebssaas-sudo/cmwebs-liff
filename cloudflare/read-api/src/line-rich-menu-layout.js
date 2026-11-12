@@ -1,16 +1,19 @@
 // V3 stage 6: the one standard rich menu, shared by every landlord. It has
 // two tabs that switch between each other: 房客服務 and 房東管理. Landlords
 // pick a palette; labels, pages and positions are the same for everyone.
-export const RICH_MENU_TEMPLATE = 'v1';
+// v2 (owner's format, 2026-11-12): tab bar 300 high with two 1250-wide tabs,
+// then 3×2 buttons of 833/833/834 × 693.
+export const RICH_MENU_TEMPLATE = 'v2';
 export const RICH_MENU_SIZE = { width:2500, height:1686 };
-export const RICH_MENU_TAB_HEIGHT = 250;
-// accent: the first card and icons; background: the card area; tabBar: the
-// inactive tab.
+export const RICH_MENU_TAB_HEIGHT = 300;
+export const RICH_MENU_COLUMNS = [0,833,1666,2500];
+// tone: [page 1 top, bottom], [page 2 top, bottom]; page 1 light, page 2 a bit
+// darker. primary: the first button's gradient. ocean is the reference look.
 export const RICH_MENU_PALETTES = {
-  forest:{ accent:'#2f6b4f', background:'#f3f6f1', tabBar:'#e1e9df', ink:'#23392e', muted:'#7b8f82' },
-  ocean:{ accent:'#2563c9', background:'#f2f6fb', tabBar:'#dfe8f4', ink:'#1f2f45', muted:'#7d8ca1' },
-  terracotta:{ accent:'#b4552f', background:'#faf5ef', tabBar:'#efe4d8', ink:'#3d2a20', muted:'#9a8476' },
-  charcoal:{ accent:'#3b4248', background:'#f5f5f3', tabBar:'#e4e4e1', ink:'#26292c', muted:'#868b8f' }
+  ocean:{ tone:[['#F4F7FB','#EBF0F7'],['#D2E0F5','#C6D7F0']], primary:['#2B85FF','#006BFF'], icon:'#006BFF', iconBg:'#EAF2FF', primarySub:'#DCEBFF', shadow:'0,60,140', glow:'0,107,255' },
+  forest:{ tone:[['#F4F8F5','#EBF2EC'],['#D3E6D8','#C6DECD']], primary:['#43A06E','#2A7A4F'], icon:'#2A7A4F', iconBg:'#E6F2EA', primarySub:'#DDF0E4', shadow:'20,90,50', glow:'42,122,79' },
+  terracotta:{ tone:[['#FBF6F2','#F5EDE6'],['#F1DCCD','#EBD0BE']], primary:['#E0845A','#C25E33'], icon:'#C25E33', iconBg:'#FBEDE5', primarySub:'#FBE3D6', shadow:'150,70,30', glow:'194,94,51' },
+  charcoal:{ tone:[['#F5F6F7','#ECEEF0'],['#DADDE1','#CED2D7']], primary:['#5A636D','#353C44'], icon:'#353C44', iconBg:'#EDEFF1', primarySub:'#DFE3E7', shadow:'30,40,50', glow:'53,60,68' }
 };
 // Each tab is its own rich menu, reached through an alias. Tenants and people
 // who have not bound yet open on the tenant tab (the default menu); landlords
@@ -30,14 +33,14 @@ export const RICH_MENU_ORDER = ['tenant','landlord'];
 export const RICH_MENU_SWITCH_DATA = 'cmwebs-tab:';
 
 export function richMenuAreas(menu, liffId) {
-  const width = RICH_MENU_SIZE.width, top = RICH_MENU_TAB_HEIGHT;
+  const width = RICH_MENU_SIZE.width, top = RICH_MENU_TAB_HEIGHT, row = (RICH_MENU_SIZE.height - top) / 2;
   const tabs = RICH_MENU_ORDER.map((name, index) => ({
     bounds:{ x:index * width / 2, y:0, width:width / 2, height:top },
     action:{ type:'richmenuswitch', label:RICH_MENUS[name].tab, richMenuAliasId:RICH_MENUS[name].alias, data:RICH_MENU_SWITCH_DATA+name } }));
-  const columns = [0,833,1667,2500], rows = [top,top+718,RICH_MENU_SIZE.height];
+  const columns = RICH_MENU_COLUMNS;
   const buttons = RICH_MENUS[menu].items.map(([label, page], index) => {
-    const column = index % 3, row = Math.floor(index / 3);
-    return { bounds:{ x:columns[column], y:rows[row], width:columns[column+1]-columns[column], height:rows[row+1]-rows[row] },
+    const column = index % 3;
+    return { bounds:{ x:columns[column], y:top + Math.floor(index / 3) * row, width:columns[column+1]-columns[column], height:row },
       action:{ type:'uri', label, uri:'https://liff.line.me/'+liffId+'/'+page } };
   });
   return [...tabs, ...buttons];

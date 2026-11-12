@@ -52,6 +52,7 @@ test('saving creates the LIFF app first, then stores the channel, and never echo
   const result = ctx.lineSetupHandle_('landlord_line_setup_save', save);
   assert.equal(result.success, true);
   assert.deepEqual(calls.map(call => call.action), ['prepare_liff', 'upsert']);
+  assert.equal(calls[0].workspace_id, 'W_TEST', 'the Worker decides who may use the existing Login channel');
   assert.equal(calls[1].workspace_id, 'W_TEST');
   assert.equal(calls[1].liff_id, '1000000001-NewApp01');
   assert.deepEqual(Object.keys(calls[1].secrets).sort(), ['line_login_channel_secret', 'messaging_access_token', 'messaging_channel_secret']);
@@ -124,9 +125,10 @@ test('menu publishing, default switch and restore are owner actions with fixed v
   assert.equal(admin.ctx.lineSetupHandle_('landlord_line_setup_menu_restore', { id_token: 'landlord' }).code, 'LINE_SETUP_OWNER_REQUIRED');
 });
 
-function syncContext({ scope, member = true, answer = { status: 200, body: { success: true } } } = {}) {
+function syncContext({ scope, member = true, home = '', answer = { status: 200, body: { success: true } } } = {}) {
   const env = setup({ answers: { link_menu: answer } });
   env.ctx.lineRequestChannelScope_ = () => scope;
+  env.ctx.lineLegacyHomeWorkspace_ = () => home;
   env.ctx.workspaceLandlordResolveAccess_ = () => member ? { success: true, workspace: { workspace_id: 'w_test' } } : { success: false };
   return env;
 }
@@ -147,12 +149,19 @@ test('people who are not members lose the landlord menu', () => {
   assert.equal(calls[0].menu, 'none');
 });
 
-test('the existing channel never touches rich menus', () => {
+test('the existing channel touches rich menus only for the home Workspace\'s own people', () => {
   for (const scope of [null, { workspace_id: '' }]) {
     const { ctx, calls } = syncContext({ scope });
     ctx.lineMenuSyncLandlord_(sub);
     assert.equal(calls.length, 0);
   }
+  const home = syncContext({ scope: { workspace_id: '' }, home: 'W_TEST' });
+  home.ctx.lineMenuSyncLandlord_(sub);
+  assert.equal(JSON.stringify(home.calls[0]), JSON.stringify({ action: 'link_menu', workspace_id: 'W_TEST', line_user_id: sub, menu: 'landlord' }));
+  const stranger = syncContext({ scope: { workspace_id: '' }, home: 'W_TEST', member: false });
+  stranger.ctx.lineMenuSyncLandlord_(sub);
+  assert.equal(stranger.calls.length, 0, 'landlords of other Workspaces on the existing channel are left alone');
+  assert.equal(stranger.cache.get('v3_line_menu:W_TEST:' + sub), 'other');
   const main = readFileSync(new URL('程式碼.js', dir), 'utf8');
   assert.match(main, /lineUserId = identity\.data\.sub;\s*if \(\/\^landlord_\/\.test\(v2Action\) && typeof lineMenuSyncLandlord_ === 'function'\) lineMenuSyncLandlord_\(lineUserId\);/);
 });
@@ -161,6 +170,13 @@ test('an unpublished menu is retried after ten minutes and errors never break th
   const { ctx, cache } = syncContext({ scope: { workspace_id: 'W_TEST' }, answer: { status: 409, body: { success: false, code: 'LINE_RICH_MENU_NOT_PUBLISHED' } } });
   ctx.lineMenuSyncLandlord_(sub);
   assert.equal(cache.get('v3_line_menu:W_TEST:' + sub), 'unpublished');
+  for (const answer of [{ status: 404, body: { success: false, code: 'LINE_USER_NOT_FOUND' } }, { status: 503, body: { success: false, code: 'LINE_CHANNEL_UNAVAILABLE' } }]) {
+    const failing = syncContext({ scope: { workspace_id: 'W_TEST' }, answer });
+    failing.ctx.lineMenuSyncLandlord_(sub);
+    failing.ctx.lineMenuSyncLandlord_(sub);
+    assert.equal(failing.calls.length, 1, 'a failure is not retried on the next page');
+    assert.equal(failing.cache.get('v3_line_menu:W_TEST:' + sub), 'failed');
+  }
   const broken = syncContext({ scope: { workspace_id: 'W_TEST' } });
   broken.ctx.workspaceLandlordResolveAccess_ = () => { throw new Error('sheet'); };
   assert.doesNotThrow(() => broken.ctx.lineMenuSyncLandlord_(sub));
@@ -173,6 +189,9 @@ test('activating clears the cached login channel and LIFF lookups', () => {
   assert.equal(ctx.lineSetupHandle_('landlord_line_setup_activate', { id_token: 'landlord' }).success, true);
   assert.equal(calls[0].status, 'active');
   assert.equal(cache.size, 0);
+  cache.set('v3_line_legacy_home', '-');
+  ctx.lineSetupHandle_('landlord_line_setup_activate', { id_token: 'landlord' });
+  assert.equal(cache.has('v3_line_legacy_home'), false);
 });
 
 test('the POST dispatcher sends only setup actions to the wizard handler', () => {
@@ -189,4 +208,40 @@ test('restoring the webhook is an owner action', () => {
   assert.equal(calls[0].action, 'restore_webhook');
   assert.equal(audits[0].action, 'landlord_line_setup_webhook_restore');
   assert.match(setup().ctx.lineSetupResult_(false, 'LINE_WEBHOOK_PROTECTED').message, /不能在精靈中更換/);
+});
+
+test('the move check counts friends, shared accounts and quota without returning any LINE ID', () => {
+  const id = n => 'U' + String(n).padStart(32, '0');
+  const sheets = {
+    V2_tenants: [
+      ...Array.from({ length: 45 }, (_, n) => ({ workspace_id: 'w_test', tenant_line_user_id: id(n) })),
+      { workspace_id: 'W_TEST', tenant_line_user_id: id(1) },
+      { workspace_id: 'W_TEST', line_user_id: '' },
+      { workspace_id: 'W_TEST', tenant_line_user_id: id(700), status: 'moved_out' },
+      { workspace_id: 'W_TEST', tenant_line_user_id: id(701), account_status: 'inactive', status: 'active' },
+      { workspace_id: 'W_OTHER', tenant_line_user_id: id(2) },
+      { workspace_id: 'W_OTHER', tenant_line_user_id: id(900) }],
+    V2_users: [{ user_id: 'u1', line_user_id: id(500) }, { user_id: 'u2', line_user_id: id(501) }, { user_id: 'u3', line_user_id: id(502) }],
+    V2_workspace_members: [{ workspace_id: 'W_TEST', user_id: 'u1', member_status: 'active' },
+      { workspace_id: 'W_TEST', user_id: 'u2', member_status: 'removed' }, { workspace_id: 'W_OTHER', user_id: 'u3', member_status: 'active' }]
+  };
+  const friends = new Set([id(0), id(3), id(500)]);
+  const { ctx, calls } = setup({ answers: { audience_check: fields => ({ status: 200, body: { success: true, data: {
+    friends: fields.line_user_ids.filter(value => friends.has(value)).length,
+    not_friends: fields.line_user_ids.filter(value => !friends.has(value)).length, unknown: 0,
+    quota_type: 'limited', quota_limit: 200, quota_used: 3 } } }) } });
+  ctx.V2_SHEETS = { tenants: 'V2_tenants' };
+  ctx.getSheetObjects_ = name => sheets[name];
+  const result = ctx.lineSetupHandle_('landlord_line_setup_audience', { id_token: 'landlord' });
+  assert.equal(result.success, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.data)), {
+    tenants: { total: 45, friends: 2, not_friends: 43, unknown: 0 }, team: { total: 1, friends: 1, not_friends: 0, unknown: 0 },
+    former_tenants: 2, shared_with_other_workspaces: 1, quota_type: 'limited', quota_limit: 200, quota_used: 3 });
+  assert.deepEqual(calls.map(call => call.line_user_ids.length), [40, 5, 1]);
+  assert.doesNotMatch(JSON.stringify(result), /U0{20}/);
+  const empty = setup();
+  empty.ctx.V2_SHEETS = { tenants: 'V2_tenants' };
+  empty.ctx.getSheetObjects_ = () => [];
+  empty.ctx.lineSetupHandle_('landlord_line_setup_audience', { id_token: 'landlord' });
+  assert.deepEqual(empty.calls.map(call => call.line_user_ids.length), [0], 'one empty batch still reads the quota');
 });

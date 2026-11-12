@@ -1545,7 +1545,7 @@ values.
 
 `POST /internal/line-channels` gains these actions (signed as before):
 
-- `prepare_liff` (`line_login_channel_id`, `line_login_channel_secret`): issues a
+- `prepare_liff` (`workspace_id`, `line_login_channel_id`, `line_login_channel_secret`): issues a
   short-lived Login-channel token, reuses the channel's LIFF app whose endpoint
   starts with the Pages root or creates one, and sets its endpoint to
   `…/cmwebs-liff/?cmwebs_liff=<LIFF ID>`. Returns `liff_id`; stores nothing.
@@ -1565,7 +1565,7 @@ values.
   the landlord then turns webhooks off in the LINE console.
 - `prepare_liff` reuses only an app whose endpoint is the Pages root or its own
   `?cmwebs_liff=` URL; other apps on the channel are never changed. `prepare_liff`
-  and `upsert` refuse the existing CMWebs Login channel (`LINE_LOGIN_CHANNEL_ID`)
+  and `upsert` refuse the existing CMWebs Login channel (`LINE_LOGIN_CHANNEL_ID`) for every Workspace except `LINE_LOGIN_HOME_WORKSPACE`
   with `LINE_CHANNEL_RESERVED`.
 - `set_webhook` refuses with `LINE_WEBHOOK_PROTECTED`, even when confirmed, if the
   current URL is an Apps Script Web App (the existing channel's webhook).
@@ -1585,7 +1585,7 @@ also accepts `line_setup_menu_preview` (`setup_code`, `id_token`, `menu`
 
 Landlord GET actions verified with a token from a landlord's own channel also
 link that person's menu once every six hours: `landlord` for members of that
-Workspace, `none` otherwise. Tokens from the existing channel never touch menus.
+Workspace, `none` otherwise. Tokens from the existing channel touch menus only for the home Workspace of 修改單 D (below).
 
 `POST /internal/line-channels` gains (channel `active` unless noted):
 
@@ -1610,3 +1610,49 @@ those events instead of forwarding them as messages.
 
 `line_setup_provider_check` also returns `channel_active`; the phone page offers
 the menu preview only when it is true.
+
+## 2026-11-12 W000001 moves onto its own OA (修改單 D, undeployed)
+
+W000001 registers the existing CMWebs Login channel (`2010314940`) as its own
+Login channel and 森の苑's Messaging API channel (same provider) as its OA.
+
+- Worker var `LINE_LOGIN_HOME_WORKSPACE` (`W000001`) names the only Workspace
+  that may use `LINE_LOGIN_CHANNEL_ID` in `prepare_liff` and `upsert`; every
+  other Workspace still gets `LINE_CHANNEL_RESERVED`. `prepare_liff` now also
+  takes `workspace_id`.
+- Apps Script `lineLegacyHomeWorkspace_()` reads the registry row of the
+  existing Login channel (`find_login_channel`). While that row is `active` and
+  its Workspace is in `CMWEBS_LINE_WORKER_WORKSPACES`, tokens from the existing
+  channel keep opening that Workspace (`lineRequestChannelDenied_`), so every old
+  LIFF link and the @cmwebs menu keep working. The answer is cached for six
+  hours under `v3_line_legacy_home` and used when the registry cannot answer.
+  With no Workspace on the list nothing is read.
+- Landlord GET actions with an existing-channel token link the landlord menu on
+  the home Workspace's OA for that Workspace's own members only; nobody else is
+  touched.
+- The Worker read path needs no change: `workspaceOnOwnChannel` ignores a row
+  whose Login channel is the existing one.
+- Rollback: removing W000001 from `CMWEBS_LINE_WORKER_WORKSPACES` sends through
+  @cmwebs again and keeps every login. Forwarded 森の苑 webhooks are then
+  refused, so also restore the webhook or suspend the row.
+
+Read-only move check: Apps Script owner action `landlord_line_setup_audience`
+(same checks as the wizard) collects the Workspace's current tenants' LINE IDs and
+active members' LINE IDs, and calls the Worker `audience_check`
+(`workspace_id`, `line_user_ids` up to 40, channel `verifying`, `active` or
+`suspended`) in batches. The Worker asks LINE's profile API (404 = not a friend)
+and the message quota and consumption. The answer has counts only:
+`tenants`/`team` `{total, friends, not_friends, unknown}`, `former_tenants`
+(bound tenants whose account status is not active; not checked),
+`shared_with_other_workspaces`, `quota_type`, `quota_limit`, `quota_used`.
+
+Rich menu format v2 (owner, 2026-11-12, replaces the v1 card style): 2500×1686;
+two 1250×300 tabs; 3×2 buttons of 833/833/834 × 693; menus are created with
+`selected: true`. The look is ported from the Libenest platform-tabbed menu
+(`scripts/generate-line-rich-menu-images.mjs`); `ocean` is the reference palette
+and the wizard's default. Menus published as v1 are replaced on the next publish.
+After uploading each image, `publish_menus` reads it back from
+`api-data.line.me/.../content` and returns `image_check` per menu: `identical`
+(same bytes) or `re-encoded` (a JPEG, or a PNG of the menu size). An unreadable
+image or a PNG of another size deletes the new menu and answers
+`LINE_RICH_MENU_IMAGE_INVALID`.

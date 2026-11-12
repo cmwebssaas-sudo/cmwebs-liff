@@ -9,7 +9,7 @@ const LINE_SETUP_ACTIONS_ = [
   'landlord_line_setup_status', 'landlord_line_setup_save', 'landlord_line_setup_verify',
   'landlord_line_setup_webhook', 'landlord_line_setup_webhook_restore', 'landlord_line_setup_provider_link', 'landlord_line_setup_activate',
   'landlord_line_setup_menu_status', 'landlord_line_setup_menu_publish', 'landlord_line_setup_menu_default',
-  'landlord_line_setup_menu_restore', 'line_setup_provider_check', 'line_setup_menu_preview'
+  'landlord_line_setup_menu_restore', 'landlord_line_setup_audience', 'line_setup_provider_check', 'line_setup_menu_preview'
 ];
 const LINE_SETUP_PALETTES_ = ['forest', 'ocean', 'terracotta', 'charcoal'];
 
@@ -30,7 +30,7 @@ const LINE_SETUP_MESSAGES_ = {
   LINE_ID_TOKEN_INVALID: 'LINE 登入已失效，請重新開啟連結',
   LINE_SETUP_CODE_INVALID: '連結已失效，請回到電腦重新產生',
   LINE_UNREACHABLE: '暫時連不到 LINE，請稍後再試',
-  LINE_CHANNEL_RESERVED: '這是 CMWebs 目前使用的登入頻道，不能在精靈中設定',
+  LINE_CHANNEL_RESERVED: '這是 CMWebs 原本的登入頻道，只有原本的管理團隊可以使用',
   LINE_WEBHOOK_PROTECTED: '這個官方帳號的 Webhook 正由 CMWebs 現有系統使用，不能在精靈中更換',
   LINE_RICH_MENU_NOT_PUBLISHED: '尚未發布圖文選單',
   LINE_RICH_MENU_FAILED: '圖文選單更新失敗，請稍後再試',
@@ -117,6 +117,7 @@ function lineSetupSave_(workspaceId, request) {
     fields.messaging_channel_id === fields.line_login_channel_id) return lineSetupResult_(false, 'INVALID_LINE_SETUP');
   const liff = lineSetupFromWorker_(lineSetupWorker_({
     action: 'prepare_liff',
+    workspace_id: workspaceId,
     line_login_channel_id: fields.line_login_channel_id,
     line_login_channel_secret: fields.line_login_channel_secret
   }));
@@ -184,11 +185,15 @@ function lineSetupMenuPreview_(request) {
 
 // Landlords and team members who open their landlord's own LIFF get the
 // landlord menu; anyone else who opens a landlord page there loses it. Runs
-// once per person every six hours, and never for the existing channel.
+// once per person every six hours. On the existing channel only the people of
+// the Workspace that took it as its own (修改單 D) get the menu; nobody else
+// on that channel is touched.
 function lineMenuSyncLandlord_(lineUserId) {
   try {
     const scope = lineRequestChannelScope_();
-    const workspaceId = scope && scope.workspace_id;
+    if (!scope) return;
+    const viaExisting = !scope.workspace_id;
+    const workspaceId = scope.workspace_id || lineLegacyHomeWorkspace_();
     const sub = String(lineUserId || '').trim();
     if (!workspaceId || !/^U[0-9a-f]{32}$/.test(sub)) return;
     const cache = CacheService.getScriptCache();
@@ -197,10 +202,81 @@ function lineMenuSyncLandlord_(lineUserId) {
     const access = workspaceLandlordResolveAccess_(sub, { skip_schema_ensure: true, skip_legacy_context_creation: true });
     const member = !!access && access.success === true && access.workspace &&
       String(access.workspace.workspace_id || '').trim().toUpperCase() === workspaceId;
+    if (viaExisting && !member) {
+      cache.put(key, 'other', 21600);
+      return;
+    }
     const answer = lineSetupWorker_({ action: 'link_menu', workspace_id: workspaceId, line_user_id: sub, menu: member ? 'landlord' : 'none' });
+    // Failures (not published, not a friend, LINE or Worker down) wait ten
+    // minutes, so a landlord page never pays for the same failed call twice.
     if (answer.status === 200) cache.put(key, member ? 'landlord' : 'none', 21600);
-    else if (answer.body.code === 'LINE_RICH_MENU_NOT_PUBLISHED') cache.put(key, 'unpublished', 600);
+    else cache.put(key, answer.body.code === 'LINE_RICH_MENU_NOT_PUBLISHED' ? 'unpublished' : 'failed', 600);
   } catch (_) {}
+}
+
+// Read-only check before a Workspace moves onto its own OA (修改單 D): how
+// many bound tenants and team members are friends of the new OA, how many
+// tenant LINE accounts are also bound in another Workspace, and the OA's
+// monthly quota. Counts only; no LINE ID or name leaves this function.
+function lineSetupAudienceIds_(workspaceId) {
+  const lineOf = function (row) {
+    return ['tenant_line_user_id', 'line_user_id', 'tenant_line_uid'].map(function (name) {
+      return String(row[name] || '').trim();
+    }).filter(function (value) { return /^U[0-9a-f]{32}$/.test(value); });
+  };
+  const inWorkspace = function (row) { return String(row.workspace_id || '').trim().toUpperCase() === workspaceId; };
+  // Current tenants, read the same way tenant binding does; people who moved
+  // out are counted apart and never checked.
+  const current = function (row) {
+    const status = String(row.account_status || row.tenant_account_status || row.status || 'active').trim().toLowerCase();
+    return ['active', 'enabled', 'valid', 'current', '啟用', '有效'].indexOf(status) >= 0;
+  };
+  const tenants = {}, former = {}, elsewhere = {};
+  getSheetObjects_(V2_SHEETS.tenants).forEach(function (row) {
+    lineOf(row).forEach(function (id) { (!inWorkspace(row) ? elsewhere : current(row) ? tenants : former)[id] = true; });
+  });
+  const userLine = {};
+  getSheetObjects_('V2_users').forEach(function (user) {
+    const id = String(user.line_user_id || '').trim();
+    if (/^U[0-9a-f]{32}$/.test(id)) userLine[String(user.user_id || '').trim()] = id;
+  });
+  const team = {};
+  getSheetObjects_('V2_workspace_members').forEach(function (member) {
+    const status = String(member.member_status || member.status || 'active').trim().toLowerCase();
+    const id = userLine[String(member.user_id || '').trim()];
+    if (inWorkspace(member) && status === 'active' && id) team[id] = true;
+  });
+  const tenantIds = Object.keys(tenants);
+  return {
+    tenants: tenantIds,
+    former: Object.keys(former).filter(function (id) { return !tenants[id]; }).length,
+    team: Object.keys(team),
+    shared: tenantIds.filter(function (id) { return elsewhere[id]; }).length
+  };
+}
+
+function lineSetupAudience_(workspaceId) {
+  const ids = lineSetupAudienceIds_(workspaceId);
+  const result = { tenants: { total: ids.tenants.length, friends: 0, not_friends: 0, unknown: 0 },
+    team: { total: ids.team.length, friends: 0, not_friends: 0, unknown: 0 },
+    former_tenants: ids.former, shared_with_other_workspaces: ids.shared, quota_type: '', quota_limit: null, quota_used: null };
+  // Batches of 40; one empty batch still reads the quota.
+  const batches = [];
+  [['tenants', ids.tenants], ['team', ids.team]].forEach(function (group) {
+    for (let start = 0; start < group[1].length; start += 40) batches.push([group[0], group[1].slice(start, start + 40)]);
+  });
+  if (!batches.length) batches.push(['tenants', []]);
+  for (let i = 0; i < batches.length; i++) {
+    const answer = lineSetupFromWorker_(lineSetupWorker_({
+      action: 'audience_check', workspace_id: workspaceId, line_user_ids: batches[i][1]
+    }));
+    if (!answer.success) return answer;
+    ['friends', 'not_friends', 'unknown'].forEach(function (name) { result[batches[i][0]][name] += answer.data[name]; });
+    result.quota_type = answer.data.quota_type;
+    result.quota_limit = answer.data.quota_limit;
+    result.quota_used = answer.data.quota_used;
+  }
+  return lineSetupResult_(true, 'OK', result);
 }
 
 function lineSetupActivate_(workspaceId) {
@@ -209,6 +285,7 @@ function lineSetupActivate_(workspaceId) {
     const cache = CacheService.getScriptCache();
     cache.remove('v3_line_login_channel:' + result.data.line_login_channel_id);
     cache.remove('v3_line_workspace_liff:' + workspaceId);
+    cache.remove('v3_line_legacy_home');
   }
   return result;
 }
@@ -244,6 +321,8 @@ function lineSetupHandle_(action, request) {
       result = lineSetupFromWorker_(lineSetupWorker_({
         action: 'set_default_menu', workspace_id: owner.workspace_id, enabled: String(request.enabled) === 'true'
       }));
+    } else if (action === 'landlord_line_setup_audience') {
+      return lineSetupAudience_(owner.workspace_id);
     } else if (action === 'landlord_line_setup_menu_restore') {
       result = lineSetupFromWorker_(lineSetupWorker_({ action: 'restore_menus', workspace_id: owner.workspace_id }));
     }
