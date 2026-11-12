@@ -46,6 +46,10 @@
 <p>請用手機開啟下面的連結：先加入您的官方帳號為好友，再完成登入。系統查得到您的資料，才代表兩個頻道在同一個 Provider。連結 10 分鐘內有效。</p>
 <button type="button" id="provider-link">產生手機連結</button><span class="code" id="provider-url" hidden></span>
 <button type="button" class="secondary" id="provider-copy" hidden>複製連結</button></div>
+<div id="audience-box" hidden><h3>搬家前檢查（只看不改）</h3>
+<p>查看已綁定的房客與管理團隊，有幾位已經加入這個官方帳號為好友，以及本月訊息額度。只顯示人數，不顯示名字。</p>
+<button type="button" class="secondary" id="audience">查看好友與額度</button>
+<ul class="checks" id="audience-result"></ul></div>
 </section>
 <section id="step-activate" aria-disabled="true"><h2>5. 啟用</h2>
 <p>全部檢查通過後才能啟用。啟用後，通知改用您的官方帳號發送前，仍需 CMWebs 另外開通。</p>
@@ -109,7 +113,7 @@
     channel=data.channel||channel;
     const list=$('checks');list.textContent='';
     Object.keys(labels).forEach(key=>{const li=document.createElement('li');const ok=data.checks[key]===true;li.className=ok?'ok':'bad';li.textContent=(ok?'✓ ':'✗ ')+labels[key];list.appendChild(li);});
-    $('webhook-box').hidden=!data.checks.token;$('provider-box').hidden=!data.checks.token;
+    $('webhook-box').hidden=!data.checks.token;$('provider-box').hidden=!data.checks.token;$('audience-box').hidden=!data.checks.token;
     const current=data.webhook.current;
     $('webhook-current').textContent=current||'（尚未設定）';
     $('replace-wrap').hidden=!current||current===data.webhook.expected;
@@ -180,6 +184,16 @@
     $('provider-url').textContent=data.url;$('provider-url').hidden=false;$('provider-copy').hidden=false;
   }));
   $('provider-copy').addEventListener('click',()=>{navigator.clipboard&&navigator.clipboard.writeText($('provider-url').textContent).then(()=>say('已複製連結'),()=>say('請手動複製連結'));});
+  function showAudience(data){
+    const list=$('audience-result');list.textContent='';
+    const line=(ok,text)=>{const li=document.createElement('li');li.className=ok?'ok':'bad';li.textContent=(ok?'✓ ':'! ')+text;list.appendChild(li);};
+    const group=(name,g)=>line(g.not_friends===0&&g.unknown===0,name+'：'+g.total+' 位已綁定，'+g.friends+' 位是好友，'+g.not_friends+' 位還沒加好友'+(g.unknown?'，'+g.unknown+' 位查不到':''));
+    group('房客',data.tenants);group('管理團隊',data.team);
+    line(data.shared_with_other_workspaces===0,data.shared_with_other_workspaces+' 位房客的 LINE 也綁在其他管理團隊');
+    if(data.quota_limit!==null&&data.quota_used!==null)line(data.quota_used<data.quota_limit*0.8,'本月已用 '+data.quota_used+' / '+data.quota_limit+' 則推播');
+    else if(data.quota_type==='none')line(true,'這個方案沒有推播則數上限');
+  }
+  $('audience').addEventListener('click',()=>run($('audience'),async()=>{say('查詢中…');showAudience(await call('landlord_line_setup_audience'));say('');}));
   $('activate').addEventListener('click',()=>run($('activate'),async()=>{channel=await call('landlord_line_setup_activate');say('已啟用。');}));
   document.querySelectorAll('input[name=palette]').forEach(input=>input.addEventListener('change',()=>{$('menu-preview').src='assets/line-rich-menu/tenant-'+input.value+'.png';}));
   $('menu-publish').addEventListener('click',()=>run($('menu-publish'),async()=>{

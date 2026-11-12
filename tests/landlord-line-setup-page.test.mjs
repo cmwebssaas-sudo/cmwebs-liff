@@ -48,3 +48,9 @@ test('the default menu changes only after publishing, trying and an explicit con
   for (const palette of ['forest', 'ocean', 'terracotta', 'charcoal']) assert.match(page, new RegExp('value="' + palette + '"'));
   assert.match(script, /\$\('phone-preview'\)\.hidden=!\(data\.provider_match&&data\.channel_active\)/);
 });
+
+test('the move check is read-only and shows counts only', () => {
+  assert.match(page, /id="audience">查看好友與額度<\/button>/);
+  assert.match(page, /call\('landlord_line_setup_audience'\)/);
+  assert.doesNotMatch(page.slice(page.indexOf('function showAudience'), page.indexOf("$('audience')")), /innerHTML|line_user_id/);
+});

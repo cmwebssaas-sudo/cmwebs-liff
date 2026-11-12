@@ -1,5 +1,5 @@
 import { boundedBody, verifySignature } from './sync.js';
-import { checkProvider, prepareLiff, restoreWebhook, setWebhook, verifyChannel } from './line-setup.js';
+import { audienceCheck, checkProvider, prepareLiff, restoreWebhook, setWebhook, verifyChannel } from './line-setup.js';
 import { linkMenu, menuStatus, previewMenu, publishMenus, restoreMenus, setDefaultMenu } from './line-rich-menu.js';
 
 const encoder = new TextEncoder();
@@ -60,14 +60,17 @@ async function commit(db, nonce, statement) {
     stop('NONCE_REPLAY',409);
   }
 }
-// The existing CMWebs Login channel and its LIFF apps stay out of the wizard
-// until moving W000001 onto its own OA is designed.
-function reservedLoginChannel(channelId, env) {
-  if (env.LINE_LOGIN_CHANNEL_ID && channelId === env.LINE_LOGIN_CHANNEL_ID) stop('LINE_CHANNEL_RESERVED',409);
+// The existing CMWebs Login channel belongs to one home Workspace (W000001,
+// 修改單 D): its tenants and team keep their LINE IDs and every old LIFF
+// link. Any other Workspace claiming it would inherit those logins.
+function reservedLoginChannel(channelId, env, workspaceId) {
+  if (!env.LINE_LOGIN_CHANNEL_ID || channelId !== env.LINE_LOGIN_CHANNEL_ID) return;
+  const home = String(env.LINE_LOGIN_HOME_WORKSPACE || '').trim().toUpperCase();
+  if (!home || String(workspaceId || '').toUpperCase() !== home) stop('LINE_CHANNEL_RESERVED',409);
 }
 async function upsert(db, nonce, input, env) {
   validUpsert(input);
-  reservedLoginChannel(input.line_login_channel_id,env);
+  reservedLoginChannel(input.line_login_channel_id,env,input.workspace_id);
   const now = new Date().toISOString();
   const encrypted = await encryptChannelSecrets(input.secrets,env.LINE_CHANNEL_SECRET_KEY,input.workspace_id);
   await commit(db,nonce,db.prepare(`INSERT INTO line_channels(workspace_id,line_login_channel_id,liff_id,messaging_channel_id,
@@ -95,6 +98,7 @@ async function setStatus(db, nonce, input) {
 // Apps Script signs each call after it has checked the caller's Workspace,
 // role and permission. Responses never include secrets.
 const anyLive = ['verifying','active','suspended'];
+const AUDIENCE_BATCH = 40;
 // Every action gets (db, channel row, decrypted secrets, input, fetcher, origin).
 const setupActions = {
   verify:{ keys:'action,workspace_id', statuses:['draft','verifying','active','suspended'],
@@ -113,7 +117,13 @@ const setupActions = {
   // A suspended channel may only switch its default menu off.
   set_default_menu:{ keys:'action,enabled,workspace_id', statuses:['active','suspended'], run:setDefaultMenu,
     valid:input => typeof input.enabled === 'boolean', allowed:(input,row) => !input.enabled || row.status === 'active' },
-  restore_menus:{ keys:'action,workspace_id', statuses:anyLive, run:(db,row,secrets,input,fetcher) => restoreMenus(db,row,secrets,fetcher) }
+  restore_menus:{ keys:'action,workspace_id', statuses:anyLive, run:(db,row,secrets,input,fetcher) => restoreMenus(db,row,secrets,fetcher) },
+  // Read-only: how many of the given LINE users are friends of the OA, and
+  // its message quota. Answers counts only.
+  audience_check:{ keys:'action,line_user_ids,workspace_id', statuses:anyLive,
+    valid:input => Array.isArray(input.line_user_ids) && input.line_user_ids.length <= AUDIENCE_BATCH &&
+      new Set(input.line_user_ids).size === input.line_user_ids.length && input.line_user_ids.every(id => /^U[0-9a-f]{32}$/.test(id)),
+    run:(db,row,secrets,input,fetcher) => audienceCheck(secrets,input.line_user_ids,fetcher) }
 };
 async function setupAction(db, input, env, origin, fetcher) {
   const spec = setupActions[input.action];
@@ -125,8 +135,8 @@ async function setupAction(db, input, env, origin, fetcher) {
   return spec.run(db,row,secrets,input,fetcher,origin);
 }
 function validPrepareLiff(input) {
-  if (Object.keys(input).sort().join() !== 'action,line_login_channel_id,line_login_channel_secret' ||
-      !/^\d{10}$/.test(input.line_login_channel_id) || typeof input.line_login_channel_secret !== 'string' ||
+  if (Object.keys(input).sort().join() !== 'action,line_login_channel_id,line_login_channel_secret,workspace_id' ||
+      !validWorkspace(input.workspace_id) || !/^\d{10}$/.test(input.line_login_channel_id) || typeof input.line_login_channel_secret !== 'string' ||
       !input.line_login_channel_secret || input.line_login_channel_secret.length > 2048) stop('INVALID_LINE_CHANNEL');
 }
 export async function lineChannels(request, env, fetcher = fetch) {
@@ -141,7 +151,7 @@ export async function lineChannels(request, env, fetcher = fetch) {
     const db = env.DB.withSession ? env.DB.withSession('first-primary') : env.DB;
     if (input.action === 'prepare_liff') {
       validPrepareLiff(input);
-      reservedLoginChannel(input.line_login_channel_id,env);
+      reservedLoginChannel(input.line_login_channel_id,env,input.workspace_id);
       await commit(db,nonce);
       return reply({ success:true, code:'OK', message:'LIFF ready', data:await prepareLiff(input,fetcher) });
     }

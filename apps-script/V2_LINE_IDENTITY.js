@@ -80,6 +80,37 @@ function lineRegistryLoginChannel_(channelId) {
   return found;
 }
 
+// 修改單 D: one Workspace (W000001) registers the existing CMWebs Login
+// channel as its own when it moves onto its own OA. Both sit under the same
+// provider, so its people keep their LINE user IDs and every old LIFF link.
+// Returns that Workspace while its row is active and it is on the Worker
+// list, else ''. When the registry cannot answer, the last answer (kept six
+// hours) stands, so a registry outage does not lock its people out.
+let LINE_LEGACY_HOME_WORKSPACE_ = null;
+
+function lineLegacyHomeWorkspace_() {
+  if (LINE_LEGACY_HOME_WORKSPACE_ !== null) return LINE_LEGACY_HOME_WORKSPACE_;
+  const listed = lineOwnChannelWorkspaces_();
+  const legacyChannelId = PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID');
+  let home = '';
+  if (listed.length && legacyChannelId) {
+    const cache = CacheService.getScriptCache();
+    let found = null;
+    try { found = lineRegistryLoginChannel_(legacyChannelId); } catch (_) { found = null; }
+    if (found) {
+      home = found.status === 'active' ? found.workspace_id : '';
+      try { cache.put('v3_line_legacy_home', home || '-', 21600); } catch (_) {}
+    } else {
+      let last = '';
+      try { last = String(cache.get('v3_line_legacy_home') || ''); } catch (_) {}
+      home = last === '-' ? '' : last;
+    }
+    if (listed.indexOf(home) < 0) home = '';
+  }
+  LINE_LEGACY_HOME_WORKSPACE_ = home;
+  return home;
+}
+
 const LINE_EXISTING_TENANT_LIFF_URL_ = 'https://liff.line.me/2010314940-iJB1D6sN';
 
 // A Workspace that sends through its own channel links tenants to its own
@@ -229,7 +260,10 @@ function lineRequestChannelDenied_(workspaceId) {
   const scope = LINE_REQUEST_CHANNEL_SCOPE_;
   if (!scope) return null;
   const id = String(workspaceId || '').trim().toUpperCase();
-  const allowed = scope.workspace_id ? id === scope.workspace_id : lineOwnChannelWorkspaces_().indexOf(id) < 0;
+  // The existing channel opens every Workspace still on it, plus the one
+  // that took that channel as its own.
+  const allowed = scope.workspace_id ? id === scope.workspace_id :
+    lineOwnChannelWorkspaces_().indexOf(id) < 0 || (!!id && id === lineLegacyHomeWorkspace_());
   return allowed ? null : { success: false, code: 'WORKSPACE_FORBIDDEN', message: '這個 LINE 帳號不能使用目前的管理團隊', data: null };
 }
 

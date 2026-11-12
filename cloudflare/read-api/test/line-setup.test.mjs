@@ -5,6 +5,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { lineChannels } from '../src/line-channels.js';
 import { liffEndpoint } from '../src/line-setup.js';
+import { createReadDatasetLoader } from '../src/read-dataset.js';
 
 const signing = 'synthetic-line-registry-secret';
 const key = Buffer.alloc(32,7).toString('base64');
@@ -43,6 +44,8 @@ function fakeLine({ apps = [], endpoint = '', active = true, friends = [landlord
       return state.endpoint ? json({ endpoint:state.endpoint, active:state.active }) : json({},404);
     }
     if (pathname === '/v2/bot/channel/webhook/test') return json({ success:testPasses, statusCode:testPasses ? 200 : 401, reason:testPasses ? 'OK' : 'ERROR_STATUS_CODE' });
+    if (pathname === '/v2/bot/message/quota') return json({ type:'limited', value:200 });
+    if (pathname === '/v2/bot/message/quota/consumption') return json({ totalUsage:17 });
     if (pathname.startsWith('/v2/bot/profile/')) return friends.includes(pathname.split('/').pop()) ? json({ userId:landlord }) : json({},404);
     return json({},404);
   };
@@ -80,15 +83,15 @@ const setStatus = (send, line, status) => send({ action:'set_status', workspace_
 test('prepare_liff creates one CMWebs LIFF app and reuses it afterwards', async () => {
   await withRegistry(async (db, send) => {
     const line = fakeLine({ apps:[{ liffId:login+'-OtherApp', view:{ type:'full', url:'https://landlord.example/' } }] });
-    const first = await send({ action:'prepare_liff', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    const first = await send({ action:'prepare_liff', workspace_id:'W_A', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
     assert.equal(first.status,200);
     assert.equal(first.body.data.liff_id,login+'-NewApp01');
     assert.equal(line.apps.find(app => app.liffId === login+'-NewApp01').view.url,liffEndpoint(login+'-NewApp01'));
-    const again = await send({ action:'prepare_liff', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    const again = await send({ action:'prepare_liff', workspace_id:'W_A', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
     assert.equal(again.body.data.liff_id,login+'-NewApp01');
     assert.equal(line.apps.length,2);
     assert.equal(line.calls.filter(call => call === 'POST /liff/v1/apps').length,1);
-    const wrong = await send({ action:'prepare_liff', line_login_channel_id:login, line_login_channel_secret:'wrong' },line);
+    const wrong = await send({ action:'prepare_liff', workspace_id:'W_A', line_login_channel_id:login, line_login_channel_secret:'wrong' },line);
     assert.equal(wrong.body.code,'LINE_LOGIN_SECRET_INVALID');
   });
 });
@@ -178,7 +181,7 @@ test('setup actions reject unknown fields, missing channels and LINE outages', a
     assert.equal((await send({ action:'verify', workspace_id:'W_A' },line)).status,404);
     await saved(send,line,login+'-AbCdEfGh');
     for (const payload of [{ action:'verify', workspace_id:'W_A', extra:1 },{ action:'set_webhook', workspace_id:'W_A', replace_existing:'yes' },
-      { action:'prepare_liff', line_login_channel_id:'bad', line_login_channel_secret:'x' }]) {
+      { action:'prepare_liff', workspace_id:'W_A', line_login_channel_id:'bad', line_login_channel_secret:'x' }]) {
       assert.equal((await send(payload,line)).body.code,'INVALID_LINE_CHANNEL');
     }
     const down = { fetch:async () => { throw new Error('down'); } };
@@ -190,21 +193,56 @@ test('LIFF apps the wizard did not make are never rewritten', async () => {
   await withRegistry(async (db, send) => {
     const existing = { liffId:login+'-TenantAp', view:{ type:'full', url:'https://cmwebssaas-sudo.github.io/cmwebs-liff/tenant-bind.html' } };
     const line = fakeLine({ apps:[existing] });
-    const result = await send({ action:'prepare_liff', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    const result = await send({ action:'prepare_liff', workspace_id:'W_A', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
     assert.equal(result.body.data.liff_id,login+'-NewApp01');
     assert.equal(existing.view.url,'https://cmwebssaas-sudo.github.io/cmwebs-liff/tenant-bind.html');
     assert.ok(!line.calls.includes('PUT /liff/v1/apps/'+login+'-TenantAp'));
   });
 });
 
-test('the existing CMWebs Login channel cannot be set up through the wizard', async () => {
+test('only the home Workspace may register the existing CMWebs Login channel', async () => {
   await withRegistry(async (db, send) => {
     const line = fakeLine();
-    const prepared = await send({ action:'prepare_liff', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    const prepared = await send({ action:'prepare_liff', workspace_id:'W_A', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
     assert.equal(prepared.status,409); assert.equal(prepared.body.code,'LINE_CHANNEL_RESERVED');
     assert.equal((await saved(send,line,login+'-AbCdEfGh')).body.code,'LINE_CHANNEL_RESERVED');
     assert.equal(line.calls.length,0);
+    const home = await send({ action:'prepare_liff', workspace_id:'W_HOME', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },line);
+    assert.equal(home.status,200); assert.equal(home.body.data.liff_id,login+'-NewApp01');
+    const row = await send({ action:'upsert', workspace_id:'W_HOME', line_login_channel_id:login, liff_id:login+'-NewApp01',
+      messaging_channel_id:messaging, secrets },line);
+    assert.equal(row.status,200);
+    // Reads: the home Workspace keeps accepting the existing channel's tokens.
+    await db.prepare("UPDATE line_channels SET status='active' WHERE workspace_id='W_HOME'").run();
+    const loader = createReadDatasetLoader(db);
+    assert.equal(await loader.workspaceOnOwnChannel('w_home',login),false);
+    await db.prepare("UPDATE line_channels SET line_login_channel_id='1000000002' WHERE workspace_id='W_HOME'").run();
+    assert.equal(await loader.workspaceOnOwnChannel('W_HOME',login),true);
+  },{ LINE_LOGIN_CHANNEL_ID:login, LINE_LOGIN_HOME_WORKSPACE:'W_HOME' });
+  // Without a named home Workspace nobody may claim it.
+  await withRegistry(async (db, send) => {
+    const home = await send({ action:'prepare_liff', workspace_id:'W_HOME', line_login_channel_id:login, line_login_channel_secret:'synthetic-c' },fakeLine());
+    assert.equal(home.body.code,'LINE_CHANNEL_RESERVED');
   },{ LINE_LOGIN_CHANNEL_ID:login });
+});
+
+test('the audience check answers friend counts and quota, never profiles', async () => {
+  await withRegistry(async (db, send) => {
+    const other = 'U'+'e'.repeat(32), third = 'U'+'f'.repeat(32);
+    const line = fakeLine({ friends:[landlord,other] });
+    await saved(send,line,login+'-AbCdEfGh');
+    const result = await send({ action:'audience_check', workspace_id:'W_A', line_user_ids:[landlord,other,third] },line);
+    assert.equal(result.status,409, 'a draft channel is not checked');
+    await setStatus(send,line,'verifying');
+    const counted = await send({ action:'audience_check', workspace_id:'W_A', line_user_ids:[landlord,other,third] },line);
+    assert.equal(counted.status,200);
+    const { channel, ...data } = counted.body.data;
+    assert.deepEqual(data,{ friends:2, not_friends:1, unknown:0, quota_type:'limited', quota_limit:200, quota_used:17 });
+    assert.doesNotMatch(JSON.stringify(counted.body),/U[ef]{32}|合成房東/);
+    for (const ids of [[landlord,landlord],['bad'],Array.from({ length:41 },(_,i) => 'U'+i.toString(16).padStart(32,'0'))]) {
+      assert.equal((await send({ action:'audience_check', workspace_id:'W_A', line_user_ids:ids },line)).body.code,'INVALID_LINE_CHANNEL');
+    }
+  });
 });
 
 test('a webhook that points at Apps Script is never replaced', async () => {
