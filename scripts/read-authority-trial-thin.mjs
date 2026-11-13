@@ -36,7 +36,7 @@ async function json(r,url,max=100000){
  const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.byteLength;}return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
 }
 const filesHash=v=>checksum([...v].sort((a,b)=>a.name.localeCompare(b.name)));
-function sourceFiles(v){if(!Array.isArray(v)||v.length<1||v.length>2||new Set(v.map(f=>f?.name)).size!==v.length)stop();for(const f of v)if(!only(f,['name','type','source'])||typeof f.name!=='string'||!/^[-A-Za-z0-9_]{1,128}$/.test(f.name)||!['JSON','SERVER_JS'].includes(f.type)||typeof f.source!=='string'||Buffer.byteLength(f.source)>100000)stop();if(v.filter(f=>f.name==='appsscript'&&f.type==='JSON').length!==1||v.filter(f=>f.type==='JSON').length!==1||!record(JSON.parse(v.find(f=>f.name==='appsscript').source)))stop();return v;}
+function sourceFiles(v){if(!Array.isArray(v)||v.length<1||v.length>2||new Set(v.map(f=>f?.name)).size!==v.length)stop();for(const f of v)if(!only(f,['name','type','source'])||typeof f.name!=='string'||!/^[-A-Za-z0-9_]{1,128}$/.test(f.name)||!['JSON','SERVER_JS'].includes(f.type)||typeof f.source!=='string'||Buffer.byteLength(f.source)>300000)stop();if(v.filter(f=>f.name==='appsscript'&&f.type==='JSON').length!==1||v.filter(f=>f.type==='JSON').length!==1||!record(JSON.parse(v.find(f=>f.name==='appsscript').source)))stop();return v;}
 export function createAuthorityTrialThin(input){
  return createTrialPublication(input,false);
 }
