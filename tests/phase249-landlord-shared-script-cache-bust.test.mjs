@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const root = new URL('../', import.meta.url);
-const releaseVersion = '20261112-assistant-chat-v1';
+const releaseVersion = '20261113-assistant-input-v1';
 const releaseSource = readFileSync(new URL('frontend-release.js', root), 'utf8');
 
 assert.match(

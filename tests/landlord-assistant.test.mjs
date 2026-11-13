@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
@@ -122,7 +122,16 @@ test('every landlord page with the bottom toolbar loads the assistant', () => {
   assert.match(read('landlord-more.html'), /CMWEBS_LANDLORD_ASSISTANT\.openChat\(\)/);
   const css = read('landlord-assistant.css');
   assert.match(css, /\.cma-fab \{[\s\S]*bottom: calc\(var\(--nav-height, 68px\) \+ env\(safe-area-inset-bottom\) \+ 14px\)/);
-  assert.match(css, /\.cma-panel \{[\s\S]*z-index: 1300/);
+  const panelZ = Number(css.match(/\.cma-panel \{[^}]*z-index: (\d+)/)[1]);
+  const fabZ = Number(css.match(/\.cma-fab \{[^}]*z-index: (\d+)/)[1]);
+  const pagesWithChat = readdirSync(new URL('../', import.meta.url)).filter(name => /^landlord-.*\.html$/.test(name))
+    .filter(name => read(name).includes('landlord-assistant.css'));
+  for (const page of pagesWithChat) {
+    const nav = read(page).match(/\.bottom-nav\s*\{[^}]*?z-index:\s*(\d+)/);
+    if (!nav) continue;
+    assert.ok(panelZ > Number(nav[1]), page + ': chat window must sit above the bottom nav so its input is visible');
+    assert.ok(fabZ > Number(nav[1]), page + ': robot button must sit above the bottom nav');
+  }
 });
 
 test('the read client posts the question to the read service with the landlord credential', () => {

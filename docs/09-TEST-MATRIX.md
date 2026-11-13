@@ -5169,6 +5169,7 @@ sign-out was not run; the preview used stubs.
 - [x] `tests/landlord-assistant.test.mjs`：對話泡泡、步驟、前往按鈕會跳脫 HTML
 - [x] `tests/landlord-assistant.test.mjs`：對話只存在本機，一天後過期、最多 30 則、登出時清除
 - [x] `tests/landlord-assistant.test.mjs`：有下方工具列的房東頁面都載入機器人按鈕，按鈕在工具列與安全區上方
+- [x] `tests/landlord-assistant.test.mjs`：對話視窗與機器人按鈕的圖層高於每一頁下方工具列，手機上輸入框與「問」按鈕不會被蓋住（2026-11-13，前端版本 `20261113-assistant-input-v1`）
 - [x] 手機尺寸實看：右下角機器人按鈕、對話視窗、重新整理後對話保留
 - [ ] 正式 LINE 手機實際問答與「前往」後回來接續（`HUMAN_REQUIRED`）
 

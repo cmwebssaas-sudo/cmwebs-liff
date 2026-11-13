@@ -1,9 +1,9 @@
-/* 房東 AI 助理：右下角機器人按鈕與對話視窗（高於下方工具列與安全區）。 */
+/* 房東 AI 助理：右下角機器人按鈕與對話視窗。圖層要高於各頁的下方工具列（有些頁面高達 120000），否則輸入框會被蓋住。 */
 .cma-fab {
   position: fixed;
   right: 16px;
   bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 14px);
-  z-index: 1100;
+  z-index: 2147482000;
   width: 56px;
   height: 56px;
   border: 0;
@@ -25,7 +25,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1300;
+  z-index: 2147483000;
   height: min(78vh, calc(var(--app-height, 100vh) - 48px));
   display: none;
   flex-direction: column;
