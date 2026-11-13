@@ -5213,3 +5213,13 @@ sign-out was not run; the preview used stubs.
 - [x] `cloudflare/read-api/test/line-rich-menu.test.mjs`：選單 v2 版型（負責人 11/12 格式）：兩個 1250×300 分頁、3×2 按鈕 833/833/834 × 693、預設展開；上傳後從 LINE 讀回圖片比對，尺寸不符就刪除選單
 - [x] `tests/line-multi-login.test.mjs`、`tests/line-worker-webhook.test.mjs`：沒有 workspace_id 的早期房客，在 W000001 搬家後也由森の苑發送、收訊息也對得到房客；其他管理團隊不會認領
 - [ ] 真實 Provider、好友數與額度、切換與回退（`HUMAN_REQUIRED`）
+
+## 2026-11-13 房東 AI 助理階段 2：查資料
+
+- [x] `cloudflare/read-api/test/assistant-data.test.mjs`：找到房間時列出房客、近三個月（新到舊）與合約到期日；已繳顯示「已繳」；沒給房號、找不到房號、房號只是較長數字的一部分，各有明確回答
+- [x] `cloudflare/read-api/test/assistant-data.test.mjs`：未繳清單含總額與逾期天數、超過 15 筆只列 15 筆並說明剩餘、沒有未繳時說沒有
+- [x] `cloudflare/read-api/test/assistant-data.test.mjs`：快到期合約區分「已發續約，等房客簽名」與「還沒續約」
+- [x] `cloudflare/read-api/test/assistant-data.test.mjs`：橋接服務只收到問題與目錄；回答不含電話、LINE 識別碼；其他 Workspace 的房間與帳單不會被回答；資料項目忽略模型回覆；同步過期回同步訊息；客戶端目錄不能使用 `ask_` 代碼
+- [x] `cloudflare/read-api/test/assistant-data.test.mjs`：功能回答只是重複問題時變成空白
+- [x] `tests/landlord-assistant.test.mjs`：長資料回答保留到 1500 字
+- [ ] 正式資料上問三個問題（`HUMAN_REQUIRED`，部署後）

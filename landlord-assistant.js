@@ -362,7 +362,7 @@
     try {
       const result = await api.askAssistant(question, CATALOG);
       const chosen = CATALOG.some(function (entry) { return entry.id === result.id; }) ? [result.id] : keywordIds;
-      return { role: 'assistant', reply: String(result.reply || '').slice(0, 200), ids: chosen };
+      return { role: 'assistant', reply: String(result.reply || '').slice(0, 1500), ids: chosen };
     } catch (error) {
       return { role: 'assistant', reply: '', ids: keywordIds };
     }

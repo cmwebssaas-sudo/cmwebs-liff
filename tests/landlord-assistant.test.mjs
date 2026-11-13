@@ -86,6 +86,17 @@ test('an AI answer keeps the chosen catalog entry; none or failure falls back to
   assert.equal(offline.ids[0], 'reminder');
 });
 
+test('a long data reply is kept past 200 characters', async () => {
+  const long = Array.from({ length: 16 }, (_, n) => '• 20' + n + ' 王小明 11 月 6,500 元，逾期 3 天').join('\n');
+  assert.ok(long.length > 200 && long.length < 1500);
+  const { assistant } = loadWithApi(async () => ({ id: 'reminder', reply: long, kind: 'data' }));
+  const result = await assistant.answer('誰沒繳');
+  assert.equal(result.reply, long);
+  assert.deepEqual([...result.ids], ['reminder']);
+  const huge = await loadWithApi(async () => ({ id: 'reminder', reply: 'x'.repeat(5000) })).assistant.answer('誰沒繳');
+  assert.equal(huge.reply.length, 1500);
+});
+
 test('chat messages render bubbles, steps and a 前往 button, escaping text', () => {
   const { assistant } = loadWithApi(null);
   assert.match(assistant.renderMessage({ role: 'user', text: '<b>退房</b>' }), /cma-me"><div class="cma-bubble">&lt;b&gt;退房&lt;\/b&gt;/);

@@ -9,6 +9,7 @@ const entries = [
   'getWorkspaceLandlordHomeBootstrapByLineUid_',
   'getWorkspaceLandlordArrearsNativeByLineUid_',
   'getWorkspaceLandlordTenantsNativeByLineUid_',
+  'getWorkspaceLandlordPaymentCalendarNativeByLineUid_',
   'getLandlordRoomCenterInitByLineUid_',
   'getLandlordPropertiesInitByLineUid_',
   'getLandlordRevenueDashboardByLineUid_'

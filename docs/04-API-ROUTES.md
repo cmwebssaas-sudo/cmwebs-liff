@@ -1480,8 +1480,30 @@ against the D1 replica. Only Workspaces in `ASSISTANT_AI_WORKSPACES` are served
 through the `ASSISTANT_BRIDGE` Workers VPC binding with the `CMWEBS_ASSISTANT_TOKEN`
 secret. Response `{success,data:{id,reply}}`; any id outside the sent catalog
 becomes `none`. Failures: `ASSISTANT_BUSY`, `ASSISTANT_UNAVAILABLE`,
-`ASSISTANT_NOT_READY` (503). No landlord data is read or sent, and questions are
-not logged. CORS is the exact Pages origin, POST only.
+`ASSISTANT_NOT_READY` (503). Questions and answers are not logged; the log line
+is `ASSISTANT {status, kind, ms}`. CORS is the exact Pages origin, POST only.
+
+Function answers. The model reply is capped at 200 characters. A reply that only
+repeats the question (ignoring spaces and punctuation) becomes `''`.
+
+Data intents (stage 2, read only). The Worker appends three catalog items to the
+client catalog before calling the bridge, so the bridge still sees only
+`{question, catalog}` and never landlord data. Client catalogs may not use ids
+starting with `ask_` and may hold at most 77 items. When the model picks one:
+
+| intent id | question | `data.id` returned |
+| --- | --- | --- |
+| `ask_room_payment` | has room X paid, last 3 months, newest first, plus contract end | `reminder` |
+| `ask_unpaid_list` | unpaid bills with total, up to 15 lines | `reminder` |
+| `ask_contract_expiry` | current contracts ending within 60 days or already ended, with renewal waiting on the tenant or not | `renewal` |
+
+The Worker checks replica freshness, loads the Workspace-scoped dataset once and
+answers from the generated read calculator (`getWorkspaceLandlordPaymentCalendarNativeByLineUid_`,
+`...ArrearsNative...`, `...TenantsNative...`). The room is matched by code from the
+question, never by the model. The model reply text is ignored. The response is
+`{success:true,data:{id,reply,kind:'data'}}` with a reply up to 1500 characters
+containing only room, property, tenant name, month, amount, date and status.
+A stale or unsynced replica answers `資料正在同步，請稍後再問一次。` with status 200.
 
 The AI-00 bridge (`ai-bridge/cmwebs_assistant_bridge.py`, user unit
 `cmwebs-assistant-bridge.service`) listens on 127.0.0.1:18760, checks the bearer
