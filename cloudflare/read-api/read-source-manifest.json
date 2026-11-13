@@ -3,6 +3,7 @@
     "getWorkspaceLandlordHomeBootstrapByLineUid_",
     "getWorkspaceLandlordArrearsNativeByLineUid_",
     "getWorkspaceLandlordTenantsNativeByLineUid_",
+    "getWorkspaceLandlordPaymentCalendarNativeByLineUid_",
     "getLandlordRoomCenterInitByLineUid_",
     "getLandlordPropertiesInitByLineUid_",
     "getLandlordRevenueDashboardByLineUid_"
@@ -81,6 +82,7 @@
     "getLandlordTenantMessages_",
     "getWorkspaceLandlordArrearsNativeByLineUid_",
     "getWorkspaceLandlordHomeBootstrapByLineUid_",
+    "getWorkspaceLandlordPaymentCalendarNativeByLineUid_",
     "getWorkspaceLandlordTenantsNativeByLineUid_",
     "landlordContractHistoryView_",
     "landlordEmailAuthAcceptedBoolean_",
@@ -274,6 +276,11 @@
     "workspaceLandlordReadSummary_",
     "workspaceLandlordResolvePrincipals_",
     "workspaceOnboardingComplete_",
+    "workspacePaymentCalendarBuild_",
+    "workspacePaymentCalendarCell_",
+    "workspacePaymentCalendarContractCounts_",
+    "workspacePaymentCalendarMonthBounds_",
+    "workspacePaymentCalendarShiftMonth_",
     "workspaceResolveContextByLineUid_",
     "workspaceResult_",
     "workspaceText_"
