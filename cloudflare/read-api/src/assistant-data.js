@@ -116,9 +116,9 @@ export const DATA_INTENTS = [
   { id: 'ask_room_payment', title: '查某一間房這幾個月繳了沒', go: 'reminder', answer: askRoomPayment,
     keywords: ['繳了嗎', '有繳', '繳了沒', '房租', '付了沒', '付了嗎', '繳費狀況', '這間房'] },
   { id: 'ask_unpaid_list', title: '列出還沒繳的房間', go: 'reminder', answer: askUnpaidList,
-    keywords: ['誰沒繳', '還沒繳', '未繳', '欠款', '列出', '哪些房間沒繳', '誰欠'] },
+    keywords: ['誰沒繳', '還沒繳', '未繳', '欠款', '列出', '哪些房間沒繳', '誰欠', '幾個人逾期', '逾期名單'] },
   { id: 'ask_contract_expiry', title: '查快到期、待續約的合約', go: 'renewal', answer: askContractExpiry,
-    keywords: ['快到期', '到期', '待續約', '續約', '哪些合約', '合約到期'] }
+    keywords: ['快到期', '到期', '待續約', '續約', '哪些合約', '合約到期', '誰還沒簽續約', '續約名單'] }
 ];
 
 export const dataIntentById = new Map(DATA_INTENTS.map(intent => [intent.id, intent]));
