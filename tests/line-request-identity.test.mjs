@@ -176,7 +176,8 @@ test('all ordinary landlord GET actions and tenant submissions require credentia
     'landlord_contract_initiate_renewal_direct', 'landlord_contract_renewal_draft_update', 'landlord_contract_renewal_review_confirm',
     'landlord_contract_checkout_init', 'landlord_contract_checkout_settlement_init', 'landlord_contract_checkout_settlement_preview',
     'landlord_contract_checkout_complete', 'landlord_contract_checkout_evidence_upload', 'landlord_contract_paper_backfill',
-    'landlord_tenant_initial_meter_init', 'landlord_tenant_initial_meter_save', 'landlord_contract_invite_cancel', 'landlord_contract_invite_reissue'];
+    'landlord_tenant_initial_meter_init', 'landlord_tenant_initial_meter_save', 'landlord_contract_paper_signing_document',
+    'landlord_contract_paper_signing_upload', 'landlord_contract_invite_cancel', 'landlord_contract_invite_reissue'];
   const classification = runtime().context;
   const exchanges = ['landlord_contract_initiated_status', 'landlord_contract_signing_review_auth_status',
     'landlord_contract_signing_reviews_fetch_status', 'landlord_contract_signing_review_update_status'];
@@ -205,7 +206,7 @@ test('every standalone page transport attaches the current LIFF credential at ru
     const fn = ['jsonpRequestOnce', 'jsonpRequest', 'callApi'].map(name => ({ name, code: pageFunction(html, name) }))
       .find(f => f.code.includes('CMWebsLiffRequestAuth.withIdToken'));
     if (!fn) continue;
-    assert.ok(html.includes('src="liff-request-auth.js?v=20261114-bind-invite-forward-v1"'), file);
+    assert.ok(html.includes('src="liff-request-auth.js?v=20261114-paper-renewal-v1"'), file);
     const scripts = [], timers = new Map();
     const context = vm.createContext({ URL, URLSearchParams, Date, Math, Object, String, Number, Promise, Error,
       encodeURIComponent, location: { href: 'https://example.invalid/' + file },

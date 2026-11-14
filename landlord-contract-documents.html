@@ -8,15 +8,15 @@
   />
   <title>CMWebs 合約文件管理</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="liff-config.js?v=20261114-bind-invite-forward-v1"></script>
-  <script src="liff-request-auth.js?v=20261114-bind-invite-forward-v1"></script>
-  <script src="landlord-auth.js?v=20261114-bind-invite-forward-v1"></script>
+  <script src="liff-config.js?v=20261114-paper-renewal-v1"></script>
+  <script src="liff-request-auth.js?v=20261114-paper-renewal-v1"></script>
+  <script src="landlord-auth.js?v=20261114-paper-renewal-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261114-bind-invite-forward-v1" />
-  <script src="landlord-glass-nav.js?v=20261114-bind-invite-forward-v1" defer></script>
-  <link rel="stylesheet" href="landlord-assistant.css?v=20261114-bind-invite-forward-v1" />
-  <script src="landlord-assistant.js?v=20261114-bind-invite-forward-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261114-bind-invite-forward-v1" defer></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261114-paper-renewal-v1" />
+  <script src="landlord-glass-nav.js?v=20261114-paper-renewal-v1" defer></script>
+  <link rel="stylesheet" href="landlord-assistant.css?v=20261114-paper-renewal-v1" />
+  <script src="landlord-assistant.js?v=20261114-paper-renewal-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261114-paper-renewal-v1" defer></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -533,7 +533,7 @@
       .page { padding-left: 32px; padding-right: 32px; }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261114-bind-invite-forward-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261114-paper-renewal-v1" />
 </head>
 <body>
   <div class="app-shell desktop-ready">
@@ -859,7 +859,9 @@
         selfie: '自拍照',
         checkin_initial_meter: '初始電表照片',
         checkout_start_meter: '退房起始電表照片',
-        checkout_end_meter: '退房最終電表照片'
+        checkout_end_meter: '退房最終電表照片',
+        paper_unsigned_contract: '紙本簽署用待簽合約',
+        paper_signed_contract: '房客手簽合約'
       };
       return map[type] || type;
     }

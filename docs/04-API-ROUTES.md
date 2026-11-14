@@ -69,6 +69,24 @@ Workspace、目前金額及角色由伺服器重新解析。收信不銷帳，�
 回應中出現多個大小寫等價 ID 時停止載入；不改儲存資料或公開私有檔案。
 本地候選尚未發布，正式後端仍為 v201。
 
+## 2026-11-14 紙本續約簽署
+
+房客不線上簽續約時，房東在房客詳細頁的待簽續約版本上按「下載合約（紙本簽署）」，
+把 PDF 傳給房客；房客手簽回傳後按「上傳已簽合約」。兩個 action 都是 POST-only，
+與入住初始電表同一套驗證：Email 用 bridge `input_json`，手機用
+`{action, session_token, input}` 的房東 review session；Workspace 與角色由後端解析。
+只用於 `signing_mode = renewal`、狀態 `pending_tenant_signature`／`awaiting_tenant_signature`、
+房客尚未線上送出簽署的合約；新房客的紙本合約仍走 `landlord_contract_paper_backfill`。
+
+| Action | Policy | Input / Result |
+|---|---|---|
+| `landlord_contract_paper_signing_document` | `contract_write` | `contract_id`。把這個版本存下的 `contract_content` 轉成 PDF（線上簽署欄改為手簽與日期欄，表上全文不變），存成 `paper_unsigned_contract` 文件；同一份全文再按回傳同一份文件。回傳 `document_id`、`file_name`，前端再用 `landlord_contract_document_download` 預覽、下載或分享。同步政策視為讀取，不觸發寫入保護。 |
+| `landlord_contract_paper_signing_upload` | `contract_write` | `contract_id`、`paper_signed_at`（YYYY-MM-DD，不晚於台北今天）、`idempotency_key`、`files`（1–10 個 JPG／PNG／PDF，各 8MB 內）。檔案先存成 `paper_signed_contract` 文件（鎖外），再於 `ScriptLock` 內重新檢查狀態、以 `landlordInitiatedContractFinalizeApproval_` 讓續約生效，記錄 `tenant_signed_at`、審核人與 `紙本簽署：` 備註，並取消仍為 pending 的線上邀請。生效失敗時移除本次新存的檔案。同一 `idempotency_key` 完成後再送回 `IDEMPOTENT`。 |
+
+錯誤碼：`PAPER_SIGNING_RENEWAL_ONLY`、`CONTRACT_NOT_PAPER_SIGNABLE`、
+`TENANT_ALREADY_SIGNED_ONLINE`、`PAPER_CONTRACT_CONTENT_MISSING`、`PAPER_CONTRACT_PDF_FAILED`、
+`INVALID_PAPER_SIGNED_DATE`、`PAPER_FILES_REQUIRED`，以及 finalize 的 `CONTRACT_FINALIZATION_*`。
+
 ## 2026-10-01 入住初始電表修復
 
 `landlord_tenant_initial_meter_init` 與 `landlord_tenant_initial_meter_save` 均為

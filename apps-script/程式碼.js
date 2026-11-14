@@ -410,6 +410,8 @@ function dispatchV2Get_(e) {
     'landlord_contract_paper_backfill',
     'landlord_tenant_initial_meter_init',
     'landlord_tenant_initial_meter_save',
+    'landlord_contract_paper_signing_document',
+    'landlord_contract_paper_signing_upload',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
   ].indexOf(v2Action) >= 0) {
@@ -2870,7 +2872,9 @@ function dispatchV2Post_(e) {
             action === 'landlord_contract_initiate_renewal_direct' ||
             action === 'landlord_contract_paper_backfill' ||
             action === 'landlord_tenant_initial_meter_init' ||
-            action === 'landlord_tenant_initial_meter_save'
+            action === 'landlord_tenant_initial_meter_save' ||
+            action === 'landlord_contract_paper_signing_document' ||
+            action === 'landlord_contract_paper_signing_upload'
           )
         ) {
           const policy = action === 'landlord_tenant_create_init' ||
@@ -2926,6 +2930,13 @@ function dispatchV2Post_(e) {
             result = meterInput && typeof meterInput === 'object' && !Array.isArray(meterInput)
               ? landlordInitialMeterByAccess_(access, meterInput, action === 'landlord_tenant_initial_meter_save')
               : landlordInitiatedContractError_('INVALID_METER_PAYLOAD', '初始電表資料格式無效');
+          } else if (access && (action === 'landlord_contract_paper_signing_document' || action === 'landlord_contract_paper_signing_upload')) {
+            let paperSigningInput = null;
+            try { paperSigningInput = JSON.parse(String(request.input_json || '')); }
+            catch (_) {}
+            result = paperSigningInput && typeof paperSigningInput === 'object' && !Array.isArray(paperSigningInput)
+              ? contractPaperSigningByAccess_(access, action, paperSigningInput)
+              : landlordInitiatedContractError_('INVALID_PAPER_SIGNING_PAYLOAD', '紙本簽署資料格式無效');
           }
 
           return htmlBridgeOutput_(
@@ -3913,6 +3924,8 @@ function dispatchV2Post_(e) {
           ? landlordContractSigningReviewHandleExchangePost_(postBody)
           : landlordInitialMeterIsRequest_(postBody)
             ? landlordInitialMeterHandlePost_(postBody)
+          : contractPaperSigningIsRequest_(postBody)
+            ? contractPaperSigningHandlePost_(postBody)
           : landlordPaperContractBackfillIsRequest_(postBody)
             ? landlordPaperContractBackfillHandlePost_(postBody)
           : landlordInitiatedContractIsRequest_(postBody)
