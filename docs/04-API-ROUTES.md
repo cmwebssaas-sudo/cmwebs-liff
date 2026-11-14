@@ -69,6 +69,24 @@ Workspace、目前金額及角色由伺服器重新解析。收信不銷帳，�
 回應中出現多個大小寫等價 ID 時停止載入；不改儲存資料或公開私有檔案。
 本地候選尚未發布，正式後端仍為 v201。
 
+## 2026-11-14 紙本續約簽署
+
+房客不線上簽續約時，房東在房客詳細頁的待簽續約版本上按「下載合約（紙本簽署）」，
+把 PDF 傳給房客；房客手簽回傳後按「上傳已簽合約」。兩個 action 都是 POST-only，
+與入住初始電表同一套驗證：Email 用 bridge `input_json`，手機用
+`{action, session_token, input}` 的房東 review session；Workspace 與角色由後端解析。
+只用於 `signing_mode = renewal`、狀態 `pending_tenant_signature`／`awaiting_tenant_signature`、
+房客尚未線上送出簽署的合約；新房客的紙本合約仍走 `landlord_contract_paper_backfill`。
+
+| Action | Policy | Input / Result |
+|---|---|---|
+| `landlord_contract_paper_signing_document` | `contract_write` | `contract_id`。把這個版本存下的 `contract_content` 轉成 PDF（線上簽署欄改為手簽與日期欄，表上全文不變），存成 `paper_unsigned_contract` 文件；同一份全文再按回傳同一份文件。回傳 `document_id`、`file_name`，前端再用 `landlord_contract_document_download` 預覽、下載或分享。同步政策視為讀取，不觸發寫入保護。 |
+| `landlord_contract_paper_signing_upload` | `contract_write` | `contract_id`、`paper_signed_at`（YYYY-MM-DD，不晚於台北今天）、`idempotency_key`、`files`（1–10 個 JPG／PNG／PDF，各 8MB 內）。檔案先存成 `paper_signed_contract` 文件（鎖外），再於 `ScriptLock` 內重新檢查狀態、以 `landlordInitiatedContractFinalizeApproval_` 讓續約生效，記錄 `tenant_signed_at`、審核人與 `紙本簽署：` 備註，並取消仍為 pending 的線上邀請。生效失敗時移除本次新存的檔案。同一 `idempotency_key` 完成後再送回 `IDEMPOTENT`。 |
+
+錯誤碼：`PAPER_SIGNING_RENEWAL_ONLY`、`CONTRACT_NOT_PAPER_SIGNABLE`、
+`TENANT_ALREADY_SIGNED_ONLINE`、`PAPER_CONTRACT_CONTENT_MISSING`、`PAPER_CONTRACT_PDF_FAILED`、
+`INVALID_PAPER_SIGNED_DATE`、`PAPER_FILES_REQUIRED`，以及 finalize 的 `CONTRACT_FINALIZATION_*`。
+
 ## 2026-10-01 入住初始電表修復
 
 `landlord_tenant_initial_meter_init` 與 `landlord_tenant_initial_meter_save` 均為
@@ -614,7 +632,7 @@ candidates the current source inventory has 83 JSONP routes.
 | `landlord_contract_signing_review_auth_status` | JSONP `v2_action` | The authentication exchange `request_id` and secret | Redeems the one-time authentication exchange; it never accepts a raw landlord LINE UID as a review credential. |
 | `landlord_contract_signing_reviews_fetch` | `doPost` | `review_session_token` in the POST body, active Workspace membership, read policy | Creates a short-lived result exchange for submitted native-signing contracts in the session's Workspace; when `contract_id` is supplied, returns that same-Workspace contract version for read-only complete-contract/signature viewing, optionally constrained by `tenant_id`. |
 | `landlord_contract_signing_reviews_fetch_status` | JSONP `v2_action` | The result exchange `request_id` and `poll_secret` | Redeems the one-time list result. The URL contains no review session token. |
-| `landlord_contract_signing_review_update_submit` | `doPost` | `review_session_token` in the POST body, active Workspace membership, `contract_write` policy | Creates a short-lived result exchange for an approval or rejection of one in-Workspace submitted native-signing contract. Approval revalidates required stored artifacts and is serialized with `ScriptLock`. |
+| `landlord_contract_signing_review_update_submit` | `doPost` | `review_session_token` in the POST body, active Workspace membership, `contract_write` policy | Creates a short-lived result exchange for an approval or rejection of one in-Workspace submitted native-signing contract. Approval revalidates required stored artifacts and is serialized with `ScriptLock`. Renewal approval does not need the tenant's user row, and accepts a tenant row with a blank `workspace_id` (imported before Workspaces) only when the Workspace's own previous contract names that tenant; the row's `workspace_id` is left blank. |
 | `landlord_contract_signing_review_update_status` | JSONP `v2_action` | The result exchange `request_id` and `poll_secret` | Redeems the one-time update result. The URL contains no review session token. |
 | `landlord_contract_signing_reviews_init` / `landlord_contract_signing_review_update` | JSONP `v2_action` compatibility routes | None | Reject with `LANDLORD_REVIEW_POST_EXCHANGE_REQUIRED`; they no longer accept a review credential through a URL. |
 
@@ -736,7 +754,7 @@ verified, while authenticated LINE/mobile contract interaction remains
 | `landlord_contract_initiated_init` | `doPost` exchange | Landlord review session, Workspace read policy | Lists the session Workspace's pending landlord-initiated contracts without exposing confirmation codes. |
 | `landlord_contract_initiate_new` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a pending new-tenant contract, provisional tenant identity, one-time invite and short confirmation code; it does not activate a room. The simplified landlord entry sends `simple_flow=true` with `room_id`, `start_date`, `term_months`, `rent_amount` and `deposit_amount`; the server computes the inclusive `end_date` (`start + term - 1 day`) and fills omitted management/payment/electricity/equipment defaults from the selected room. When `initial_rent_paid=true`, it records the start month and rent snapshot so that month's rent is automatically credited on the first bill. |
 | `landlord_contract_initiate_renewal` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a new `pending_landlord_review` renewal version linked by `previous_contract_id`; it does not overwrite, invite the tenant, or activate the predecessor. |
-| `landlord_contract_initiate_renewal_direct` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates an append-only renewal version from an active, expired, approved or completed predecessor, records direct landlord confirmation, creates one signing invite immediately, and moves the new version to `pending_tenant_signature`. After the ScriptLock is released it pushes the link, confirmation code and signing instructions to the tenant LINE (contract or same-Workspace tenant row, retry key = invite ID) and returns `line_notification` `{sent, code, message}`; delivery failure never undoes the invite. |
+| `landlord_contract_initiate_renewal_direct` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates an append-only renewal version from an active, expired, approved or completed predecessor (`tenant_user_id` falls back to the predecessor's `user_id`), records direct landlord confirmation, creates one signing invite immediately (every contract invite, new or reissued, is valid for 7 days), and moves the new version to `pending_tenant_signature`. After the ScriptLock is released it pushes the link, confirmation code and signing instructions to the tenant LINE (contract or same-Workspace tenant row, retry key = invite ID) and returns `line_notification` `{sent, code, message}`; delivery failure never undoes the invite. |
 | `landlord_contract_renewal_draft_update` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Updates dates, amounts, payment day, optional 30-day clause and optional `note` (at most 500 characters) of an unsigned `pending_landlord_review` renewal draft. When `note` is provided, the server replaces the current draft's version-bound supplemental condition in `terms_snapshot_json` and regenerates the full text; an empty `note` removes it. It rejects sent/signed versions, fails closed if the condition cannot appear before signing, and never changes the predecessor. |
 | `landlord_contract_renewal_review_confirm` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Re-reads the selected Workspace-scoped renewal draft under `ScriptLock`, records landlord review confirmation, and automatically sends the tenant renewal inquiry before recording `renewal_inquiry_status=sent`. |
 | `landlord_contract_renewal_inquiry_send` | `doPost` exchange compatibility action | Landlord review session, Workspace `contract_write` policy | Retained for older clients; sends the reviewed renewal inquiry once and is idempotent after the inquiry is already sent. The new UI does not require a second click. |
@@ -1466,6 +1484,12 @@ fields come from `lineTenantLiffUrl_`. Workspaces outside the allowlist keep
 `/tenant-contract.html?invite_id=…`), read with the registry `get` action and
 cached for five minutes. When the registry has no active LIFF app the link is
 empty rather than pointing at another LIFF app.
+The existing tenant LIFF app's endpoint is `tenant-bind.html`, so an invite
+link without a page path (`…iJB1D6sN?invite_id=…`) opens the bind page first.
+After LINE login, before the binding check, `tenant-bind.html` reads
+`invite_id` from the query or from `liff.state` and replaces itself with
+`tenant-contract.html?invite_id=…`. Without this step an already-bound tenant
+was sent to the tenant home and never saw the contract.
 The read Worker's generated calculator takes `lineTenantLiffUrl_` as a runtime
 adapter that returns the existing link. Its `/v1/home` summary drops invite
 links, so no Worker response changes.

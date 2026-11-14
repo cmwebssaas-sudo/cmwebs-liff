@@ -37,7 +37,7 @@ const headers = {
   rooms: ['room_id', 'workspace_id', 'landlord_id', 'property_id', 'room_name', 'room_status', 'account_status', 'current_contract_id', 'current_tenant_id', 'current_tenant_name', 'updated_at'],
   users: ['user_id', 'workspace_id', 'landlord_id', 'line_user_id', 'role', 'status', 'account_status', 'active_workspace_id', 'updated_at'],
   tenants: ['tenant_id', 'tenant_user_id', 'user_id', 'workspace_id', 'landlord_id', 'tenant_line_user_id', 'line_user_id', 'tenant_name', 'name', 'tenant_phone', 'phone', 'tenant_email', 'email', 'property_id', 'property_name', 'room_id', 'room_name', 'current_contract_id', 'tenant_binding_status', 'binding_status', 'account_status', 'tenant_account_status', 'bound_at', 'updated_at'],
-  contracts: ['contract_id', 'workspace_id', 'landlord_id', 'landlord_line_user_id', 'landlord_name', 'tenant_id', 'tenant_user_id', 'tenant_line_user_id', 'tenant_name', 'tenant_phone', 'tenant_email', 'property_id', 'property_name', 'property_address', 'room_id', 'room_name', 'start_date', 'contract_start_date', 'end_date', 'contract_end_date', 'rent_amount', 'monthly_rent', 'management_fee', 'monthly_management_fee', 'deposit_amount', 'payment_day', 'monthly_payment_day', 'contract_status', 'status', 'account_status', 'signing_mode', 'contract_origin', 'invite_id', 'contract_content', 'contract_version', 'previous_contract_id', 'renewed_to_contract_id', 'tenant_signed_at', 'tenant_signature_artifact_id', 'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'tenant_signing_reviewed_at', 'tenant_signing_reviewed_by_user_id', 'tenant_signing_reviewed_by_membership_id', 'tenant_signing_review_note', 'created_by_user_id', 'created_by_membership_id', 'created_at', 'updated_at', 'terms_snapshot_json', 'note'],
+  contracts: ['contract_id', 'workspace_id', 'landlord_id', 'landlord_line_user_id', 'landlord_name', 'tenant_id', 'user_id', 'tenant_user_id', 'tenant_line_user_id', 'tenant_name', 'tenant_phone', 'tenant_email', 'property_id', 'property_name', 'property_address', 'room_id', 'room_name', 'start_date', 'contract_start_date', 'end_date', 'contract_end_date', 'rent_amount', 'monthly_rent', 'management_fee', 'monthly_management_fee', 'deposit_amount', 'payment_day', 'monthly_payment_day', 'contract_status', 'status', 'account_status', 'signing_mode', 'contract_origin', 'invite_id', 'contract_content', 'contract_version', 'previous_contract_id', 'renewed_to_contract_id', 'tenant_signed_at', 'tenant_signature_artifact_id', 'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'tenant_signing_reviewed_at', 'tenant_signing_reviewed_by_user_id', 'tenant_signing_reviewed_by_membership_id', 'tenant_signing_review_note', 'created_by_user_id', 'created_by_membership_id', 'created_at', 'updated_at', 'terms_snapshot_json', 'note'],
   invites: ['invite_id', 'workspace_id', 'contract_id', 'room_id', 'landlord_user_id', 'landlord_membership_id', 'claim_code_hash', 'status', 'expires_at', 'claimed_at', 'claimed_line_user_id', 'cancelled_at', 'created_at', 'updated_at'],
   artifacts: ['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'status'],
   landlordView: ['tenant_id', 'workspace_id', 'tenant_user_id', 'tenant_line_user_id', 'tenant_name', 'tenant_phone', 'tenant_binding_status', 'tenant_account_status', 'property_id', 'property_name', 'room_id', 'room_list', 'current_contract_id', 'contract_status', 'contract_start_date', 'contract_end_date', 'updated_at'],
@@ -56,15 +56,18 @@ const access = {
   principals: [{ landlord_id: 'L1' }]
 };
 
-function makeRuntime({ renewal = false, includeViews = true, previousStatus = 'active' } = {}) {
+function makeRuntime({ renewal = false, includeViews = true, previousStatus = 'active', legacy = false } = {}) {
+  // legacy: rows imported before Workspaces existed. The tenant and user rows
+  // have no workspace_id and the contract keeps the user only in user_id.
+  const legacyWorkspace = legacy ? '' : 'W1';
   const previousContract = {
-    contract_id: 'old-contract', workspace_id: 'W1', landlord_id: 'L1', landlord_name: '林房東', tenant_id: 'tenant-existing', tenant_user_id: 'user-existing', tenant_line_user_id: 'existing-line', tenant_name: '既有房客', tenant_phone: '0911111111', property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R1', room_name: '603', start_date: '2025-08-01', end_date: '2026-07-31', rent_amount: 22000, management_fee: 1000, deposit_amount: 44000, payment_day: 5, contract_status: previousStatus, status: previousStatus, account_status: 'active', signing_mode: 'new_tenant', contract_origin: 'legacy', tenant_signing_submission_status: 'approved', created_at: '2025-08-01T00:00:00.000Z', updated_at: '2025-08-01T00:00:00.000Z'
+    contract_id: 'old-contract', workspace_id: 'W1', landlord_id: 'L1', landlord_name: '林房東', tenant_id: 'tenant-existing', user_id: 'user-existing', tenant_user_id: legacy ? '' : 'user-existing', tenant_line_user_id: 'existing-line', tenant_name: '既有房客', tenant_phone: '0911111111', property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R1', room_name: '603', start_date: '2025-08-01', end_date: '2026-07-31', rent_amount: 22000, management_fee: 1000, deposit_amount: 44000, payment_day: 5, contract_status: previousStatus, status: previousStatus, account_status: 'active', signing_mode: 'new_tenant', contract_origin: 'legacy', tenant_signing_submission_status: 'approved', created_at: '2025-08-01T00:00:00.000Z', updated_at: '2025-08-01T00:00:00.000Z'
   };
   const sheets = {
     V2_properties: new Sheet(headers.properties, [row(headers.properties, { property_id: 'P1', workspace_id: 'W1', landlord_id: 'L1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', account_status: 'active' })]),
     V2_rooms: new Sheet(headers.rooms, [row(headers.rooms, { room_id: 'R1', workspace_id: 'W1', landlord_id: 'L1', property_id: 'P1', room_name: '603', room_status: renewal ? 'occupied' : 'vacant', account_status: 'active', current_contract_id: renewal ? 'old-contract' : '', current_tenant_id: renewal ? 'tenant-existing' : '', current_tenant_name: renewal ? '既有房客' : '' })]),
-    V2_users: new Sheet(headers.users, renewal ? [row(headers.users, { user_id: 'user-existing', workspace_id: 'W1', landlord_id: 'L1', line_user_id: 'existing-line', role: 'tenant', status: 'active', account_status: 'active', active_workspace_id: 'W1' })] : []),
-    V2_tenants: new Sheet(headers.tenants, renewal ? [row(headers.tenants, { tenant_id: 'tenant-existing', tenant_user_id: 'user-existing', user_id: 'user-existing', workspace_id: 'W1', landlord_id: 'L1', tenant_line_user_id: 'existing-line', line_user_id: 'existing-line', tenant_name: '既有房客', name: '既有房客', tenant_phone: '0911111111', phone: '0911111111', property_id: 'P1', property_name: '幸福公寓', room_id: 'R1', room_name: '603', current_contract_id: 'old-contract', tenant_binding_status: 'bound', binding_status: 'bound', account_status: 'active', tenant_account_status: 'active' })] : []),
+    V2_users: new Sheet(headers.users, renewal ? [row(headers.users, { user_id: 'user-existing', workspace_id: legacyWorkspace, landlord_id: 'L1', line_user_id: 'existing-line', role: 'tenant', status: 'active', account_status: 'active', active_workspace_id: 'W1' })] : []),
+    V2_tenants: new Sheet(headers.tenants, renewal ? [row(headers.tenants, { tenant_id: 'tenant-existing', tenant_user_id: legacy ? '' : 'user-existing', user_id: 'user-existing', workspace_id: legacyWorkspace, landlord_id: 'L1', tenant_line_user_id: 'existing-line', line_user_id: 'existing-line', tenant_name: '既有房客', name: '既有房客', tenant_phone: '0911111111', phone: '0911111111', property_id: 'P1', property_name: '幸福公寓', room_id: 'R1', room_name: '603', current_contract_id: 'old-contract', tenant_binding_status: 'bound', binding_status: 'bound', account_status: 'active', tenant_account_status: 'active' })] : []),
     V2_contracts: new Sheet(headers.contracts, renewal ? [row(headers.contracts, previousContract)] : []),
     V2_contract_invites: new Sheet(headers.invites),
     V2_contract_artifacts: new Sheet(headers.artifacts),
@@ -131,6 +134,42 @@ function makeRuntime({ renewal = false, includeViews = true, previousStatus = 'a
   assert.equal(oldContract.contract_status, 'renewed');
   assert.equal(oldContract.renewed_to_contract_id, newContract.contract_id);
   assert.equal(newContract.contract_status, 'active');
+}
+
+// A renewal for a tenant imported before Workspaces existed must activate
+// once the tenant has signed. On 2026-11-10 the five no88 renewals were such
+// tenants and approval would have stopped at CONTRACT_FINALIZATION_SCHEMA_NOT_READY.
+{
+  const runtime = makeRuntime({ renewal: true, legacy: true });
+  const created = runtime.api.landlordInitiatedContractCreateDirectRenewal_(access, input('old-contract'));
+  assert.equal(created.success, true, created.code);
+  assert.equal(created.data.contract.tenant_user_id, 'user-existing', 'the renewal carries the legacy user_id');
+  const claimed = runtime.api.landlordInitiatedContractInviteClaim_(created.data.invite.invite_id, created.data.invite.confirmation_code, 'existing-line', { tenant_name: '既有房客', tenant_phone: '0911111111' });
+  assert.equal(claimed.success, true, claimed.code);
+  markSubmitted(runtime, created.data.contract.contract_id, 'tenant-existing', 'renewal');
+  const approved = runtime.api.updateLandlordContractSigningReviewBySessionToken_('server-session', created.data.contract.contract_id, 'approve', '續約完成');
+  assert.equal(approved.success, true, approved.code);
+  const contracts = runtime.api.landlordInitiatedContractRows_(runtime.sheets.V2_contracts);
+  assert.equal(contracts.find(item => item.contract_id === 'old-contract').contract_status, 'renewed');
+  assert.equal(contracts.find(item => item.contract_id === created.data.contract.contract_id).contract_status, 'active');
+  const tenant = runtime.api.landlordInitiatedContractRows_(runtime.sheets.V2_tenants)[0];
+  assert.equal(tenant.current_contract_id, created.data.contract.contract_id);
+  assert.equal(tenant.workspace_id, '', 'finalize leaves the legacy row unscoped; backfilling it is a separate owner decision');
+  const room = runtime.api.landlordInitiatedContractRows_(runtime.sheets.V2_rooms)[0];
+  assert.equal(room.current_contract_id, created.data.contract.contract_id);
+}
+
+// A blank-workspace tenant row is only accepted through the Workspace's own
+// previous contract. Another tenant's id on the renewal row does not match it.
+{
+  const runtime = makeRuntime({ renewal: true, legacy: true });
+  const created = runtime.api.landlordInitiatedContractCreateDirectRenewal_(access, input('old-contract'));
+  const contracts = runtime.api.landlordInitiatedContractRows_(runtime.sheets.V2_contracts);
+  const previous = contracts.find(item => item.contract_id === 'old-contract');
+  runtime.sheets.V2_contracts.rows[previous._sheet_row - 2][headers.contracts.indexOf('tenant_id')] = 'someone-else';
+  markSubmitted(runtime, created.data.contract.contract_id, 'tenant-existing', 'renewal');
+  const approved = runtime.api.updateLandlordContractSigningReviewBySessionToken_('server-session', created.data.contract.contract_id, 'approve', '');
+  assert.equal(approved.success, false);
 }
 
 function input(previousContractId = '') {

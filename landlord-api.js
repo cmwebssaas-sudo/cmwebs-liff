@@ -27,7 +27,7 @@
     'landlord_bill_manual_settlement_status landlord_bill_notifications_init '+
     'landlord_bill_test_archive_candidates landlord_billing_init '+
     'landlord_contract_checkout_init landlord_contract_checkout_settlement_init landlord_contract_checkout_settlement_preview '+
-    'landlord_contract_document_download landlord_contract_documents_init '+
+    'landlord_contract_document_download landlord_contract_documents_init landlord_contract_paper_signing_document '+
     'landlord_contract_initiated_init landlord_contract_initiated_status landlord_contract_requests_init '+
     'landlord_contract_signing_review_auth_status landlord_contract_signing_review_update_status '+
     'landlord_contract_signing_reviews_fetch_status landlord_contract_signing_reviews_init '+

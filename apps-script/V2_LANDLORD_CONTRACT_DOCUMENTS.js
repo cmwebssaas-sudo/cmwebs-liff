@@ -9,7 +9,9 @@ var LD_CONTRACT_DOCUMENT_TYPES_ = [
   'selfie',
   'checkin_initial_meter',
   'checkout_start_meter',
-  'checkout_end_meter'
+  'checkout_end_meter',
+  'paper_unsigned_contract',
+  'paper_signed_contract'
 ];
 var LD_CONTRACT_DOCUMENT_HEADERS_ = [
   'document_id',

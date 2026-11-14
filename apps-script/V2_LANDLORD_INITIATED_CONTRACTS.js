@@ -20,7 +20,7 @@ const V2_LANDLORD_INITIATED_CONTRACT_INVITE_HEADERS_ = [
   'created_at',
   'updated_at'
 ];
-const V2_LANDLORD_INITIATED_CONTRACT_INVITE_TTL_MS_ = 24 * 60 * 60 * 1000;
+const V2_LANDLORD_INITIATED_CONTRACT_INVITE_TTL_MS_ = 7 * 24 * 60 * 60 * 1000;
 const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_TTL_SECONDS_ = 60;
 const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_RESERVATION_TTL_SECONDS_ = 600;
 const V2_LANDLORD_INITIATED_CONTRACT_LOCK_ATTEMPTS_ = 3;
@@ -306,7 +306,7 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
   const contract = landlordInitiatedContractContractObject_(access, actor, property, room, contractInput, {
     contract_id: contractId,
     tenant_id: previous.tenant_id,
-    tenant_user_id: previous.tenant_user_id || '',
+    tenant_user_id: previous.tenant_user_id || previous.user_id || '',
     tenant_line_user_id: previous.tenant_line_user_id || '',
     tenant_name: previous.tenant_name || previous.name || '',
     tenant_phone: previous.tenant_phone || previous.phone || '',
@@ -884,19 +884,32 @@ function landlordInitiatedContractFinalizeApproval_(ss, access, contract, now) {
   const room = landlordInitiatedContractRows_(schema.data.rooms).find(function (row) {
     return landlordInitiatedContractText_(row.room_id) === landlordInitiatedContractText_(contract.room_id) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
   });
+  const contracts = landlordInitiatedContractRows_(schema.data.contracts);
+  // Tenants imported before Workspaces existed have no workspace_id. A renewal
+  // reaches such a row only through this Workspace's own previous contract,
+  // which names the same tenant.
+  const previousForTenant = mode === 'renewal' ? contracts.find(function (row) {
+    return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contract.previous_contract_id) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+  }) : null;
+  const legacyTenantId = previousForTenant && landlordInitiatedContractText_(previousForTenant.tenant_id) === landlordInitiatedContractText_(contract.tenant_id)
+    ? landlordInitiatedContractText_(contract.tenant_id)
+    : '';
   const tenant = landlordInitiatedContractRows_(schema.data.tenants).find(function (row) {
-    return landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+    const rowWorkspace = landlordInitiatedContractText_(row.workspace_id);
+    return landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id) &&
+      (rowWorkspace === workspaceId || (!rowWorkspace && !!legacyTenantId && landlordInitiatedContractText_(row.tenant_id) === legacyTenantId));
   });
-  const user = landlordInitiatedContractRows_(schema.data.users).find(function (row) {
+  // Only a new tenant's account is activated here; a renewal keeps the user as is.
+  const user = mode === 'new_tenant' ? landlordInitiatedContractRows_(schema.data.users).find(function (row) {
     return landlordInitiatedContractText_(row.user_id) === landlordInitiatedContractText_(contract.tenant_user_id) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
-  });
+  }) : null;
   const views = landlordInitiatedContractFinalizationViews_(ss);
-  if (!room || !tenant || !user || !views.success) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_SCHEMA_NOT_READY', '合約啟用所需房間、房客或檢視資料尚未就緒');
+  if (!room || !tenant || (mode === 'new_tenant' && !user) || !views.success) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_SCHEMA_NOT_READY', '合約啟用所需房間、房客或檢視資料尚未就緒');
   const contractHeaders = landlordInitiatedContractHeaders_(schema.data.contracts);
   const roomHeaders = landlordInitiatedContractHeaders_(schema.data.rooms);
   const tenantHeaders = landlordInitiatedContractHeaders_(schema.data.tenants);
   const userHeaders = landlordInitiatedContractHeaders_(schema.data.users);
-  if (!landlordInitiatedContractHasAnyHeader_(userHeaders, ['status', 'account_status']) || !landlordInitiatedContractHasAnyHeader_(tenantHeaders, ['tenant_binding_status', 'binding_status']) || !landlordInitiatedContractHasAnyHeader_(tenantHeaders, ['account_status', 'tenant_account_status']) || !landlordInitiatedContractHasHeaders_(roomHeaders, ['room_status', 'current_contract_id', 'current_tenant_id']) || !landlordInitiatedContractHasHeaders_(contractHeaders, ['contract_status', 'status', 'account_status'])) {
+  if ((mode === 'new_tenant' && !landlordInitiatedContractHasAnyHeader_(userHeaders, ['status', 'account_status'])) || !landlordInitiatedContractHasAnyHeader_(tenantHeaders, ['tenant_binding_status', 'binding_status']) || !landlordInitiatedContractHasAnyHeader_(tenantHeaders, ['account_status', 'tenant_account_status']) || !landlordInitiatedContractHasHeaders_(roomHeaders, ['room_status', 'current_contract_id', 'current_tenant_id']) || !landlordInitiatedContractHasHeaders_(contractHeaders, ['contract_status', 'status', 'account_status'])) {
     return landlordInitiatedContractError_('CONTRACT_FINALIZATION_SCHEMA_NOT_READY', '合約啟用欄位尚未就緒');
   }
   const viewHeadersReady = landlordInitiatedContractHasHeaders_(views.data.landlord.headers, ['tenant_id', 'workspace_id', 'current_contract_id', 'contract_status']) && landlordInitiatedContractHasHeaders_(views.data.tenant.headers, ['tenant_id', 'workspace_id', 'current_contract_id', 'contract_status']);
@@ -920,10 +933,7 @@ function landlordInitiatedContractFinalizeApproval_(ss, access, contract, now) {
     landlordInitiatedContractUpdate_(schema.data.invites, invite, { status: 'completed', updated_at: timestamp });
     landlordInitiatedContractUpsertViews_(views.data, contract, tenant, lineSub, timestamp, 'bound');
   } else {
-    const previousId = landlordInitiatedContractText_(contract.previous_contract_id);
-    const previous = landlordInitiatedContractRows_(schema.data.contracts).find(function (row) {
-      return landlordInitiatedContractText_(row.contract_id) === previousId && landlordInitiatedContractText_(row.workspace_id) === workspaceId && landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id);
-    });
+    const previous = previousForTenant && landlordInitiatedContractText_(previousForTenant.tenant_id) === landlordInitiatedContractText_(contract.tenant_id) ? previousForTenant : null;
     const previousStatus = typeof contractRenewalHistoryEffectiveStatus_ === 'function'
       ? contractRenewalHistoryEffectiveStatus_(previous)
       : landlordInitiatedContractText_(previous && (previous.contract_status || previous.status)).toLowerCase();

@@ -9,17 +9,17 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261113-assistant-data-v1"></script>
-  <script src="liff-config.js?v=20261113-assistant-data-v1"></script>
-  <script src="liff-request-auth.js?v=20261113-assistant-data-v1"></script>
-  <script src="landlord-auth.js?v=20261113-assistant-data-v1"></script>
-  <script src="landlord-api.js?v=20261113-assistant-data-v1"></script>
+  <script src="frontend-release.js?v=20261114-paper-renewal-v1"></script>
+  <script src="liff-config.js?v=20261114-paper-renewal-v1"></script>
+  <script src="liff-request-auth.js?v=20261114-paper-renewal-v1"></script>
+  <script src="landlord-auth.js?v=20261114-paper-renewal-v1"></script>
+  <script src="landlord-api.js?v=20261114-paper-renewal-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261113-assistant-data-v1" />
-  <script src="landlord-glass-nav.js?v=20261113-assistant-data-v1" defer></script>
-  <link rel="stylesheet" href="landlord-assistant.css?v=20261113-assistant-data-v1" />
-  <script src="landlord-assistant.js?v=20261113-assistant-data-v1" defer></script>
-  <script src="landlord-glass-shell.js?v=20261113-assistant-data-v1" defer></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261114-paper-renewal-v1" />
+  <script src="landlord-glass-nav.js?v=20261114-paper-renewal-v1" defer></script>
+  <link rel="stylesheet" href="landlord-assistant.css?v=20261114-paper-renewal-v1" />
+  <script src="landlord-assistant.js?v=20261114-paper-renewal-v1" defer></script>
+  <script src="landlord-glass-shell.js?v=20261114-paper-renewal-v1" defer></script>
 
   <style>
     :root {
@@ -875,6 +875,12 @@
       display: none;
     }
 
+    .paper-renewal-upload-body {
+      display: grid;
+      gap: 8px;
+      padding: 4px 17px 16px;
+    }
+
     .tenant-document-action-dialog {
       display: flex;
       width: min(100%, 540px);
@@ -1394,7 +1400,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261113-assistant-data-v1" />
+  <link rel="stylesheet" href="landlord-glass-theme.css?v=20261114-paper-renewal-v1" />
 </head>
 
 <body>
@@ -2299,7 +2305,9 @@
         selfie: '自拍照',
         checkin_initial_meter: '初始電表照片',
         checkout_start_meter: '退房起始電表照片',
-        checkout_end_meter: '退房最終電表照片'
+        checkout_end_meter: '退房最終電表照片',
+        paper_unsigned_contract: '紙本簽署用待簽合約',
+        paper_signed_contract: '房客手簽合約'
       };
 
       return labels[type] || type || '文件';
@@ -2380,6 +2388,154 @@
       };
 
       return icons[type] || icons.legacy_contract;
+    }
+
+    // 紙本續約：房客不線上簽時，房東下載待簽合約用 LINE 傳給房客，
+    // 收回手簽照片或 PDF 後上傳，續約即生效。只用於續約。
+    let PAPER_RENEWAL_UPLOAD_KEY = '';
+
+    function canPaperSignRenewal(contract) {
+      const status = normalizedStatus(contract && (contract.contract_status || contract.status));
+      return normalizedStatus(contract && contract.signing_mode) === 'renewal' &&
+        ['pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(status) >= 0 &&
+        normalizedStatus(contract && contract.tenant_signing_submission_status) !== 'submitted';
+    }
+
+    async function downloadPaperRenewalContract(contractId, button) {
+      if (button) {
+        button.disabled = true;
+        button.textContent = '合約產生中…';
+      }
+      try {
+        const data = await requestTenantInitialMeterAction('landlord_contract_paper_signing_document', { contract_id: contractId });
+        if (!data.document_id) throw new Error('合約檔案產生失敗，請再試一次');
+        await previewTenantDocument(data.document_id);
+      } catch (error) {
+        showToast(rawText(error && error.message ? error.message : '合約下載失敗'), true);
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = '下載合約（紙本簽署）';
+        }
+      }
+    }
+
+    function taipeiToday() {
+      return new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    }
+
+    function closePaperRenewalUpload() {
+      const modal = document.getElementById('paperRenewalUploadModal');
+      if (modal) modal.remove();
+      document.body.classList.remove('modal-open');
+    }
+
+    function openPaperRenewalUpload(contractId) {
+      closePaperRenewalUpload();
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      PAPER_RENEWAL_UPLOAD_KEY = Array.from(bytes, function (value) { return value.toString(16).padStart(2, '0'); }).join('');
+      const today = taipeiToday();
+      const modal = document.createElement('div');
+      modal.id = 'paperRenewalUploadModal';
+      modal.className = 'tenant-document-action-modal';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-label', '上傳已簽合約');
+      modal.innerHTML = `
+        <div class="tenant-document-action-dialog">
+          <div class="tenant-document-action-head">
+            <div>
+              <div class="tenant-document-action-title">上傳已簽合約</div>
+              <div class="tenant-document-action-note">上傳房客手簽後傳回的合約照片或 PDF，最多 10 個檔案。上傳後這份續約立即生效，線上簽約連結會失效。</div>
+            </div>
+            <button class="tenant-document-action-close" type="button" data-paper-renewal-close>關閉</button>
+          </div>
+          <div class="paper-renewal-upload-body">
+            <label class="field-label" for="paperRenewalSignedAt">房客簽名日期</label>
+            <input id="paperRenewalSignedAt" class="tenant-document-select" type="date" value="${today}" max="${today}">
+            <label class="field-label" for="paperRenewalFiles">合約照片或 PDF</label>
+            <input id="paperRenewalFiles" class="tenant-document-select" type="file" accept="image/jpeg,image/png,application/pdf" multiple>
+            <div id="paperRenewalFileSummary" class="tenant-document-context">尚未選擇檔案</div>
+          </div>
+          <div class="tenant-document-action-footer">
+            <button id="paperRenewalSubmit" class="tenant-document-action-button primary" type="button">上傳並讓續約生效</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      document.body.classList.add('modal-open');
+      modal.querySelector('[data-paper-renewal-close]').addEventListener('click', closePaperRenewalUpload);
+      modal.querySelector('#paperRenewalFiles').addEventListener('change', function (event) {
+        const files = Array.from(event.target.files || []);
+        document.getElementById('paperRenewalFileSummary').textContent = files.length
+          ? '已選 ' + files.length + ' 個檔案：' + files.map(function (file) { return file.name; }).join('、')
+          : '尚未選擇檔案';
+      });
+      modal.querySelector('#paperRenewalSubmit').addEventListener('click', function () {
+        submitPaperRenewalUpload(contractId);
+      });
+    }
+
+    // 手機照片常有好幾 MB，先縮到長邊 1800px 的 JPG 再上傳；PDF 原樣上傳。
+    async function preparePaperRenewalFile(file) {
+      const mimeType = rawText(file && file.type).toLowerCase();
+      if (!file || file.size <= 0) throw new Error('檔案是空的：' + rawText(file && file.name));
+      if (mimeType === 'application/pdf') {
+        if (file.size > 8 * 1024 * 1024) throw new Error('PDF 超過 8MB：' + file.name);
+        const read = await readFileAsBase64(file);
+        return { file_name: file.name, mime_type: 'application/pdf', base64: read.base64 };
+      }
+      if (['image/jpeg', 'image/png'].indexOf(mimeType) < 0) throw new Error('只支援 JPG、PNG、PDF：' + file.name);
+      let output = file;
+      if (typeof createImageBitmap === 'function') {
+        const image = await createImageBitmap(file);
+        const scale = Math.min(1, 1800 / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) { image.close(); throw new Error('此裝置無法處理照片'); }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        image.close();
+        output = await new Promise(function (resolve, reject) {
+          canvas.toBlob(function (blob) { blob ? resolve(blob) : reject(new Error('照片壓縮失敗')); }, 'image/jpeg', 0.82);
+        });
+      }
+      if (output.size > 8 * 1024 * 1024) throw new Error('照片超過 8MB：' + file.name);
+      const read = await readFileAsBase64(output);
+      return {
+        file_name: rawText(file.name).replace(/\.[^.]+$/, '') + (output === file ? '.' + (mimeType === 'image/png' ? 'png' : 'jpg') : '.jpg'),
+        mime_type: output === file ? mimeType : 'image/jpeg',
+        base64: read.base64
+      };
+    }
+
+    async function submitPaperRenewalUpload(contractId) {
+      const button = document.getElementById('paperRenewalSubmit');
+      const signedAt = rawText(document.getElementById('paperRenewalSignedAt').value).trim();
+      const files = Array.from(document.getElementById('paperRenewalFiles').files || []);
+      if (!signedAt) { showToast('請選擇房客簽名日期', true); return; }
+      if (!files.length || files.length > 10) { showToast('請選擇 1 到 10 個檔案', true); return; }
+      if (!window.confirm('確定上傳嗎？上傳後這份續約會立即生效，房客的線上簽約連結會失效。')) return;
+      button.disabled = true;
+      button.textContent = '上傳中，請稍候…';
+      try {
+        const prepared = [];
+        for (const file of files) prepared.push(await preparePaperRenewalFile(file));
+        await requestTenantInitialMeterAction('landlord_contract_paper_signing_upload', {
+          contract_id: contractId,
+          paper_signed_at: signedAt,
+          idempotency_key: PAPER_RENEWAL_UPLOAD_KEY,
+          files: prepared
+        });
+        closePaperRenewalUpload();
+        showToast('已上傳，續約已生效');
+        loadPage();
+      } catch (error) {
+        showToast(rawText(error && error.message ? error.message : '上傳失敗'), true);
+        button.disabled = false;
+        button.textContent = '上傳並讓續約生效';
+      }
     }
 
     function tenantDocumentUploadItemForType(type) {
@@ -4721,6 +4877,8 @@
                 </div>
                 <div class="contract-history-actions">
                   ${canRenew ? `<button class="primary-button contract-history-button" type="button" onclick="goTenantRenewal('${escapeHtml(contractId)}')">發起續約</button>` : ''}
+                  ${canPaperSignRenewal(contract) ? `<button class="secondary-button contract-history-button" type="button" onclick="downloadPaperRenewalContract('${escapeHtml(contractId)}', this)">下載合約（紙本簽署）</button>
+                  <button class="primary-button contract-history-button" type="button" onclick="openPaperRenewalUpload('${escapeHtml(contractId)}')">上傳已簽合約</button>` : ''}
                   ${canCheckout ? `<button class="${checkoutPending ? 'primary-button' : 'secondary-button'} contract-history-button" type="button" onclick="goTenantCheckout('${escapeHtml(checkoutTargetId)}')">${checkoutPending ? '待辦理退房' : '手動辦理退房'}</button>` : ''}
                   <button class="secondary-button contract-history-button" type="button" onclick="goTenantPaperBackfill()">手動補登紙本合約</button>
                   <button class="secondary-button contract-history-button" type="button" onclick="goContractVersion('${escapeHtml(contractId)}')">查看完整合約與簽名</button>
