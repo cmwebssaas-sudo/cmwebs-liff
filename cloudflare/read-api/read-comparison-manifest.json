@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-1193bbe882d540286a64d2c72a163b437913b3bcf54f4767c64a7721a008d902",
+  "comparison_version": "read-ecb084ce1c075c84c25194a7a4a56ea019c8dfae7cef79bb36f95275e642d563",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -20,7 +20,7 @@
     "apps-script/V2_CONTRACT_REQUESTS.js": "54e314a0ae6cb1331b04d1cfeef58e4926d48a20f93775775ad88a4adc8827dd",
     "apps-script/V2_LANDLORD_CONTRACT_DOCUMENTS.js": "a619d68d79f15b19fd9e855287620b54199641f4d00c5f28fd0beb2c462878ff",
     "apps-script/V2_LANDLORD_EMAIL_AUTH.js": "9ef81a6f077f5859bbe4c588dbddc8bb20c7c15d96eac2fa84fe9a2af479a0c8",
-    "apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js": "dc38c243a4ad89a728f50d9a9f9e7ddbc546147536362faaf8a60cceff8fa241",
+    "apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js": "d9a6c3fb95f3290ba2ab15345178e6a5045223948b2f53b2aa6389842a4a8a57",
     "apps-script/V2_LANDLORD_LIFF_SIGNING_REVIEW_SESSION.js": "e5d1927775b47ddbddfc4ff8552d3161ee721c100434b0239bb25e3682a4f288",
     "apps-script/V2_LANDLORD_MANAGEMENT.js": "5da237d474636a9696c47f1760cc5c2dd46741c0da9cbdc23b1450a9ed59cff7",
     "apps-script/V2_LANDLORD_ONBOARDING.js": "e11e994d0878f1f8517abd99e004767ef6dd080e6376d841d64bec5f10d06f38",
@@ -104,7 +104,7 @@
     "cloudflare/read-api/migrations/0013_line_rich_menus.sql": "6153b66d6f72de60867155ec8674f282603be5a010300a8031e1f98e77c9dfc5",
     "cloudflare/read-api/package-lock.json": "d7bc7ef8bbfbc4b2a0153e7b9f6b5fbaf26ac33818a0000bfe3be3b719158293",
     "cloudflare/read-api/package.json": "0855e510e718cdac2f3dd272f8dd8ec60e3e9ab101aa1d7f482ee0efa8b9deba",
-    "cloudflare/read-api/read-source-manifest.json": "b80252a52220d03680bc2ec184784689456805940921fcff3b418c5104fb5bf8",
+    "cloudflare/read-api/read-source-manifest.json": "7d351c28c5439f824c9310aa9f091e642fb62dda57461f5533319185968dc6ab",
     "cloudflare/read-api/schema.json": "2663ad1feae4cd8d68457f5cdde210315f6ad9cd5a19820e87581477936df3c1",
     "cloudflare/read-api/shadow-clock-fields.json": "d9353b00a2e7c81ee072ba68ed7ced5fb273d2a32acec8e42145fa0b5063617f",
     "cloudflare/read-api/shadow-fields.json": "c3d62eb405d82516e3b933765bfba7b72a2bcbcea72f3933b7f171a2742442f3",

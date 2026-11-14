@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261114-bind-invite-forward-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-1193bbe882d540286a64d2c72a163b437913b3bcf54f4767c64a7721a008d902";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-ecb084ce1c075c84c25194a7a4a56ea019c8dfae7cef79bb36f95275e642d563";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';
