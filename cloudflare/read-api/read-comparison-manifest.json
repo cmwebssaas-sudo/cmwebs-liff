@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-4505dbecb1150679e8e75fa3c8fc32cdb71f5715c96305e3b72cba3cf26d571c",
+  "comparison_version": "read-1193bbe882d540286a64d2c72a163b437913b3bcf54f4767c64a7721a008d902",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -196,7 +196,7 @@
     "scripts/generate-read-replica-schema.mjs": "3030f2fa54cb828a22d118dd5633b37aef50eef05887c374fa458f641094ed09",
     "scripts/generate-shadow-fields.mjs": "38bd8834826f45ca6f2919de90689cd36f6eecb22794aa25002a7e578e235d6e",
     "tenant-bills.html": "9454ebf5110e71d49a6fd32997cb834378524ef9103dc46cebf147c705e08fb3",
-    "tenant-bind.html": "a8d70c3ce2d3024314cae9c9e4fd3242a20ad68bf9e6fbc90ce94c1c7b4a0a0c",
+    "tenant-bind.html": "5c651721e92df8390b82a174074a0d44946cc46afe4de773c09d18aa808c5f64",
     "tenant-checkin.html": "c48dfa43df7c937cf1a8a17b8c7aaf83f5d0c86f654bb904500fb3584b92ae62",
     "tenant-contract.html": "37a5619a8cce370a17e251f9a0b2bf99dac75eba31c4102bcb7802b9bf4d21af",
     "tenant-home.html": "39579927abe5bbc4bec5026c6aca7aae3a3ed3cc969272c845b52e04b47c1fbc",

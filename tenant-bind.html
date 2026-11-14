@@ -9,9 +9,9 @@
   <title>CMWebs 房客首次綁定</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261113-assistant-data-v1"></script>
-  <script src="liff-config.js?v=20261113-assistant-data-v1"></script>
-  <script src="liff-request-auth.js?v=20261113-assistant-data-v1"></script>
+<script src="frontend-release.js?v=20261114-bind-invite-forward-v1"></script>
+  <script src="liff-config.js?v=20261114-bind-invite-forward-v1"></script>
+  <script src="liff-request-auth.js?v=20261114-bind-invite-forward-v1"></script>
 
   <style>
     :root {
@@ -505,9 +505,9 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="repair-dispatch.css?v=20261113-assistant-data-v1">
-  <script src="repair-dispatch.js?v=20261113-assistant-data-v1"></script>
-  <script src="vendor-repair.js?v=20261113-assistant-data-v1"></script>
+  <link rel="stylesheet" href="repair-dispatch.css?v=20261114-bind-invite-forward-v1">
+  <script src="repair-dispatch.js?v=20261114-bind-invite-forward-v1"></script>
+  <script src="vendor-repair.js?v=20261114-bind-invite-forward-v1"></script>
 </head>
 
 <body>
@@ -626,6 +626,59 @@
       }
 
       return url.href;
+    }
+
+    // 合約簽署邀請連結是 liff.line.me/<房客 LIFF>?invite_id=…，LINE 一律
+    // 先開本頁（LIFF 端點）。邀請編號在第一次載入時藏在 liff.state，
+    // LIFF 轉址後才出現在網址參數；兩處都看，直接送到簽約頁。
+    function buildInviteContractTarget_() {
+      let inviteId =
+        rawText(
+          URL_PARAMS.get('invite_id')
+        ).trim();
+
+      if (!inviteId) {
+        const state =
+          rawText(
+            URL_PARAMS.get('liff.state')
+          );
+        const queryStart =
+          state.indexOf('?');
+
+        if (queryStart >= 0) {
+          inviteId =
+            rawText(
+              new URLSearchParams(
+                state.slice(queryStart + 1)
+              ).get('invite_id')
+            ).trim();
+        }
+      }
+
+      if (
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          inviteId
+        )
+      ) {
+        return '';
+      }
+
+      const url = new URL(
+        'tenant-contract.html',
+        location.href
+      );
+
+      url.searchParams.set(
+        'invite_id',
+        inviteId
+      );
+      url.searchParams.set(
+        'v',
+        window.CMWEBS_RELEASE_VERSION ||
+          'v2.1-p0-1'
+      );
+
+      return preserveTestQuery_(url.href);
     }
 
     function buildPostLoginTarget_() {
@@ -1498,6 +1551,16 @@
           if (!ready) {
             return;
           }
+        }
+
+        const inviteTarget =
+          buildInviteContractTarget_();
+
+        if (inviteTarget) {
+          location.replace(
+            inviteTarget
+          );
+          return;
         }
 
         const result =

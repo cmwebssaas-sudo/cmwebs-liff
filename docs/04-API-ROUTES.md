@@ -1466,6 +1466,12 @@ fields come from `lineTenantLiffUrl_`. Workspaces outside the allowlist keep
 `/tenant-contract.html?invite_id=…`), read with the registry `get` action and
 cached for five minutes. When the registry has no active LIFF app the link is
 empty rather than pointing at another LIFF app.
+The existing tenant LIFF app's endpoint is `tenant-bind.html`, so an invite
+link without a page path (`…iJB1D6sN?invite_id=…`) opens the bind page first.
+After LINE login, before the binding check, `tenant-bind.html` reads
+`invite_id` from the query or from `liff.state` and replaces itself with
+`tenant-contract.html?invite_id=…`. Without this step an already-bound tenant
+was sent to the tenant home and never saw the contract.
 The read Worker's generated calculator takes `lineTenantLiffUrl_` as a runtime
 adapter that returns the existing link. Its `/v1/home` summary drops invite
 links, so no Worker response changes.
