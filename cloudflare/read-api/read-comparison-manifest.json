@@ -1,11 +1,11 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-721658f604f3007ae04949650797b262534d914ea5225fa1d4e7fb802122f7b9",
+  "comparison_version": "read-c575cadb7a0c46646645c772211855ec1767345cd09824d5007e6f3be57856a8",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
     "apps-script/V2_ANNOUNCEMENT_MANAGEMENT.js": "342b2cd0bde9fbde62c21a58e3cd3b2a848e7a96b1ca4a669ab89eb261c6d24a",
-    "apps-script/V2_API.js": "1e5cafc6ee55f9cc6def2abf9195bc6118a7d18001bea898f5135c55ef73b8d3",
+    "apps-script/V2_API.js": "a5475c802bb52d53b0a2b26dc6f21e2a4e116955607d37238271faaed74d3b42",
     "apps-script/V2_AUTO_PAYMENT_REMINDER.js": "c9da8830f3ca4a40e3f21740fab87e1a85283c90772ced154d51e1f190ffd3ff",
     "apps-script/V2_BANK_EMAIL_RECEIPTS.js": "67f95f22572faa85e1af69ecb572b913781114e3722e99590a2c4bd24cbe66d2",
     "apps-script/V2_BILLING_MANAGEMENT.js": "4d8f93a2fb46f5c2b6b6933f04ed0c48e950281ae106cccab795a275afbd9a21",
@@ -59,7 +59,7 @@
     "apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js": "2504068eb434eaf6a4966dc98214a062f33711155ee417b8166fea673aa1cf75",
     "apps-script/V2_TENANT_MESSAGES.js": "19482c29f925b517a34b71dbbad4d371549c94aae0ba908625583604837fe70a",
     "apps-script/V2_TENANT_PAYMENT_REPORTS.js": "e50ff0b6f0d1f0a7f11dd70d14236ff29cac1d97420f6c25494756bd41218bda",
-    "apps-script/V2_TENANT_RUNTIME_RESOLVER.js": "dfeb752fb916e0660cdc68638122c478d5f22920cd1fab8d603107615ede5112",
+    "apps-script/V2_TENANT_RUNTIME_RESOLVER.js": "371afeadb9a119cd690f059cba47a4f3b2f5c178ed88566f3c75cc2300d9b5a7",
     "apps-script/V2_TEST_BILL_ARCHIVE.js": "f7d256d43af2ccd652ad27d47cf2d2893dcc5e6a945eee7f37eed3ed777cfb88",
     "apps-script/V2_WORKSPACES.js": "2f4aacb871ccb3877fb27e717aed5194a6bd9a446d6cba3578de593a64486d77",
     "apps-script/V2_WORKSPACE_CREATION.js": "f36ebc5aa9e5e07c17a7f0ccd90326ef3933ec088184826149537f0b9d6610ec",

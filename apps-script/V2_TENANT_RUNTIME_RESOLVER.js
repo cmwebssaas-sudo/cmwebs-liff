@@ -236,7 +236,10 @@ function tenantRuntimeLineMatches_(
 
 
 function tenantRuntimeContractIsActive_(contract) {
+  // See tenantBillsRuntimeContractActive_: scheduled paper leases become
+  // effective on their start day without rewriting the stored status.
   const status =
+    contractRenewalHistoryEffectiveStatus_(contract) ||
     tenantRuntimeFirst_(
       contract,
       [
