@@ -5568,8 +5568,10 @@ function revenueDashboardContractExpiry_(
 }
 
 function revenueDashboardContractIsActive_(contract) {
+  // Started paper leases keep their stored `upcoming` label; count them by date.
   const status = revenueDashboardStatus_(
-    contract && (contract.contract_status || contract.status)
+    contractRenewalHistoryEffectiveStatus_(contract) ||
+    (contract && (contract.contract_status || contract.status))
   );
   return [
     'active', 'valid', 'current', 'approved', '啟用', '有效'

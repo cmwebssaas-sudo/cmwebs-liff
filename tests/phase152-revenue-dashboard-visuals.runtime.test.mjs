@@ -8,6 +8,11 @@ const source = readFileSync(
 );
 const context = { console, Date, Math, Number, String, Object, Array, JSON };
 vm.createContext(context);
+vm.runInContext(
+  readFileSync(new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url), 'utf8'),
+  context,
+  { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' }
+);
 vm.runInContext(source, context, { filename: 'V2_REPORTING_DASHBOARD.js' });
 
 const result = context.revenueDashboardAggregate_(

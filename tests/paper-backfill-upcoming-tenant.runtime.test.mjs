@@ -313,7 +313,7 @@ function tenantRuntimeFixture(today) {
   const context = vm.createContext({Date:Clock, console,
     Utilities:{formatDate:date => new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Taipei'}).format(new Date(date))}
   });
-  for (const name of ['V2_CONTRACT_RENEWAL_HISTORY', 'V2_API', 'V2_TENANT_RUNTIME_RESOLVER']) {
+  for (const name of ['V2_CONTRACT_RENEWAL_HISTORY', 'V2_API', 'V2_TENANT_RUNTIME_RESOLVER', 'V2_REPORTING_DASHBOARD']) {
     vm.runInContext(readFileSync(new URL('../apps-script/' + name + '.js', import.meta.url), 'utf8'), context);
   }
   const tenant = {tenant_id:'tenant-501', tenant_user_id:'user-501', tenant_name:'Fixture 501', workspace_id:'W1', property_id:'P1', room_id:'R1', account_status:'active', tenant_line_user_id:'U-501', line_user_id:'U-501', current_contract_id:'C-paper'};
@@ -325,11 +325,12 @@ function tenantRuntimeFixture(today) {
   return {context, paper};
 }
 
-test('tenant bills and tenant home resolve a started paper lease whose stored status is still upcoming', () => {
+test('tenant bills, tenant home and revenue dashboard resolve a started paper lease whose stored status is still upcoming', () => {
   for (const [day, expected] of [['2026-10-14', false], ['2026-10-15', true], ['2026-11-23', true], ['2028-10-14', true], ['2028-10-15', false]]) {
     const f = tenantRuntimeFixture(day);
     assert.equal(f.context.tenantBillsRuntimeContractActive_(f.paper), expected, 'tenant bills ' + day);
     assert.equal(f.context.tenantRuntimeContractIsActive_(f.paper), expected, 'tenant runtime ' + day);
+    assert.equal(f.context.revenueDashboardContractIsActive_(f.paper), expected, 'revenue dashboard ' + day);
     if (expected) {
       const identity = f.context.tenantBillsRuntimeResolveIdentity_('U-501');
       assert.equal(identity.contract_id, 'C-paper', day);
@@ -345,4 +346,5 @@ test('tenant checks ignore the effective-date rule for non-paper upcoming leases
   const electronic = {...f.paper, signing_mode:'new_tenant', contract_origin:'landlord_initiated'};
   assert.equal(f.context.tenantBillsRuntimeContractActive_(electronic), false);
   assert.equal(f.context.tenantRuntimeContractIsActive_(electronic), false);
+  assert.equal(f.context.revenueDashboardContractIsActive_(electronic), false);
 });
