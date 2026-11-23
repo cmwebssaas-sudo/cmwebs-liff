@@ -256,6 +256,7 @@ function createResolverBackedRuntime(options = {}) {
   const resolverSource = fs.readFileSync('apps-script/V2_TENANT_RUNTIME_RESOLVER.js', 'utf8');
   const paymentSource = fs.readFileSync('apps-script/V2_TENANT_PAYMENT_REPORTS.js', 'utf8');
 
+  vm.runInNewContext(fs.readFileSync('apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', 'utf8'), context);
   vm.runInNewContext(resolverSource, context);
   vm.runInNewContext(paymentSource, context);
   context.tenantPaymentReportAppend_ = (report) => {

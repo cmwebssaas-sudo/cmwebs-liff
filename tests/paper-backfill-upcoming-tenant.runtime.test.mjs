@@ -305,3 +305,46 @@ test('tenant desktop/mobile renderers explicitly label future lease and its star
     assert.match(html, /2026-10-15/);
   }
 });
+
+function tenantRuntimeFixture(today) {
+  class Clock extends Date {
+    constructor(...args) { super(...(args.length ? args : [today + 'T12:00:00+08:00'])); }
+  }
+  const context = vm.createContext({Date:Clock, console,
+    Utilities:{formatDate:date => new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Taipei'}).format(new Date(date))}
+  });
+  for (const name of ['V2_CONTRACT_RENEWAL_HISTORY', 'V2_API', 'V2_TENANT_RUNTIME_RESOLVER', 'V2_REPORTING_DASHBOARD']) {
+    vm.runInContext(readFileSync(new URL('../apps-script/' + name + '.js', import.meta.url), 'utf8'), context);
+  }
+  const tenant = {tenant_id:'tenant-501', tenant_user_id:'user-501', tenant_name:'Fixture 501', workspace_id:'W1', property_id:'P1', room_id:'R1', account_status:'active', tenant_line_user_id:'U-501', line_user_id:'U-501', current_contract_id:'C-paper'};
+  const paper = {contract_id:'C-paper', tenant_id:'tenant-501', workspace_id:'W1', property_id:'P1', room_id:'R1', room_name:'501', start_date:'2026-10-15', end_date:'2028-10-14', contract_status:'upcoming', status:'upcoming', account_status:'upcoming', signing_mode:'paper_backfill', contract_origin:'paper_backfill'};
+  // The unfinished electronic invite the paper lease replaced stays cancelled.
+  const cancelled = {...paper, contract_id:'C-cancelled', contract_status:'cancelled', status:'cancelled', account_status:'cancelled', signing_mode:'new_tenant', contract_origin:'landlord_initiated'};
+  const rows = {V2_tenants:[tenant], V2_contracts:[cancelled, paper]};
+  context.getSheetObjects_ = name => rows[name] || [];
+  return {context, paper};
+}
+
+test('tenant bills, tenant home and revenue dashboard resolve a started paper lease whose stored status is still upcoming', () => {
+  for (const [day, expected] of [['2026-10-14', false], ['2026-10-15', true], ['2026-11-23', true], ['2028-10-14', true], ['2028-10-15', false]]) {
+    const f = tenantRuntimeFixture(day);
+    assert.equal(f.context.tenantBillsRuntimeContractActive_(f.paper), expected, 'tenant bills ' + day);
+    assert.equal(f.context.tenantRuntimeContractIsActive_(f.paper), expected, 'tenant runtime ' + day);
+    assert.equal(f.context.revenueDashboardContractIsActive_(f.paper), expected, 'revenue dashboard ' + day);
+    if (expected) {
+      const identity = f.context.tenantBillsRuntimeResolveIdentity_('U-501');
+      assert.equal(identity.contract_id, 'C-paper', day);
+    } else {
+      assert.throws(() => f.context.tenantBillsRuntimeResolveIdentity_('U-501'), error => error.code === 'ACTIVE_CONTRACT_NOT_FOUND', day);
+    }
+    assert.equal(f.paper.contract_status, 'upcoming', 'stored audit status is not rewritten');
+  }
+});
+
+test('tenant checks ignore the effective-date rule for non-paper upcoming leases', () => {
+  const f = tenantRuntimeFixture('2026-11-23');
+  const electronic = {...f.paper, signing_mode:'new_tenant', contract_origin:'landlord_initiated'};
+  assert.equal(f.context.tenantBillsRuntimeContractActive_(electronic), false);
+  assert.equal(f.context.tenantRuntimeContractIsActive_(electronic), false);
+  assert.equal(f.context.revenueDashboardContractIsActive_(electronic), false);
+});

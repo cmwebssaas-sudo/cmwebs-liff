@@ -397,7 +397,10 @@ function tenantBillsRuntimeRequireOne_(
 
 
 function tenantBillsRuntimeContractActive_(contract) {
+  // A signed paper lease saved before its start day keeps its stored
+  // `upcoming` label; its effective status follows the lease dates.
   const status =
+    contractRenewalHistoryEffectiveStatus_(contract) ||
     tenantBillsRuntimeFirst_(
       contract,
       [
