@@ -71,6 +71,11 @@ function tenantBillsPayload(rowsBySheet) {
     }
   };
 
+  vm.runInNewContext(
+    readFileSync(new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url), 'utf8'),
+    context,
+    { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' }
+  );
   vm.runInNewContext(apiSource, context, {
     filename: 'V2_API.js'
   });
