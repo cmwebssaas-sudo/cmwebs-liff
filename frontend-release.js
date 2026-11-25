@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261114-paper-renewal-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-84cf48a315bacbb140a5b312fdc46320691cb88bab65693486cb1a85617e7653";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-d866a3ad456de4d771c23d14db6d36deb798bddae65cbe0b99a8abaee2f9fbd2";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = 'https://cmwebs-read-api.buyhotart.workers.dev';

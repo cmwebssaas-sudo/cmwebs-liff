@@ -1,11 +1,11 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-84cf48a315bacbb140a5b312fdc46320691cb88bab65693486cb1a85617e7653",
+  "comparison_version": "read-d866a3ad456de4d771c23d14db6d36deb798bddae65cbe0b99a8abaee2f9fbd2",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
     "apps-script/V2_ANNOUNCEMENT_MANAGEMENT.js": "342b2cd0bde9fbde62c21a58e3cd3b2a848e7a96b1ca4a669ab89eb261c6d24a",
-    "apps-script/V2_API.js": "a5475c802bb52d53b0a2b26dc6f21e2a4e116955607d37238271faaed74d3b42",
+    "apps-script/V2_API.js": "be83635dfe4fe964b54e548ced17c364761387cb33a62d7e3f268051d61c68fd",
     "apps-script/V2_AUTO_PAYMENT_REMINDER.js": "bead14f68ad3238c59ec50df03a61310fc9d4aef9cbffe3b9fc90310bb9d0364",
     "apps-script/V2_BANK_EMAIL_RECEIPTS.js": "67f95f22572faa85e1af69ecb572b913781114e3722e99590a2c4bd24cbe66d2",
     "apps-script/V2_BILLING_MANAGEMENT.js": "4d8f93a2fb46f5c2b6b6933f04ed0c48e950281ae106cccab795a275afbd9a21",

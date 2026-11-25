@@ -3486,42 +3486,13 @@ function landlordSendTenantMessageByLineUid_(
       };
     }
 
-    const rows = getSheetObjects_(
-      V2_SHEETS.landlordTenantListView
-    );
-
-    const tenant = rows.find(row => {
-      const rowLandlordLineUserId =
-        String(
-          row.line_user_id || ''
-        ).trim();
-
-      const rowTenantId =
-        String(
-          row.tenant_id || ''
-        ).trim();
-
-      const rowTenantUserId =
-        String(
-          row.tenant_user_id || ''
-        ).trim();
-
-      return (
-        rowLandlordLineUserId ===
-          landlordLineUserId &&
-        (
-          (
-            tenantId &&
-            rowTenantId === tenantId
-          ) ||
-          (
-            tenantUserId &&
-            rowTenantUserId ===
-              tenantUserId
-          )
-        )
+    const tenant =
+      landlordMessageResolveTenant_(
+        landlordLineUserId,
+        tenantId,
+        tenantUserId,
+        new Date()
       );
-    });
 
     if (!tenant) {
       cmwebsLogLineMessage_({
@@ -3678,11 +3649,7 @@ function landlordSendTenantMessageByLineUid_(
       }
 
       const unpaidBills =
-        getTenantUnpaidBillsFromBillView_(
-          resolvedTenantId,
-          resolvedTenantUserId,
-          tenantLineUserId
-        );
+        tenant.unpaid_bills;
 
       if (unpaidBills.length === 0) {
         logPaymentReminderBlocked_({
@@ -3705,12 +3672,7 @@ function landlordSendTenantMessageByLineUid_(
       }
 
       const overdueBills =
-        getTenantOverdueBillsForReminder_(
-          landlordLineUserId,
-          resolvedTenantId,
-          resolvedTenantUserId,
-          tenantLineUserId
-        );
+        tenant.overdue_bills;
 
       if (overdueBills.length === 0) {
         logPaymentReminderBlocked_({
@@ -3922,167 +3884,107 @@ function landlordSendTenantMessageByLineUid_(
 
 
 /**
- * 取得房客目前全部未繳帳單
+ * 房東手動傳訊／催繳：從正式資料表找房客與未繳帳單。
+ * 舊的 V2_landlord_tenant_list_view／V2_landlord_arrears_view 未持續更新，
+ * 大部分舊房客不在表內，不能作為依據。
+ * 房客歸屬：房客、帳單或租約任一筆的 landlord_id 屬於此房東。
  */
-function getTenantUnpaidBillsFromBillView_(
-  tenantId,
-  tenantUserId,
-  tenantLineUserId
-) {
-  tenantId = String(
-    tenantId || ''
-  ).trim();
-
-  tenantUserId = String(
-    tenantUserId || ''
-  ).trim();
-
-  tenantLineUserId = String(
-    tenantLineUserId || ''
-  ).trim();
-
-  const rows = getSheetObjects_(
-    V2_SHEETS.tenantBillView
-  );
-
-  return rows.filter(row => {
-    const sameTenant =
-      (
-        tenantId &&
-        String(
-          row.tenant_id || ''
-        ).trim() === tenantId
-      ) ||
-      (
-        tenantUserId &&
-        String(
-          row.user_id ||
-          row.tenant_user_id ||
-          ''
-        ).trim() ===
-          tenantUserId
-      ) ||
-      (
-        tenantLineUserId &&
-        String(
-          row.line_user_id ||
-          row.tenant_line_user_id ||
-          ''
-        ).trim() ===
-          tenantLineUserId
-      );
-
-    if (!sameTenant) {
-      return false;
-    }
-
-    return (
-      String(
-        row.payment_status || ''
-      )
-        .trim()
-        .toLowerCase() ===
-      'unpaid'
-    );
-  });
-}
-
-
-/**
- * 取得房客目前可催繳的逾期帳單
- *
- * 規則：
- * - 必須屬於目前房東
- * - payment_status 必須是 unpaid
- * - days_overdue 必須達到設定天數
- */
-function getTenantOverdueBillsForReminder_(
+function landlordMessageResolveTenant_(
   landlordLineUserId,
   tenantId,
   tenantUserId,
-  tenantLineUserId
+  now
 ) {
-  landlordLineUserId = String(
-    landlordLineUserId || ''
-  ).trim();
+  const text = function (value) {
+    return String(value == null ? '' : value).trim();
+  };
 
-  tenantId = String(
-    tenantId || ''
-  ).trim();
+  const landlord = getSheetObjects_(V2_SHEETS.landlords).find(function (row) {
+    return text(row.line_user_id || row.landlord_line_user_id) === landlordLineUserId;
+  });
 
-  tenantUserId = String(
-    tenantUserId || ''
-  ).trim();
+  if (!landlord || !text(landlord.landlord_id)) {
+    return null;
+  }
 
-  tenantLineUserId = String(
-    tenantLineUserId || ''
-  ).trim();
+  const landlordId = text(landlord.landlord_id);
 
-  const rows = getSheetObjects_(
-    V2_SHEETS.landlordArrearsView
-  );
-
-  return rows.filter(row => {
-    const rowLandlordLineUserId =
-      String(
-        row.line_user_id ||
-        row.landlord_line_user_id ||
-        ''
-      ).trim();
-
-    if (
-      rowLandlordLineUserId !==
-      landlordLineUserId
-    ) {
-      return false;
-    }
-
-    const sameTenant =
-      (
-        tenantId &&
-        String(
-          row.tenant_id || ''
-        ).trim() === tenantId
-      ) ||
-      (
-        tenantUserId &&
-        String(
-          row.tenant_user_id ||
-          ''
-        ).trim() ===
-          tenantUserId
-      ) ||
-      (
-        tenantLineUserId &&
-        String(
-          row.tenant_line_user_id ||
-          ''
-        ).trim() ===
-          tenantLineUserId
-      );
-
-    if (!sameTenant) {
-      return false;
-    }
-
-    const paymentStatus =
-      String(
-        row.payment_status || ''
-      )
-        .trim()
-        .toLowerCase();
-
-    const daysOverdue =
-      Number(
-        row.days_overdue || 0
-      );
-
+  const tenantRow = getSheetObjects_(V2_SHEETS.tenants).find(function (row) {
     return (
-      paymentStatus === 'unpaid' &&
-      daysOverdue >=
-        V2_PAYMENT_REMINDER_MIN_DAYS_OVERDUE
+      (tenantId && text(row.tenant_id) === tenantId) ||
+      (tenantUserId && text(row.tenant_user_id || row.user_id) === tenantUserId)
     );
   });
+
+  if (!tenantRow) {
+    return null;
+  }
+
+  const resolvedTenantId = text(tenantRow.tenant_id);
+  const resolvedTenantUserId = text(tenantRow.tenant_user_id || tenantRow.user_id);
+  const belongsToTenant = function (row) {
+    return (
+      (resolvedTenantId && text(row.tenant_id) === resolvedTenantId) ||
+      (resolvedTenantUserId && text(row.tenant_user_id || row.user_id) === resolvedTenantUserId)
+    );
+  };
+
+  const bills = getSheetObjects_(V2_SHEETS.bills).filter(function (row) {
+    return text(row.landlord_id) === landlordId && belongsToTenant(row);
+  });
+
+  const ownsTenant =
+    text(tenantRow.landlord_id) === landlordId ||
+    bills.length > 0 ||
+    getSheetObjects_(V2_SHEETS.contracts).some(function (row) {
+      return text(row.landlord_id) === landlordId && belongsToTenant(row);
+    });
+
+  if (!ownsTenant) {
+    return null;
+  }
+
+  const unpaidBills = bills.filter(function (row) {
+    return (
+      autoReminderNormalizePaymentStatus_(row.payment_status) === 'unpaid' &&
+      autoReminderNormalizeBillStatus_(row.bill_status) === 'issued'
+    );
+  });
+
+  const overdueBills = unpaidBills.filter(function (row) {
+    return autoReminderDaysOverdue_(row.due_date, now, V2_TIMEZONE) >=
+      V2_PAYMENT_REMINDER_MIN_DAYS_OVERDUE;
+  });
+
+  const byMonthDesc = function (a, b) {
+    return text(b.bill_month) < text(a.bill_month) ? -1 : text(b.bill_month) > text(a.bill_month) ? 1 : 0;
+  };
+  const latestBill = (unpaidBills.length ? unpaidBills : bills).slice().sort(byMonthDesc)[0] || {};
+  const rooms = [];
+  (unpaidBills.length ? unpaidBills : [latestBill]).forEach(function (row) {
+    const room = text(row.room_name);
+    if (room && rooms.indexOf(room) === -1) rooms.push(room);
+  });
+
+  return {
+    tenant_id: resolvedTenantId,
+    tenant_user_id: resolvedTenantUserId,
+    tenant_line_user_id: text(tenantRow.tenant_line_user_id || tenantRow.line_user_id),
+    tenant_name: text(tenantRow.tenant_name || tenantRow.name),
+    tenant_binding_status: text(tenantRow.tenant_binding_status || tenantRow.binding_status),
+    landlord_id: landlordId,
+    landlord_name: text(landlord.landlord_name),
+    room_list: rooms.join('、'),
+    latest_bill_month: text(latestBill.bill_month),
+    latest_due_date: latestBill.due_date || '',
+    latest_total_amount: Number(latestBill.total_amount || 0),
+    latest_payment_status: text(latestBill.payment_status),
+    unpaid_total_amount: unpaidBills.reduce(function (sum, row) {
+      return sum + Number(row.total_amount || 0);
+    }, 0),
+    unpaid_bills: unpaidBills,
+    overdue_bills: overdueBills
+  };
 }
 
 
