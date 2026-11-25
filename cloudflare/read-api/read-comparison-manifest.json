@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-e877a19e6f158633af45f292d98257a4c297aff79759a1e6f42d28417f1e711d",
+  "comparison_version": "read-a02a428afc09671b0411d66985a8eb40823dcd2107060ef7e9404d6b8040f3d0",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -105,7 +105,7 @@
     "cloudflare/read-api/migrations/0013_line_rich_menus.sql": "6153b66d6f72de60867155ec8674f282603be5a010300a8031e1f98e77c9dfc5",
     "cloudflare/read-api/package-lock.json": "d7bc7ef8bbfbc4b2a0153e7b9f6b5fbaf26ac33818a0000bfe3be3b719158293",
     "cloudflare/read-api/package.json": "0855e510e718cdac2f3dd272f8dd8ec60e3e9ab101aa1d7f482ee0efa8b9deba",
-    "cloudflare/read-api/read-source-manifest.json": "6106ecbe3eb14f5b5ef1b99bc757bfbd37413efc5b51467aa02ddd0d8d5075d1",
+    "cloudflare/read-api/read-source-manifest.json": "27e35e0f8fff130c7e331144d5239b722d1d5254c6abd6e5abfaa338343bbbe9",
     "cloudflare/read-api/schema.json": "2663ad1feae4cd8d68457f5cdde210315f6ad9cd5a19820e87581477936df3c1",
     "cloudflare/read-api/shadow-clock-fields.json": "d9353b00a2e7c81ee072ba68ed7ced5fb273d2a32acec8e42145fa0b5063617f",
     "cloudflare/read-api/shadow-fields.json": "c3d62eb405d82516e3b933765bfba7b72a2bcbcea72f3933b7f171a2742442f3",
