@@ -1490,18 +1490,6 @@ function autoReminderBuildPlan_(
         ] ||
         null;
 
-      const contractId =
-        autoReminderText_(
-          bill.contract_id
-        );
-
-      const contract =
-        contractId
-          ? context.contractById[
-              contractId
-            ] || null
-          : null;
-
       const landlord =
         context.landlordById[
           landlordId
@@ -1783,25 +1771,10 @@ function autoReminderBuildPlan_(
         return;
       }
 
-      if (
-        !contractId ||
-        !contract ||
-        !autoReminderIsContractActive_(
-          contract,
-          now,
-          timezone
-        )
-      ) {
-        skippedItems.push(
-          autoReminderSkippedItem_(
-            item,
-            '租約不是有效狀態'
-          )
-        );
-
-        return;
-      }
-
+      /*
+       * 帳單已開出且未繳就追繳，不檢查租約是否到期：
+       * 房客常晚於到期日才完成續約，期間仍照常開帳單。
+       */
       if (
         !item
           .tenantLineUserId
@@ -3661,91 +3634,6 @@ function autoReminderIsAccountActive_(value) {
   ];
 
   return inactiveValues.indexOf(text) === -1;
-}
-
-
-function autoReminderIsContractActive_(
-  contract,
-  now,
-  timezone
-) {
-  const status =
-    autoReminderText_(
-      contract.contract_status ||
-      contract.status ||
-      contract.account_status
-    )
-      .replace(/\s+/g, '')
-      .toLowerCase();
-
-  const inactiveValues = [
-    'inactive',
-    'terminated',
-    'ended',
-    'expired',
-    'cancelled',
-    'canceled',
-    'closed',
-    'archived',
-    'void',
-    'voided',
-    'deleted',
-    'rejected',
-    'draft',
-    '停用',
-    '終止',
-    '到期',
-    '取消',
-    '作廢',
-    '退租'
-  ];
-
-  if (inactiveValues.indexOf(status) !== -1) {
-    return false;
-  }
-
-  const todayKey =
-    autoReminderDateKey_(
-      now,
-      timezone
-    );
-  const startKey =
-    autoReminderDateKey_(
-      contract.start_date ||
-      contract.contract_start_date ||
-      contract.lease_start_date,
-      timezone
-    );
-  const endKey =
-    autoReminderDateKey_(
-      contract.end_date ||
-      contract.contract_end_date ||
-      contract.lease_end_date,
-      timezone
-    );
-
-  if (startKey && todayKey && startKey > todayKey) {
-    return false;
-  }
-
-  if (endKey && todayKey && endKey < todayKey) {
-    return false;
-  }
-
-  return Boolean(
-    startKey ||
-    endKey ||
-    [
-      'active',
-      'current',
-      'effective',
-      'signed',
-      'approved',
-      '有效',
-      '生效',
-      '進行中'
-    ].indexOf(status) !== -1
-  );
 }
 
 

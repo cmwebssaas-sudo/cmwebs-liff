@@ -1132,6 +1132,7 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - [x] 月初帳單補發修正：停用全部逾期催繳 Workspace 時仍保留每小時 dispatcher；房東可按「手動發送本月帳單」補發當月既有未發送／失敗帳單，且不重發已成功帳單；中文 `已建立`／`已開立`／`開立` 狀態與 `issued` 一致（Phase 233；Apps Script Version 165 已部署，LINE／LIFF UAT 待驗證）
 - [x] 月帳單手動發送遇到 JSONP 回應逾時不會自動重送寫入，而是重新讀取通知狀態並提示確認 `已發送`；快速續約 CTA 在 mobile action grid 保持綠底白字；手動銷帳 canonical V2 寫入完成後，V1／通知／稽核後續失敗以警示回傳、不誤導重複銷帳（Phase 234；local candidate，Production／LIFF UAT 待驗證）
 - [x] 手動銷帳同步帳單檢視時，工作表中空白的 `__row_number` 儲存格不可覆寫系統的實際列號，避免 `Cannot convert "" to int` 而回滾銷帳（Phase 235；local candidate，Production／LIFF UAT 待驗證）
+- [x] 已開立且未繳的帳單一律依逾期天數自動催繳，不再因租約已到期、找不到租約或租約狀態為 expired 而略過（房客常晚於到期日才完成續約；602 B0000079 案例；`tests/overdue-reminder-expired-lease.test.mjs`）
 - [ ] LINE 失敗進入通知中心
 
 ## 訊息／報修
