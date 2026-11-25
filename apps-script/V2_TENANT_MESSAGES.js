@@ -101,6 +101,18 @@ function tenantMessageResolveLandlordRecipient_(
     }
   });
 
+  /*
+   * 舊系統建檔的房客，租約與物業都沒有房東 LINE UID，
+   * 且不在已停更的 V2_landlord_tenant_list_view；改由正式房東表補上。
+   */
+  if (Object.keys(recipientValues).length === 0) {
+    tenantMessageLandlordLineUserIds_(
+      canonicalLandlordId
+    ).forEach(function (value) {
+      recipientValues[value] = true;
+    });
+  }
+
   const recipients =
     Object.keys(recipientValues);
 
@@ -139,6 +151,25 @@ function tenantMessageResolveLandlordRecipient_(
     landlord_id: canonicalLandlordId,
     landlord_line_user_id: recipient
   };
+}
+
+
+function tenantMessageLandlordLineUserIds_(landlordId) {
+  const values = {};
+
+  getSheetObjects_('V2_landlords').forEach(function (row) {
+    const lineUserId =
+      String(row.line_user_id || '').trim();
+
+    if (
+      String(row.landlord_id || '').trim() === landlordId &&
+      /^U[0-9a-f]{32}$/i.test(lineUserId)
+    ) {
+      values[lineUserId] = true;
+    }
+  });
+
+  return Object.keys(values);
 }
 
 

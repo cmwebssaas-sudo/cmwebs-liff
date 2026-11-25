@@ -1134,6 +1134,7 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - [x] 手動銷帳同步帳單檢視時，工作表中空白的 `__row_number` 儲存格不可覆寫系統的實際列號，避免 `Cannot convert "" to int` 而回滾銷帳（Phase 235；local candidate，Production／LIFF UAT 待驗證）
 - [x] 已開立且未繳的帳單一律依逾期天數自動催繳，不再因租約已到期、找不到租約或租約狀態為 expired 而略過（房客常晚於到期日才完成續約；602 B0000079 案例；`tests/overdue-reminder-expired-lease.test.mjs`）
 - [x] 房東「手動催繳」／傳訊改由 `V2_landlords`、`V2_tenants`、`V2_bills`、`V2_contracts` 判斷房客歸屬與未繳／逾期帳單，不再依賴未更新且含 `#REF!` 的 `V2_landlord_tenant_list_view`／`V2_landlord_arrears_view`（舊房客原本會出現「找不到此房東名下的房客資料」；`tests/landlord-manual-reminder-canonical-tenant.test.mjs`）
+- [x] 房客「傳訊息給房東」：舊系統建檔房客的租約與物業沒有房東 LINE UID、也不在停更的 `V2_landlord_tenant_list_view`，改由 `V2_landlords` 依 landlord_id 補收件人；房東表查無時仍回 `TENANT_MESSAGE_RECIPIENT_MISSING`；房客綁定查詢不再把 list view 的房東 `line_user_id` 當成房客（`tests/tenant-message-legacy-landlord-recipient.test.mjs`）
 - [ ] LINE 失敗進入通知中心
 
 ## 訊息／報修

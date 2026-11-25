@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-d866a3ad456de4d771c23d14db6d36deb798bddae65cbe0b99a8abaee2f9fbd2",
+  "comparison_version": "read-e877a19e6f158633af45f292d98257a4c297aff79759a1e6f42d28417f1e711d",
   "sources": {
     "announce.html": "5af9654f23862e2926be52273b2848fd2ec7b834ccb6747593b9717a14c2694d",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -51,13 +51,13 @@
     "apps-script/V2_SETTINGS_INTEGRATION.js": "d709db4c21f371a7d5e56c435c4179a25c66a3ee30477e70d358df295e254212",
     "apps-script/V2_SYSTEM_SETTINGS.js": "f4c2fec2886c077cf5b7a791a5dcb56d7f5c96af0f7e4deedad51e8b85c753f8",
     "apps-script/V2_TEAM_MANAGEMENT.js": "22ced73110eed4c284ff56fd3a41d905a3507baf7ba5f08b443fdeaf0b37d98e",
-    "apps-script/V2_TENANT_BINDING_PHONE.js": "338a4d29971937ea52ff67bcc2d62f34bf7b3c5d8d53a424989963622ae9552a",
+    "apps-script/V2_TENANT_BINDING_PHONE.js": "800e6028c37785fe575228b95cd930b7e9e9dc70ae9ba15cdd06a1f9e76ddd6a",
     "apps-script/V2_TENANT_CHECKIN_MANAGEMENT.js": "64e6fdf7f47447574cf7f55fc945d9f28e88b257642d748a38c976eee3e8bc45",
     "apps-script/V2_TENANT_CONTRACT_SIGNING_REVIEW.js": "ff3bcf6de266376b498f2a13bd1c701cdd5704519d00e1518fad21857e37046a",
     "apps-script/V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js": "9a2088ec345da5b9f55e08366b1e2583a709b2421e66b05d595772cb29afb267",
     "apps-script/V2_TENANT_LEASE_ONBOARDING.js": "fee57a7a9c1ee17f1303392e6e7d412c1978e35c2c7e455c1dccbedebe8b32e2",
     "apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js": "2504068eb434eaf6a4966dc98214a062f33711155ee417b8166fea673aa1cf75",
-    "apps-script/V2_TENANT_MESSAGES.js": "19482c29f925b517a34b71dbbad4d371549c94aae0ba908625583604837fe70a",
+    "apps-script/V2_TENANT_MESSAGES.js": "40458d27f79942a80974acfaaa196a32414836966d8f1c036d1c9dd1de3c7b69",
     "apps-script/V2_TENANT_PAYMENT_REPORTS.js": "e50ff0b6f0d1f0a7f11dd70d14236ff29cac1d97420f6c25494756bd41218bda",
     "apps-script/V2_TENANT_RUNTIME_RESOLVER.js": "371afeadb9a119cd690f059cba47a4f3b2f5c178ed88566f3c75cc2300d9b5a7",
     "apps-script/V2_TEST_BILL_ARCHIVE.js": "f7d256d43af2ccd652ad27d47cf2d2893dcc5e6a945eee7f37eed3ed777cfb88",
