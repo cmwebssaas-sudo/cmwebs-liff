@@ -131,7 +131,9 @@ const V2_READ_REPLICA_ACTIONS_ = (function() {
     landlord_tenant_checkin_save landlord_tenant_checkin_send_welcome landlord_tenant_create landlord_tenant_initial_meter_save
     tenant_contract_renewal_intent tenant_contract_request_cancel tenant_contract_request_submit tenant_bind_submit`,
     ['V2_contracts','V2_contract_requests','V2_contract_invites','V2_tenants','V2_rooms','V2_bills','V2_users']);
-  routes(`landlord_message_update landlord_send_tenant_message tenant_message_submit`,['V2_tenant_messages']);
+  routes(`landlord_message_update tenant_message_submit`,['V2_tenant_messages']);
+  // 手動催繳會更新 V2_bills.reminder_count，欠款頁才看得到次數
+  routes(`landlord_send_tenant_message`,['V2_tenant_messages','V2_bills']);
   routes(`commercial_registration_email_request commercial_registration_email_verify commercial_registration_line
     commercial_billing_link_line commercial_billing_retry_provisioning commercial_billing_workspace_mode
     landlord_email_login_request landlord_email_login_verify landlord_email_session_revoke

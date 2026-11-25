@@ -9,6 +9,10 @@ const sandbox = {
   Utilities: {
     formatDate(value, timezone, format) {
       const date = new Date(value);
+      if (format === 'yyyy-MM') {
+        const taipei = new Date(date.getTime() + 8 * 3600 * 1000);
+        return taipei.getUTCFullYear() + '-' + String(taipei.getUTCMonth() + 1).padStart(2, '0');
+      }
       if (format === 'yyyy-MM-dd') {
         return [
           date.getUTCFullYear(),
@@ -39,7 +43,7 @@ const sheets = {
   ],
   V2_bills: [
     { bill_id: 'B60', bill_month: '2026-10', tenant_id: 'T4', user_id: '', landlord_id: 'L1', room_name: '602', due_date: '2026/10/10', total_amount: '26223', bill_status: 'issued', payment_status: 'paid' },
-    { bill_id: 'B79', bill_month: '2026-11', tenant_id: 'T4', user_id: '', landlord_id: 'L1', room_name: '602', due_date: '2026/11/10', total_amount: '25593', bill_status: 'issued', payment_status: 'unpaid' }
+    { bill_id: 'B79', bill_month: new Date('2026-10-31T16:00:00Z'), tenant_id: 'T4', user_id: '', landlord_id: 'L1', room_name: '602', due_date: '2026/11/10', total_amount: '25593', bill_status: 'issued', payment_status: 'unpaid' }
   ],
   V2_landlord_tenant_list_view: [{ line_user_id: '#REF!' }],
   V2_landlord_arrears_view: [{ line_user_id: '#REF!' }]
@@ -73,5 +77,31 @@ assert.equal(sandbox.landlordMessageResolveTenant_(LANDLORD_LINE, 'T-NONE', '', 
 const beforeDue = sandbox.landlordMessageResolveTenant_(LANDLORD_LINE, 'T4', '', new Date('2026-11-09T03:00:00Z'));
 assert.equal(beforeDue.unpaid_bills.length, 1);
 assert.equal(beforeDue.overdue_bills.length, 0, 'not overdue before the due date');
+
+// 手動催繳成功後，逾期帳單 reminder_count +1、更新 last_reminder_at
+const billGrid = [
+  ['bill_id', 'reminder_count', 'last_reminder_at', 'last_reminder_stage'],
+  ['B60', 2, '', 15],
+  ['B79', '', '', '']
+];
+const billSheet = {
+  getLastRow: () => billGrid.length,
+  getLastColumn: () => billGrid[0].length,
+  getRange(row, col, rows = 1, cols = 1) {
+    return {
+      getValues: () => billGrid.slice(row - 1, row - 1 + rows).map((r) => r.slice(col - 1, col - 1 + cols)),
+      getValue: () => billGrid[row - 1][col - 1],
+      setValue: (value) => { billGrid[row - 1][col - 1] = value; }
+    };
+  }
+};
+sandbox.runtimeSpreadsheet_ = () => ({ getSheetByName: (name) => (name === 'V2_bills' ? billSheet : null) });
+sandbox.landlordMessageRecordManualReminder_(tenant.overdue_bills);
+assert.equal(billGrid[2][1], 1, 'manual reminder counts toward 已成功催繳');
+assert.equal(Object.prototype.toString.call(billGrid[2][2]), '[object Date]');
+assert.equal(billGrid[2][3], '', 'manual reminder does not change the automatic stage');
+assert.equal(billGrid[1][1], 2, 'other bills untouched');
+sandbox.landlordMessageRecordManualReminder_(tenant.overdue_bills);
+assert.equal(billGrid[2][1], 2);
 
 console.log('Landlord manual reminder canonical tenant tests passed.');
