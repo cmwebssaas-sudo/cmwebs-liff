@@ -697,12 +697,19 @@ function tenantBindingResolveByLineUid_(ss, lineUserId) {
       continue;
     }
 
+    // landlord_tenant_list_view 的 line_user_id 是房東 UID，只能比對 tenant_line_user_id
+    const isLandlordView =
+      sheetNames[i] ===
+      V2_TENANT_BINDING_SHEETS_.landlordTenantListView;
+
     const row = tenantBindingGetObjectsWithRow_(sheet).find(
       function (item) {
         return (
           tenantBindingText_(
-            item.tenant_line_user_id ||
-            item.line_user_id
+            isLandlordView
+              ? item.tenant_line_user_id
+              : item.tenant_line_user_id ||
+                item.line_user_id
           ) === lineUserId
         );
       }
