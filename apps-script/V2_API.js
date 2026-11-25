@@ -3815,6 +3815,10 @@ function landlordSendTenantMessageByLineUid_(
       note: 'LINE message sent'
     });
 
+    if (messageType === 'payment_reminder') {
+      landlordMessageRecordManualReminder_(tenant.overdue_bills);
+    }
+
     return {
       success: true,
       code: 'OK',
@@ -3929,8 +3933,17 @@ function landlordMessageResolveTenant_(
     );
   };
 
+  // Sheets 會把 bill_month 讀成 Date；統一成 yyyy-MM，避免訊息出現「Sun Nov 01 2026 …」
+  const billMonth = function (value) {
+    return Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())
+      ? Utilities.formatDate(value, V2_TIMEZONE, 'yyyy-MM')
+      : text(value);
+  };
+
   const bills = getSheetObjects_(V2_SHEETS.bills).filter(function (row) {
     return text(row.landlord_id) === landlordId && belongsToTenant(row);
+  }).map(function (row) {
+    return Object.assign({}, row, { bill_month: billMonth(row.bill_month) });
   });
 
   const ownsTenant =
@@ -3957,7 +3970,7 @@ function landlordMessageResolveTenant_(
   });
 
   const byMonthDesc = function (a, b) {
-    return text(b.bill_month) < text(a.bill_month) ? -1 : text(b.bill_month) > text(a.bill_month) ? 1 : 0;
+    return b.bill_month < a.bill_month ? -1 : b.bill_month > a.bill_month ? 1 : 0;
   };
   const latestBill = (unpaidBills.length ? unpaidBills : bills).slice().sort(byMonthDesc)[0] || {};
   const rooms = [];
@@ -3985,6 +3998,45 @@ function landlordMessageResolveTenant_(
     unpaid_bills: unpaidBills,
     overdue_bills: overdueBills
   };
+}
+
+
+/**
+ * 手動催繳成功後，把逾期帳單的 reminder_count +1、更新 last_reminder_at，
+ * 讓欠款頁「已成功催繳」包含手動催繳。不動 last_reminder_stage，自動催繳階段照舊。
+ * 寫入失敗不影響已送出的訊息。
+ */
+function landlordMessageRecordManualReminder_(overdueBills) {
+  try {
+    const billIds = {};
+    (overdueBills || []).forEach(function (row) {
+      const id = String(row.bill_id || '').trim();
+      if (id) billIds[id] = true;
+    });
+    if (!Object.keys(billIds).length) return;
+
+    const sheet = runtimeSpreadsheet_().getSheetByName(V2_SHEETS.bills);
+    if (!sheet || sheet.getLastRow() < 2) return;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+      .map(function (header) { return String(header || '').trim(); });
+    const idColumn = headers.indexOf('bill_id') + 1;
+    const countColumn = headers.indexOf('reminder_count') + 1;
+    const atColumn = headers.indexOf('last_reminder_at') + 1;
+    if (!idColumn || !countColumn) return;
+
+    const ids = sheet.getRange(2, idColumn, sheet.getLastRow() - 1, 1).getValues();
+    const now = new Date();
+    ids.forEach(function (cell, index) {
+      if (!billIds[String(cell[0] || '').trim()]) return;
+      const row = index + 2;
+      const countCell = sheet.getRange(row, countColumn);
+      countCell.setValue((Number(countCell.getValue()) || 0) + 1);
+      if (atColumn) sheet.getRange(row, atColumn).setValue(now);
+    });
+  } catch (err) {
+    console.warn('manual reminder tracking failed: ' + (err && err.message ? err.message : err));
+  }
 }
 
 
